@@ -1,0 +1,1 @@
+# issurec-yonetimi
