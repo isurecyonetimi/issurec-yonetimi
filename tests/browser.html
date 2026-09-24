@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="tr"><meta charset="utf-8"><title>Uygulama testleri</title>
+<link rel="stylesheet" href="../styles.css"><main id="app"></main><pre id="results">RUNNING</pre>
+<script src="../community.js"></script><script src="../employee.js"></script><script src="../account.js"></script><script src="../app.js"></script>
+<script>
+const results = [];
+const snapshot = Object.fromEntries(Object.keys(localStorage).map((key) => [key, localStorage.getItem(key)]));
+const runtimeErrors = [];
+window.addEventListener('error', (event) => runtimeErrors.push(event.message));
+window.confirm = () => true;
+window.alert = () => {};
+function check(name, run) { try { run(); assert(!/Sayfa açılamadı|Sayfa yüklenirken hata oluştu/.test(app.textContent), 'Sayfa hata ekranına düştü'); results.push('PASS: ' + name); } catch (err) { results.push('FAIL: ' + name + ' — ' + err.message); } }
+function assert(value, message) { if (!value) throw new Error(message || 'Beklenti karşılanmadı'); }
+function login(index) {
+  renderLogin();
+  const form = document.querySelector('#login-form');
+  form.elements.email.value = users[index].email;
+  form.elements.password.value = users[index].password;
+  form.requestSubmit();
+}
+check('Giriş ekranı', () => assert(document.querySelector('#login-form')));
+check('Yönetici giriş ve ana panel', () => {
+  login(0); assert(currentUser && isAdminUser());
+  assert(document.querySelector('.app-shell'));
+  assert(!app.textContent.includes('hata oluştu'), app.textContent);
+});
+check('Yönetici duyuru sayfası', () => { renderDashboard('Duyurular'); assert(document.querySelector('#announcement-form')); });
+check('Yetkilendirme yöneticiye açık', () => { renderDashboard('Yetkilendirme'); assert(document.querySelector('#perm-form')); });
+check('Personelde yetki menüsü yok; doğrudan geçiş oturumu korur', () => {
+  login(1); assert(!document.querySelector('[data-page="Yetkilendirme"]'));
+  renderDashboard('Yetkilendirme'); assert(currentUser.name === users[1].name);
+  assert(!document.querySelector('#perm-form')); assert(document.querySelector('.app-shell'));
+});
+check('Yetkisiz personel duyuru yazamaz', () => { renderDashboard('Duyurular'); assert(!document.querySelector('#announcement-form')); assert(!publishAnnouncement('Test', 'Test')); });
+check('Ayın elemanı sayfası', () => { renderDashboard('Ayın Elemanı'); assert(!app.textContent.includes('hata oluştu'), app.textContent); });
+check('Duyuru yetkisi verme, formdan yayınlama ve geri alma', () => {
+  login(0); renderDashboard('Yetkilendirme');
+  const input = document.querySelector('[data-announcement-permission="Mehmet Kaya"]');
+  input.checked = true; input.dispatchEvent(new Event('change'));
+  login(1); renderDashboard('Duyurular');
+  const form = document.querySelector('#announcement-form'); assert(form);
+  form.elements.title.value = 'Toplantı'; form.elements.body.value = 'Yarın saat 10.00'; form.requestSubmit();
+  assert(app.textContent.includes('Yarın saat 10.00'));
+  assert(!setAnnouncementPermission('Elif Demir', true));
+  assert(!renderAccessMatrixContent().includes('id="perm-form"'));
+  login(0); assert(setAnnouncementPermission('Mehmet Kaya', false));
+  login(1); assert(!publishAnnouncement('Başlık', 'Metin'));
+});
+check('Ünvan ekleme, düzenleme ve diğer personele gösterim', () => {
+  login(0); renderDashboard('Personel Yönetimi');
+  const form = document.querySelector('#staff-form');
+  form.elements.staffName.value = 'Test Personeli'; form.elements.staffTitle.value = 'Operasyon Uzmanı'; form.requestSubmit();
+  assert(getStaffTitle('Test Personeli') === 'Operasyon Uzmanı');
+  document.querySelector('[data-edit-staff="Mehmet Kaya"]').click();
+  const edit = document.querySelector('#staff-edit-form'); edit.elements.staffTitle.value = 'Yönetici'; edit.requestSubmit();
+  assert(getAccess()['Mehmet Kaya'].length === 2, 'Ünvan düzenleme erişimi silmemeli');
+  login(1); assert(!isAdminUser(), 'Ünvan rol değildir'); renderDashboard('Personel Yönetimi');
+  assert(!document.querySelector('#staff-form')); assert(app.textContent.includes('Operasyon Uzmanı'));
+});
+check('Kullanıcı adı ve şifre ile personel ekleme', () => {
+  login(0); renderDashboard('Personel Yönetimi');
+  const form = document.querySelector('#staff-form');
+  const testEmail = 'yeni.personel@test.com';
+  form.elements.staffName.value = 'Yeni Personel';
+  form.elements.staffTitle.value = 'Proje Koordinatörü';
+  form.elements.staffEmail.value = testEmail;
+  form.elements.staffPassword.value = 'GüvenliSifre123';
+  form.elements.staffPasswordRepeat.value = 'GüvenliSifre123';
+  form.requestSubmit();
+
+  // Personelin eklendiğini doğrula
+  const staffList = getStaff();
+  assert(staffList.includes('Yeni Personel'), 'Personel listesine eklenmeli');
+  assert(getStaffTitle('Yeni Personel') === 'Proje Koordinatörü', 'Ünvan kaydedilmeli');
+
+  // Kullanıcı listesine eklendiğini doğrula
+  const user = users.find(u => u.email === testEmail);
+  assert(user, 'Kullanıcı listesine eklendi olmalı');
+  assert(user.name === 'Yeni Personel', 'Kullanıcı adı doğru olmalı');
+
+  // Şifre deposunda hesap oluştuğunu doğrula (localStorage üzerinden)
+  const passwordRaw = localStorage.getItem('isSurecPasswordsV1');
+  const records = passwordRaw ? JSON.parse(passwordRaw) : {};
+  assert(records[testEmail], 'Şifre deposuna kayıt eklendi olmalı');
+  assert(records[testEmail].algorithm === 'PBKDF2-SHA256', 'Şifre algoritması doğru olmalı');
+  assert(/^[a-f0-9]{32}$/.test(records[testEmail].salt), 'Salt değeri doğru formatta olmalı');
+  assert(/^[a-f0-9]{64}$/.test(records[testEmail].hash), 'Hash değeri doğru formatta olmalı');
+});
+const month = currentMonth();
+check('Aylık işlem hesabı, eski kayıt uyumu ve tekrar kaydetme', () => {
+  const store = {};
+  store[`Mehmet Kaya || Firma || ${month}-01`] = { tasks: [true, true], tasksByName: { A: true, B: false } };
+  store[`Mehmet Kaya || Firma || ${month}-02`] = { tasks: [true, true] };
+  store[`Elif Demir || Firma || ${month}-01`] = { tasksByName: { A: true } };
+  store['Mehmet Kaya || Firma || 2000-01-01'] = { tasks: [true, true] };
+  saveWorkStore(store); saveWorkStore(store);
+  assert(getMonthlyPerformance(month)[0].count === 3);
+  assert(!getMonthlyPerformance(month)[0].reviewed);
+  assert(!loadCommunity(EMPLOYEE_KEY)[month], 'Onaysız otomatik seçim yapılmamalı');
+});
+check('Hata oranı ve yönetici onayı', () => {
+  assert(!saveErrorReview(month, 'Mehmet Kaya', 1)); assert(!approveEmployee(month, 'Mehmet Kaya'));
+  login(0);
+  assert(!saveErrorReview(month, 'Mehmet Kaya', -1)); assert(!saveErrorReview(month, 'Mehmet Kaya', 4));
+  assert(!saveErrorReview(month, 'Mehmet Kaya', 1.5));
+  assert(saveErrorReview(month, 'Elif Demir', 0)); assert(!approveEmployee(month, 'Elif Demir'));
+  renderDashboard('Ayın Elemanı');
+  const form = document.querySelector('[data-error-review="Mehmet Kaya"]');
+  form.elements.errors.value = '1'; form.requestSubmit();
+  assert(Math.abs(getMonthlyPerformance(month)[0].rate - 100 / 3) < .001);
+  document.querySelector('[data-approve-employee="Mehmet Kaya"]').click();
+  assert(loadCommunity(EMPLOYEE_KEY)[month].staff === 'Mehmet Kaya');
+  login(2); assert(document.querySelector('.is-awarded')); renderDashboard('Ayın Elemanı');
+  assert(!document.querySelector('[data-error-review]')); assert(!document.querySelector('[data-approve-employee]'));
+});
+check('Ad değişince işlem, yetki ve ödül verisi korunur', () => {
+  login(0); assert(setAnnouncementPermission('Mehmet Kaya', true));
+  renderDashboard('Personel Yönetimi'); document.querySelector('[data-edit-staff="Mehmet Kaya"]').click();
+  const form = document.querySelector('#staff-edit-form'); form.elements.newName.value = 'Mehmet Yeni'; form.requestSubmit();
+  assert(getMonthlyPerformance(month)[0].staff === 'Mehmet Yeni');
+  assert(getMonthlyPerformance(month)[0].count === 3);
+  assert(loadCommunity(EMPLOYEE_KEY)[month].staff === 'Mehmet Yeni');
+  login(1); assert(currentUser.name === 'Mehmet Yeni'); assert(canPublishAnnouncement());
+});
+check('İşlem değişikliği yeniden hata incelemesi gerektirir', () => {
+  const store = loadWorkStore(); store[`Mehmet Yeni || Firma || ${month}-03`] = { tasks: [true] }; saveWorkStore(store);
+  assert(!getMonthlyPerformance(month)[0].reviewed);
+  login(0); assert(!approveEmployee(month, 'Mehmet Yeni'));
+  assert(loadCommunity(EMPLOYEE_KEY)[month].count === 3, 'Yayınlanan onay anlık görüntüsü korunmalı');
+});
+check('Tüm menüler yönetici ve personelde açılır', () => {
+  for (const user of [0, 2]) {
+    login(user);
+    for (const [, page] of menuItems) {
+      renderDashboard(page); assert(document.querySelector('.app-shell'));
+      assert(!/Sayfa açılamadı|Sayfa yüklenirken hata oluştu/.test(app.textContent), page);
+    }
+  }
+});
+check('Çalışma zamanı hatası yok', () => assert(runtimeErrors.length === 0, runtimeErrors.join('; ')));
+Object.keys(localStorage).forEach((key) => { if (!(key in snapshot)) localStorage.removeItem(key); });
+Object.entries(snapshot).forEach(([key, value]) => localStorage.setItem(key, value));
+document.querySelector('#results').textContent = results.join('\n');
+document.title = results.some((r) => r.startsWith('FAIL')) ? 'FAIL' : 'PASS';
+</script></html>

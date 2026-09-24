@@ -1,0 +1,11 @@
+<!doctype html><html lang="tr"><meta charset="utf-8"><title>Odaklı test</title><main id="app"></main><pre id="results"></pre>
+<script>window.testErrors = []; window.addEventListener('error', e => testErrors.push(e.message || 'Kaynak yüklenemedi: ' + e.target.src), true); const originalError = console.error; console.error = (...args) => { testErrors.push(args.join(' ')); originalError(...args); };</script>
+<script src="../community.js"></script><script src="../employee.js"></script><script src="../account.js"></script><script src="../app.js"></script>
+<script>
+const output = [];
+function step(name, run) { try { run(); const error = document.querySelector('.permission-empty'); if (error && /hata oluştu|Sayfa açılamadı/.test(error.textContent)) throw Error(error.textContent); output.push('PASS: ' + name); } catch(e) { output.push('FAIL: ' + name + ': ' + e.message); } }
+step('Giriş', () => { const form = document.querySelector('#login-form'); form.elements.email.value = 'ayse.yilmaz@firma.com'; form.elements.password.value = '1234'; form.requestSubmit(); if (!currentUser) throw Error('Oturum açılmadı'); });
+step('Menü', () => { if (!document.querySelector('.nav')) throw Error('Menü yok'); });
+step('Personel sayfası', () => { document.querySelector('[data-page="Personel Yönetimi"]').click(); if (!document.querySelector('#staff-form')) throw Error('Personel formu yok'); });
+document.querySelector('#results').textContent = output.concat(testErrors.map(e => 'JS ERROR: ' + e)).join('\n');
+</script></html>
