@@ -157,6 +157,10 @@ async function changeOwnPassword(
     );
 
   } catch (err) {
+    
+    console.error('ŞİFRE DEĞİŞTİRME FIREBASE HATASI:', err);
+    console.error('Hata kodu:', err?.code);
+    console.error('Hata mesajı:', err?.message);
 
     if (
       err &&
