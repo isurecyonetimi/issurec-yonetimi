@@ -1,4 +1,6 @@
+```js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+
 import {
   getAuth,
   signInWithEmailAndPassword,
@@ -7,7 +9,14 @@ import {
   reauthenticateWithCredential,
   EmailAuthProvider
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc
+} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+
 import { getStorage } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-storage.js";
 
 const firebaseConfig = {
@@ -26,18 +35,28 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
 
+// Firebase bağlantılarını global olarak kullanılabilir hale getiriyoruz.
 window.firebaseApp = app;
 window.firebaseAuth = auth;
 window.firebaseDb = db;
+
 window.firebaseDoc = doc;
 window.firebaseGetDoc = getDoc;
 window.firebaseSetDoc = setDoc;
+
 window.firebaseStorage = storage;
+
 window.firebaseSignIn = signInWithEmailAndPassword;
 window.firebaseCreateUser = createUserWithEmailAndPassword;
+
 window.firebaseUpdatePassword = updatePassword;
 window.firebaseReauthenticate = reauthenticateWithCredential;
 window.firebaseEmailAuthProvider = EmailAuthProvider;
 
-export { app, auth, db, storage };
-
+export {
+  app,
+  auth,
+  db,
+  storage
+};
+```

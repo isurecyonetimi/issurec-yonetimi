@@ -1,34 +1,34 @@
 const menuItems = [
-  ['¦', 'Yönetim Paneli'],
-  ['?', 'Kullanýcý Yönetimi'],
-  ['?', 'Firma Yönetimi'],
-  ['?', 'Yýl / Dönem Yönetimi'],
-  ['?', 'Personel Yönetimi'],
+  ['ï¿½', 'Yï¿½netim Paneli'],
+  ['?', 'Kullanï¿½cï¿½ Yï¿½netimi'],
+  ['?', 'Firma Yï¿½netimi'],
+  ['?', 'Yï¿½l / Dï¿½nem Yï¿½netimi'],
+  ['?', 'Personel Yï¿½netimi'],
   ['?', 'Yetkilendirme'],
   ['?', 'Raporlar'],
-  ['?', 'Personel Sorularý'],
-  ['?', 'Ayýn Elemaný'],
+  ['?', 'Personel Sorularï¿½'],
+  ['?', 'Ayï¿½n Elemanï¿½'],
   ['?', 'Duyurular'],
   ['?', 'Notlar']
 ];
 
 const app = document.querySelector('#app');
 
-const DEFAULT_STAFF = ['Ayþe Yýlmaz', 'Mehmet Kaya', 'Elif Demir', 'Ahmet Þahin', 'Zeynep Aras'];
+const DEFAULT_STAFF = ['Ayï¿½e Yï¿½lmaz', 'Mehmet Kaya', 'Elif Demir', 'Ahmet ï¿½ahin', 'Zeynep Aras'];
 const STAFF_STORAGE_KEY = 'isSurecStaffV1';
 function loadStaff() { try { const raw = localStorage.getItem(STAFF_STORAGE_KEY); const p = raw ? JSON.parse(raw) : null; if (Array.isArray(p) && p.length) return p.filter((s) => typeof s === 'string' && s.trim()); } catch (err) {} return [...DEFAULT_STAFF]; }
 function saveStaff(list) { try { localStorage.setItem(STAFF_STORAGE_KEY, JSON.stringify(list)); } catch (err) {} }
 function getStaff() { return loadStaff(); }
 const staffMembers = loadStaff();
-const DEFAULT_COMPANIES = ['Artemis Teknoloji A.Þ.', 'Nova Ýnsan Kaynaklarý Ltd.', 'Yapýtaþ Proje ve Danýþmanlýk'];
+const DEFAULT_COMPANIES = ['Artemis Teknoloji A.ï¿½.', 'Nova ï¿½nsan Kaynaklarï¿½ Ltd.', 'Yapï¿½taï¿½ Proje ve Danï¿½ï¿½manlï¿½k'];
 const COMPANY_STORAGE_KEY = 'isSurecCompaniesV1';
 const ACCESS_STORAGE_KEY = 'isSurecStaffAccessV1';
 const DEFAULT_ACCESS = {
-  'Ayþe Yýlmaz': ['Artemis Teknoloji A.Þ.', 'Nova Ýnsan Kaynaklarý Ltd.', 'Yapýtaþ Proje ve Danýþmanlýk'],
-  'Mehmet Kaya': ['Artemis Teknoloji A.Þ.', 'Yapýtaþ Proje ve Danýþmanlýk'],
-  'Elif Demir': ['Nova Ýnsan Kaynaklarý Ltd.'],
-  'Ahmet Þahin': ['Artemis Teknoloji A.Þ.'],
-  'Zeynep Aras': ['Yapýtaþ Proje ve Danýþmanlýk']
+  'Ayï¿½e Yï¿½lmaz': ['Artemis Teknoloji A.ï¿½.', 'Nova ï¿½nsan Kaynaklarï¿½ Ltd.', 'Yapï¿½taï¿½ Proje ve Danï¿½ï¿½manlï¿½k'],
+  'Mehmet Kaya': ['Artemis Teknoloji A.ï¿½.', 'Yapï¿½taï¿½ Proje ve Danï¿½ï¿½manlï¿½k'],
+  'Elif Demir': ['Nova ï¿½nsan Kaynaklarï¿½ Ltd.'],
+  'Ahmet ï¿½ahin': ['Artemis Teknoloji A.ï¿½.'],
+  'Zeynep Aras': ['Yapï¿½taï¿½ Proje ve Danï¿½ï¿½manlï¿½k']
 };
 
 function loadCompanies() {
@@ -68,7 +68,7 @@ function getCompanyCreatedDate(company) {
   } catch (err) {}
   return new Date().toISOString().slice(0, 10);
 }
-function formatDateTr(iso) { if (!iso) return '—'; const p = (iso || '').split('-'); if (p.length !== 3) return iso; return `${p[2]}.${p[1]}.${p[0]}`; }
+function formatDateTr(iso) { if (!iso) return 'ï¿½'; const p = (iso || '').split('-'); if (p.length !== 3) return iso; return `${p[2]}.${p[1]}.${p[0]}`; }
 function getAllowedTasks(staff) { try { if (typeof getVisibleTasks === 'function') return getVisibleTasks(staff); } catch (err) {} try { return getTaskTypes(); } catch (err) {} return []; }
 function loadWork() {
   try {
@@ -85,10 +85,10 @@ function loadWork() {
     });
   } catch (err) { return []; }
 }
-// Giriþ yapan personele özel Yönetim Paneli özeti:
-// - Sadece görebildiði cariler (yetki filtresi)
-// - Her carinin tanýmlandýðý tarihten itibaren yapmasý gereken iþler
-// - Tamamlanan / eksik sayýlarý yalnýzca o kullanýcýya ait kayýtlardan hesaplanýr.
+// Giriï¿½ yapan personele ï¿½zel Yï¿½netim Paneli ï¿½zeti:
+// - Sadece gï¿½rebildiï¿½i cariler (yetki filtresi)
+// - Her carinin tanï¿½mlandï¿½ï¿½ï¿½ tarihten itibaren yapmasï¿½ gereken iï¿½ler
+// - Tamamlanan / eksik sayï¿½larï¿½ yalnï¿½zca o kullanï¿½cï¿½ya ait kayï¿½tlardan hesaplanï¿½r.
 function normName(s) { try { return (s || '').toString().trim().toLocaleLowerCase('tr'); } catch (err) { return (s || '').toString().trim().toLowerCase(); } }
 function getPermRecord(staff, company) {
   try {
@@ -110,16 +110,16 @@ function getMyVisibleCompanies(staff) {
     const keys = Object.keys(perms || {});
     const sn = normName(staff);
     const ownKeys = keys.filter((k) => normName((k.split(' || ')[0] || '')) === sn);
-    // Bu personele Yetkilendirme ekranýndan en az 1 kayýt girilmiþse tek kaynak orasýdýr
-    // (yönetici dahil herkes yalnýzca islem/gor olanlarý görür).
+    // Bu personele Yetkilendirme ekranï¿½ndan en az 1 kayï¿½t girilmiï¿½se tek kaynak orasï¿½dï¿½r
+    // (yï¿½netici dahil herkes yalnï¿½zca islem/gor olanlarï¿½ gï¿½rï¿½r).
     if (ownKeys.length) return all.filter((c) => {
       const v = getPermRecord(staff, c);
       return v === 'islem' || v === 'gor';
     });
-    // Sistem genelinde yetkilendirme kullanýlmaya baþlanmýþsa kaydý olmayan personel
-    // eski listeden kalma firmalarý görmesin (4 yerine 0/1 gösterimi için kritik).
+    // Sistem genelinde yetkilendirme kullanï¿½lmaya baï¿½lanmï¿½ï¿½sa kaydï¿½ olmayan personel
+    // eski listeden kalma firmalarï¿½ gï¿½rmesin (4 yerine 0/1 gï¿½sterimi iï¿½in kritik).
     if (keys.length) return [];
-    // Hiç yetkilendirme yapýlmamýþsa eski eriþim listesine düþ (ilk kurulum uyumluluðu).
+    // Hiï¿½ yetkilendirme yapï¿½lmamï¿½ï¿½sa eski eriï¿½im listesine dï¿½ï¿½ (ilk kurulum uyumluluï¿½u).
     try {
       const acc = loadAccess();
       if (acc) {
@@ -161,28 +161,28 @@ function renderMyDashboardStats() {
   try {
   const s = getMyDashboardStats();
   const cards = [
-    ['?', 'Görebildiðim cari', `${s.visibleCompanies.length}`, s.earliest ? `${formatDateTr(s.earliest)} itibarýyla` : 'tanýmlý cari'],
-    ['?', 'Yapmam gereken iþ', `${s.totalExpected}`, `${s.visibleCompanies.length} cari × ${s.allowedTasks.length} iþ türü`],
-    ['?', 'Tamamladýðým', `${s.totalDone}`, `%${s.pct} tamamlanma`],
-    ['!', 'Eksik / bekleyen', `${s.totalMissing}`, 'carinin tanýmlandýðý tarihten itibaren']
+    ['?', 'Gï¿½rebildiï¿½im cari', `${s.visibleCompanies.length}`, s.earliest ? `${formatDateTr(s.earliest)} itibarï¿½yla` : 'tanï¿½mlï¿½ cari'],
+    ['?', 'Yapmam gereken iï¿½', `${s.totalExpected}`, `${s.visibleCompanies.length} cari ï¿½ ${s.allowedTasks.length} iï¿½ tï¿½rï¿½`],
+    ['?', 'Tamamladï¿½ï¿½ï¿½m', `${s.totalDone}`, `%${s.pct} tamamlanma`],
+    ['!', 'Eksik / bekleyen', `${s.totalMissing}`, 'carinin tanï¿½mlandï¿½ï¿½ï¿½ tarihten itibaren']
   ].map(([icon, title, value, change]) => `<article class="stat-card"><div class="stat-top"><span>${title}</span><span class="stat-icon">${icon}</span></div><div class="stat-number">${value}</div><span class="stat-change">${change}</span></article>`).join('');
   const rows = s.perCompany.length ? s.perCompany.map((r) => `
     <div class="task-row" style="cursor:default">
       <span class="task-box" style="${r.missing === 0 ? 'border-color:var(--teal);background:var(--teal);color:white;' : ''}">${r.missing === 0 ? '?' : '?'}</span>
-      <div class="task-name"><strong>${r.company}</strong><small>Tanýmlanma: ${formatDateTr(r.createdAt)} · Gereken: ${r.expected} · Yapýlan: ${r.done} · Kalan: ${r.missing}</small></div>
+      <div class="task-name"><strong>${r.company}</strong><small>Tanï¿½mlanma: ${formatDateTr(r.createdAt)} ï¿½ Gereken: ${r.expected} ï¿½ Yapï¿½lan: ${r.done} ï¿½ Kalan: ${r.missing}</small></div>
       <span class="task-counter">${r.missing === 0 ? 'Tamam' : r.missing + ' eksik'}</span>
-    </div>`).join('') : '<div class="permission-empty"><span class="permission-icon">?</span><div><strong>Henüz görebildiðiniz cari yok.</strong><p>Yöneticinizden firma eriþim yetkisi isteyin.</p></div></div>';
+    </div>`).join('') : '<div class="permission-empty"><span class="permission-icon">?</span><div><strong>Henï¿½z gï¿½rebildiï¿½iniz cari yok.</strong><p>Yï¿½neticinizden firma eriï¿½im yetkisi isteyin.</p></div></div>';
   return `
-    <div class="page-heading"><div><h1>Yönetim Paneli</h1><p>Hoþ geldin ${s.me} — bu sayfadaki tüm sayýlar yalnýzca sana ait. Carilerin ve tanýmlanma tarihlerinden itibaren yapman gereken iþler.</p></div><span class="access-badge">${s.me}</span></div>
+    <div class="page-heading"><div><h1>Yï¿½netim Paneli</h1><p>Hoï¿½ geldin ${s.me} ï¿½ bu sayfadaki tï¿½m sayï¿½lar yalnï¿½zca sana ait. Carilerin ve tanï¿½mlanma tarihlerinden itibaren yapman gereken iï¿½ler.</p></div><span class="access-badge">${s.me}</span></div>
     <section class="stats-grid">${cards}</section>
-    <section class="panel"><div class="panel-header"><div><h2>Carilerime göre durum</h2><p class="panel-subtitle">Her cari, tanýmlandýðý tarihten sonraki kayýtlarýna göre deðerlendirilir.</p></div><span class="task-counter">${s.totalDone}/${s.totalExpected} tamamlandý</span></div>
+    <section class="panel"><div class="panel-header"><div><h2>Carilerime gï¿½re durum</h2><p class="panel-subtitle">Her cari, tanï¿½mlandï¿½ï¿½ï¿½ tarihten sonraki kayï¿½tlarï¿½na gï¿½re deï¿½erlendirilir.</p></div><span class="task-counter">${s.totalDone}/${s.totalExpected} tamamlandï¿½</span></div>
       <div class="task-content">${rows}</div>
     </section>`;
-  } catch (err) { return '<div class="permission-empty"><span class="permission-icon">!</span><div><strong>Panel yüklenemedi.</strong></div></div>'; }
+  } catch (err) { return '<div class="permission-empty"><span class="permission-icon">!</span><div><strong>Panel yï¿½klenemedi.</strong></div></div>'; }
 }
 function getCompanies() { return loadCompanies(); }
 function getAccess() { return loadAccess(); }
-function isAdminUser() { return currentUser && currentUser.title === 'Yönetici'; }
+function isAdminUser() { return currentUser && currentUser.title === 'Yï¿½netici'; }
 let companies = loadCompanies();
 let staffCompanyAccess = loadAccess();
 function refreshCompanyCache() { companies = loadCompanies(); staffCompanyAccess = loadAccess(); }
@@ -191,7 +191,7 @@ function loadPlans() { try { const raw = localStorage.getItem(PLAN_STORAGE_KEY);
 function savePlans(list) { try { localStorage.setItem(PLAN_STORAGE_KEY, JSON.stringify(list)); } catch (err) {} }
 function getMyPlans() { const me = currentUser ? currentUser.name : ''; return loadPlans().filter((p) => p.staff === me); }
 const TASK_TYPE_KEY = 'isSurecTaskTypesV1';
-const DEFAULT_TASKS = ['Sevk tanýmlandý', 'Evrak yüklendi'];
+const DEFAULT_TASKS = ['Sevk tanï¿½mlandï¿½', 'Evrak yï¿½klendi'];
 function loadTaskTypes() { try { const raw = localStorage.getItem(TASK_TYPE_KEY); const p = raw ? JSON.parse(raw) : null; if (Array.isArray(p) && p.length) return p.filter((t) => typeof t === 'string' && t.trim()); } catch (err) {} return [...DEFAULT_TASKS]; }
 function saveTaskTypes(list) { try { localStorage.setItem(TASK_TYPE_KEY, JSON.stringify(list)); } catch (err) {} }
 function getTaskTypes() { return loadTaskTypes(); }
@@ -199,11 +199,11 @@ const TASK_PERM_KEY = 'isSurecTaskPermsV1';
 function loadTaskPerms() { try { const raw = localStorage.getItem(TASK_PERM_KEY); const p = raw ? JSON.parse(raw) : null; if (p && typeof p === 'object') return p; } catch (err) {} return {}; }
 function saveTaskPerms(o) { try { localStorage.setItem(TASK_PERM_KEY, JSON.stringify(o)); } catch (err) {} }
 function getVisibleTasks(staff) { const p = loadTaskPerms(); const v = p[staff]; if (!Array.isArray(v)) return getTaskTypes(); return getTaskTypes().filter((t) => v.includes(t)); }
-const dailyTasks = ['Sevk tanýmlandý', 'Evrak yüklendi'];
+const dailyTasks = ['Sevk tanï¿½mlandï¿½', 'Evrak yï¿½klendi'];
 
-// Tarih bazlý iþ takip kayýtlarý (personel + firma + tarih üçlüsüne özel).
-// localStorage'da saklanýr: { "PERSONEL || FÝRMA || YYYY-MM-DD": { tasks: [bool], updatedAt: iso } }
-// Böylece 01.01.2026'da kaydedilen iþlem 02.01.2026'da görünmez; her tarihe ayrý kayýt tutulur.
+// Tarih bazlï¿½ iï¿½ takip kayï¿½tlarï¿½ (personel + firma + tarih ï¿½ï¿½lï¿½sï¿½ne ï¿½zel).
+// localStorage'da saklanï¿½r: { "PERSONEL || Fï¿½RMA || YYYY-MM-DD": { tasks: [bool], updatedAt: iso } }
+// Bï¿½ylece 01.01.2026'da kaydedilen iï¿½lem 02.01.2026'da gï¿½rï¿½nmez; her tarihe ayrï¿½ kayï¿½t tutulur.
 const WORK_STORAGE_KEY = 'isSurecIsTakipV1';
 const DASH_PANEL_KEY = 'isTakipPanelAcik';
 const LAST_WORK_KEY = 'isSurecLastWorkDateV1';
@@ -223,7 +223,7 @@ function loadWorkStore() {
 function saveWorkStore(store) {
   try {
     localStorage.setItem(WORK_STORAGE_KEY, JSON.stringify(store));
-  } catch (err) { /* depolama doluysa sessiz geç */ }
+  } catch (err) { /* depolama doluysa sessiz geï¿½ */ }
 }
 
 function getWorkKey(staff, company, date) {
@@ -254,14 +254,14 @@ function formatUpdatedAt(iso) {
   return d.toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
-// Her personel kendi kullanýcý bilgileriyle (e-posta / þifre) giriþ yapar.
-// Böylece Ýþ Takip ekranýnda personel alaný, giriþ yapan kullanýcýya göre
-// otomatik ve deðiþtirilemez þekilde doldurulur; baþka bir isim seçilemez.
+// Her personel kendi kullanï¿½cï¿½ bilgileriyle (e-posta / ï¿½ifre) giriï¿½ yapar.
+// Bï¿½ylece ï¿½ï¿½ Takip ekranï¿½nda personel alanï¿½, giriï¿½ yapan kullanï¿½cï¿½ya gï¿½re
+// otomatik ve deï¿½iï¿½tirilemez ï¿½ekilde doldurulur; baï¿½ka bir isim seï¿½ilemez.
 const users = [
-  { email: 'ayse.yilmaz@firma.com', password: '1234', name: 'Ayþe Yýlmaz', title: 'Yönetici' },
+  { email: 'ayse.yilmaz@firma.com', password: '1234', name: 'Ayï¿½e Yï¿½lmaz', title: 'Yï¿½netici' },
   { email: 'mehmet.kaya@firma.com', password: '1234', name: 'Mehmet Kaya', title: 'Personel' },
   { email: 'elif.demir@firma.com', password: '1234', name: 'Elif Demir', title: 'Personel' },
-  { email: 'ahmet.sahin@firma.com', password: '1234', name: 'Ahmet Þahin', title: 'Personel' },
+  { email: 'ahmet.sahin@firma.com', password: '1234', name: 'Ahmet ï¿½ahin', title: 'Personel' },
   { email: 'zeynep.aras@firma.com', password: '1234', name: 'Zeynep Aras', title: 'Personel' }
 ];
 const USER_NAME_KEY = 'isSurecUserNamesV1';
@@ -283,7 +283,7 @@ function getVisibleQuestions() {
 
 const NOTE_KEY = 'isSurecNotesV1';
 function loadNotes() { try { const raw = localStorage.getItem(NOTE_KEY); const p = raw ? JSON.parse(raw) : null; if (Array.isArray(p)) return p; } catch (err) {} return []; }
-function saveNotes(list) { try { localStorage.setItem(NOTE_KEY, JSON.stringify(list)); } catch (err) { window.alert('Not kaydedilemedi (depolama dolu olabilir, daha küçük dosya deneyin).'); } }
+function saveNotes(list) { try { localStorage.setItem(NOTE_KEY, JSON.stringify(list)); } catch (err) { window.alert('Not kaydedilemedi (depolama dolu olabilir, daha kï¿½ï¿½ï¿½k dosya deneyin).'); } }
 function getMyNotes() { const me = currentUser ? currentUser.name : ''; return loadNotes().filter((n) => n.staff === me); }
 
 function getInitials(name) {
@@ -315,44 +315,44 @@ function canView(staff, company) { const v = getPermRecord(staff, company); retu
 function canEdit(staff, company) { return getPermRecord(staff, company) === 'islem'; }
 
 function renderAccessMatrixContent() {
-  if (!isAdminUser()) return '<div class="permission-empty">Bu panel yalnýzca yöneticilere açýktýr.</div>';
+  if (!isAdminUser()) return '<div class="permission-empty">Bu panel yalnï¿½zca yï¿½neticilere aï¿½ï¿½ktï¿½r.</div>';
   const firms = getCompanies();
   const people = getStaff();
   const perms = loadPerms();
   const focusStaff = window._permFocus || people[0] || '';
   const defined = Object.keys(perms).filter((k) => perms[k] && perms[k] !== 'yok' && k.indexOf(`${focusStaff} || `) === 0);
-  const permLabel = (v) => v === 'islem' ? 'Görsün / Ýþlem yapsýn' : v === 'gor' ? 'Görsün / Ýþlem yapamasýn' : 'Görmesin / Ýþlem yapamasýn';
+  const permLabel = (v) => v === 'islem' ? 'Gï¿½rsï¿½n / ï¿½ï¿½lem yapsï¿½n' : v === 'gor' ? 'Gï¿½rsï¿½n / ï¿½ï¿½lem yapamasï¿½n' : 'Gï¿½rmesin / ï¿½ï¿½lem yapamasï¿½n';
   const listRows = defined.length ? defined.map((k) => {
     const [s, c] = k.split(' || ');
-    return `<div class="task-row" style="cursor:default"><span class="task-box" style="border-radius:50%">?</span><span class="task-name"><strong>${s} › ${c}</strong><small>${permLabel(perms[k])}</small></span><span style="margin-left:auto;"><button class="primary-btn work-submit" data-del-perm="${k}" type="button" style="min-width:80px;background:#b5443c;">Sil</button></span></div>`;
-  }).join('') : '<div class="permission-empty"><span class="permission-icon">?</span><div><strong>Henüz yetki tanýmlanmadý.</strong><p>Yukarýdan firma + personel + yetki seçip Kaydet\'e basýn.</p></div></div>';
+    return `<div class="task-row" style="cursor:default"><span class="task-box" style="border-radius:50%">?</span><span class="task-name"><strong>${s} ï¿½ ${c}</strong><small>${permLabel(perms[k])}</small></span><span style="margin-left:auto;"><button class="primary-btn work-submit" data-del-perm="${k}" type="button" style="min-width:80px;background:#b5443c;">Sil</button></span></div>`;
+  }).join('') : '<div class="permission-empty"><span class="permission-icon">?</span><div><strong>Henï¿½z yetki tanï¿½mlanmadï¿½.</strong><p>Yukarï¿½dan firma + personel + yetki seï¿½ip Kaydet\'e basï¿½n.</p></div></div>';
   return `
-    <div class="page-heading"><div><h1>Yetkilendirme</h1><p>Firma seçin, personel seçin, yetkiyi seçip Kaydet'e basýn.</p></div><span class="access-badge">Yönetici</span></div>
+    <div class="page-heading"><div><h1>Yetkilendirme</h1><p>Firma seï¿½in, personel seï¿½in, yetkiyi seï¿½ip Kaydet'e basï¿½n.</p></div><span class="access-badge">Yï¿½netici</span></div>
     ${renderAnnouncementPermissions()}
-    <section class="panel"><div class="panel-header"><div><h2>Yetki ver</h2><p class="panel-subtitle">Listelerden seçim yapýn, tek tek kaydedin.</p></div></div>
+    <section class="panel"><div class="panel-header"><div><h2>Yetki ver</h2><p class="panel-subtitle">Listelerden seï¿½im yapï¿½n, tek tek kaydedin.</p></div></div>
       <form id="perm-form" class="work-form" style="grid-template-columns:1fr 1fr 1fr auto">
         <label class="field">Firma<select name="company">${firms.map((c) => `<option>${c}</option>`).join('')}</select></label>
         <label class="field">Personel<select name="staff">${people.map((s) => `<option>${s}</option>`).join('')}</select></label>
-        <label class="field">Yetki<select name="perm"><option value="islem">Görsün / Ýþlem yapsýn</option><option value="gor">Görsün / Ýþlem yapamasýn</option><option value="yok">Görmesin / Ýþlem yapamasýn</option></select></label>
+        <label class="field">Yetki<select name="perm"><option value="islem">Gï¿½rsï¿½n / ï¿½ï¿½lem yapsï¿½n</option><option value="gor">Gï¿½rsï¿½n / ï¿½ï¿½lem yapamasï¿½n</option><option value="yok">Gï¿½rmesin / ï¿½ï¿½lem yapamasï¿½n</option></select></label>
         <button class="primary-btn work-submit" type="submit">Kaydet</button>
       </form>
       <div class="save-row"><span class="save-status" id="perm-save-status"></span></div>
     </section>
-    <section class="panel"><div class="panel-header"><div><h2 id="perm-focus-title">Tanýmlý yetkiler · ${focusStaff} (${defined.length})</h2><p class="panel-subtitle">Aþaðýdan personel seçin, sadece onun yetkileri listelenir.</p></div></div>
+    <section class="panel"><div class="panel-header"><div><h2 id="perm-focus-title">Tanï¿½mlï¿½ yetkiler ï¿½ ${focusStaff} (${defined.length})</h2><p class="panel-subtitle">Aï¿½aï¿½ï¿½dan personel seï¿½in, sadece onun yetkileri listelenir.</p></div></div>
       <form id="perm-focus-form" class="work-form" style="grid-template-columns:1fr auto">
         <label class="field">Personel<select name="staff" id="perm-focus-staff">${people.map((s) => `<option${s === focusStaff ? ' selected' : ''}>${s}</option>`).join('')}</select></label>
-        <button class="primary-btn work-submit" type="submit">Göster</button>
+        <button class="primary-btn work-submit" type="submit">Gï¿½ster</button>
       </form>
       <div class="task-content">${listRows}</div>
     </section>
-    <section class="panel"><div class="panel-header"><div><h2>Ýþ türleri</h2><p class="panel-subtitle">Yeni iþ türü ekleyin (örn: Sevk tanýmlandý). Aþaðýdan personele hangi iþleri göreceðini seçin.</p></div></div>
+    <section class="panel"><div class="panel-header"><div><h2>ï¿½ï¿½ tï¿½rleri</h2><p class="panel-subtitle">Yeni iï¿½ tï¿½rï¿½ ekleyin (ï¿½rn: Sevk tanï¿½mlandï¿½). Aï¿½aï¿½ï¿½dan personele hangi iï¿½leri gï¿½receï¿½ini seï¿½in.</p></div></div>
       <form id="tasktype-form" class="work-form" style="grid-template-columns:1fr auto">
-        <label class="field">Ýþ türü<input type="text" name="taskName" placeholder="Örn: Fatura kesildi" required /></label>
+        <label class="field">ï¿½ï¿½ tï¿½rï¿½<input type="text" name="taskName" placeholder="ï¿½rn: Fatura kesildi" required /></label>
         <button class="primary-btn work-submit" type="submit">Ekle</button>
       </form>
       <div class="task-content">${getTaskTypes().map((t) => `<div class="task-row" style="cursor:default"><span class="task-box" style="border-radius:50%">?</span><span class="task-name"><strong>${t}</strong></span></div>`).join('')}</div>
     </section>
-    <section class="panel"><div class="panel-header"><div><h2>Personel iþ türü yetkisi</h2><p class="panel-subtitle">Personel seçin, göreceði iþleri iþaretleyip Kaydet'e basýn.</p></div></div>
+    <section class="panel"><div class="panel-header"><div><h2>Personel iï¿½ tï¿½rï¿½ yetkisi</h2><p class="panel-subtitle">Personel seï¿½in, gï¿½receï¿½i iï¿½leri iï¿½aretleyip Kaydet'e basï¿½n.</p></div></div>
       <form id="taskperm-form" class="work-form" style="grid-template-columns:1fr auto">
         <label class="field">Personel<select name="staff" id="taskperm-staff">${people.map((s) => `<option>${s}</option>`).join('')}</select></label>
         <button class="primary-btn work-submit" type="submit">Kaydet</button>
@@ -366,18 +366,18 @@ function renderMatrixRows(start, end, people) {
   const head = document.querySelector('#matrix-head');
   const body = document.querySelector('#matrix-body');
   if (!dates.length || !people.length) {
-    head.innerHTML = '<tr><th>Gün</th></tr>';
-    body.innerHTML = '<tr><td class="matrix-empty" colspan="2">Görüntülemek için en az bir personel ve geçerli bir tarih aralýðý seçin.</td></tr>';
+    head.innerHTML = '<tr><th>Gï¿½n</th></tr>';
+    body.innerHTML = '<tr><td class="matrix-empty" colspan="2">Gï¿½rï¿½ntï¿½lemek iï¿½in en az bir personel ve geï¿½erli bir tarih aralï¿½ï¿½ï¿½ seï¿½in.</td></tr>';
     return;
   }
-  head.innerHTML = `<tr><th>Gün</th>${people.map((person) => `<th>${person}</th>`).join('')}</tr>`;
+  head.innerHTML = `<tr><th>Gï¿½n</th>${people.map((person) => `<th>${person}</th>`).join('')}</tr>`;
   body.innerHTML = dates.map((date, dateIndex) => `<tr><th>${date}</th>${people.map((person, personIndex) => `<td><label class="matrix-check"><input type="checkbox" data-date="${date}" data-person="${person}" ${dateIndex === 0 || personIndex === 0 ? 'checked' : ''} /><span></span></label></td>`).join('')}</tr>`).join('');
-  document.querySelector('#matrix-summary').textContent = `${dates.length} gün · ${people.length} yetkili personel · Kutularý iþaretleyerek görünürlüðü düzenleyin.`;
+  document.querySelector('#matrix-summary').textContent = `${dates.length} gï¿½n ï¿½ ${people.length} yetkili personel ï¿½ Kutularï¿½ iï¿½aretleyerek gï¿½rï¿½nï¿½rlï¿½ï¿½ï¿½ dï¿½zenleyin.`;
 }
 
 function setupCompanyManagement() {
   if (!isAdminUser()) return;
-  // Eski kayýtlarda tarih yoksa geriye dönük doldur: ilk iþ kaydýnýn tarihi, yoksa bugün.
+  // Eski kayï¿½tlarda tarih yoksa geriye dï¿½nï¿½k doldur: ilk iï¿½ kaydï¿½nï¿½n tarihi, yoksa bugï¿½n.
   try {
     const m0 = loadCompanyMeta();
     let changed0 = false;
@@ -415,11 +415,11 @@ function setupCompanyManagement() {
     saveCompanyMeta(mm);
     refreshCompanyCache();
     window._companyEdit = '';
-    renderDashboard('Firma Yönetimi');
+    renderDashboard('Firma Yï¿½netimi');
   });
   document.querySelectorAll('[data-edit-company]').forEach((b) => b.addEventListener('click', () => {
     window._companyEdit = b.dataset.editCompany;
-    renderDashboard('Firma Yönetimi');
+    renderDashboard('Firma Yï¿½netimi');
   }));
   const ef = document.querySelector('#company-edit-form');
   if (ef) ef.addEventListener('submit', (e) => {
@@ -445,7 +445,7 @@ function setupCompanyManagement() {
     saveWorkStore(ws);
     window._companyEdit = '';
     refreshCompanyCache();
-    renderDashboard('Firma Yönetimi');
+    renderDashboard('Firma Yï¿½netimi');
   });
 }
 
@@ -456,8 +456,8 @@ function setupAccessMatrix() {
     e.preventDefault();
     const fd = new FormData(form);
     const o = loadPerms();
-    // Ayný personel+firma için büyük/küçük harf veya boþluk farkýyla çift anahtar
-    // oluþmasýn diye önce eþleþen eski anahtarý temizle.
+    // Aynï¿½ personel+firma iï¿½in bï¿½yï¿½k/kï¿½ï¿½ï¿½k harf veya boï¿½luk farkï¿½yla ï¿½ift anahtar
+    // oluï¿½masï¿½n diye ï¿½nce eï¿½leï¿½en eski anahtarï¿½ temizle.
     try {
       const sn = normName(fd.get('staff'));
       const cn = normName(fd.get('company'));
@@ -469,7 +469,7 @@ function setupAccessMatrix() {
     o[`${fd.get('staff')} || ${fd.get('company')}`] = fd.get('perm');
     savePerms(o);
     const st = document.querySelector('#perm-save-status');
-    if (st) { st.className = 'save-status is-ok'; st.textContent = `? Kaydedildi: ${fd.get('staff')} › ${fd.get('company')}`; }
+    if (st) { st.className = 'save-status is-ok'; st.textContent = `? Kaydedildi: ${fd.get('staff')} ï¿½ ${fd.get('company')}`; }
     setTimeout(() => renderDashboard('Yetkilendirme'), 600);
   });
   document.querySelectorAll('[data-del-perm]').forEach((b) => b.addEventListener('click', () => {
@@ -517,7 +517,7 @@ function setupAccessMatrix() {
     o[staff] = checked;
     saveTaskPerms(o);
     const st = document.querySelector('#perm-save-status');
-    if (st) { st.className = 'save-status is-ok'; st.textContent = `? Kaydedildi: ${staff} ${checked.length} iþ türü görür.`; }
+    if (st) { st.className = 'save-status is-ok'; st.textContent = `? Kaydedildi: ${staff} ${checked.length} iï¿½ tï¿½rï¿½ gï¿½rï¿½r.`; }
   });
 }
 
@@ -525,18 +525,18 @@ function renderStaffContent() {
   const list = getStaff();
   const admin = isAdminUser();
   const editName = window._staffEdit || '';
-  const editRow = admin && editName ? `<form id="staff-edit-form" class="work-form community-form"><label class="field">Ad Soyad<input type="text" name="newName" value="${escapeHtml(editName)}" maxlength="100" required /></label><label class="field">Ünvan<input type="text" name="staffTitle" value="${escapeHtml(loadCommunity(STAFF_META_KEY)[editName]?.title || '')}" maxlength="100" required /></label><button class="primary-btn work-submit" type="submit">Kaydet</button></form>` : '';
+  const editRow = admin && editName ? `<form id="staff-edit-form" class="work-form community-form"><label class="field">Ad Soyad<input type="text" name="newName" value="${escapeHtml(editName)}" maxlength="100" required /></label><label class="field">ï¿½nvan<input type="text" name="staffTitle" value="${escapeHtml(loadCommunity(STAFF_META_KEY)[editName]?.title || '')}" maxlength="100" required /></label><button class="primary-btn work-submit" type="submit">Kaydet</button></form>` : '';
   return `
-    <div class="page-heading"><div><h1>Personel Yönetimi</h1><p>${admin ? 'Personel ekleyin; adýný ve ünvanýný düzenleyin. Ünvan, yönetici yetkisi vermez.' : 'Kayýtlý personeller ve ünvanlarý (sadece görüntüleme).'}</p></div><span class="access-badge">${admin ? 'Yönetici' : 'Personel'}</span></div>
-    ${admin ? `<section class="panel"><div class="panel-header"><div><h2>Yeni personel ekle</h2><p class="panel-subtitle">Ad Soyad ve ünvan yazýp Ekle'ye basýn.</p></div></div>
+    <div class="page-heading"><div><h1>Personel Yï¿½netimi</h1><p>${admin ? 'Personel ekleyin; adï¿½nï¿½ ve ï¿½nvanï¿½nï¿½ dï¿½zenleyin. ï¿½nvan, yï¿½netici yetkisi vermez.' : 'Kayï¿½tlï¿½ personeller ve ï¿½nvanlarï¿½ (sadece gï¿½rï¿½ntï¿½leme).'}</p></div><span class="access-badge">${admin ? 'Yï¿½netici' : 'Personel'}</span></div>
+    ${admin ? `<section class="panel"><div class="panel-header"><div><h2>Yeni personel ekle</h2><p class="panel-subtitle">Ad Soyad ve ï¿½nvan yazï¿½p Ekle'ye basï¿½n.</p></div></div>
       <form id="staff-form" class="work-form community-form">
-        <label class="field">Ad Soyad<input type="text" name="staffName" placeholder="Örn: Ali Veli" maxlength="100" required /></label>
-        <label class="field">Ünvan<input type="text" name="staffTitle" placeholder="Örn: Muhasebe Uzmaný" maxlength="100" required /></label>
+        <label class="field">Ad Soyad<input type="text" name="staffName" placeholder="ï¿½rn: Ali Veli" maxlength="100" required /></label>
+        <label class="field">ï¿½nvan<input type="text" name="staffTitle" placeholder="ï¿½rn: Muhasebe Uzmanï¿½" maxlength="100" required /></label>
         <button class="primary-btn work-submit" type="submit">Ekle</button>
       </form>
       <div class="save-row"><span class="save-status" id="staff-save-status"></span></div>${editRow}</section>` : ``}
-    <section class="panel"><div class="panel-header"><div><h2>Kayýtlý personeller (${list.length})</h2></div></div>
-      <div class="task-content">${list.map((s) => `<div class="task-row" style="cursor:default"><span class="task-box" style="border-radius:50%">?</span><span class="task-name">${staffIdentity(s)}</span>${admin ? `<span style="margin-left:auto;"><button class="primary-btn work-submit" data-edit-staff="${escapeHtml(s)}" type="button" style="min-width:90px;">Düzenle</button></span>` : ''}</div>`).join('')}</div>
+    <section class="panel"><div class="panel-header"><div><h2>Kayï¿½tlï¿½ personeller (${list.length})</h2></div></div>
+      <div class="task-content">${list.map((s) => `<div class="task-row" style="cursor:default"><span class="task-box" style="border-radius:50%">?</span><span class="task-name">${staffIdentity(s)}</span>${admin ? `<span style="margin-left:auto;"><button class="primary-btn work-submit" data-edit-staff="${escapeHtml(s)}" type="button" style="min-width:90px;">Dï¿½zenle</button></span>` : ''}</div>`).join('')}</div>
     </section>`;
 }
 
@@ -551,7 +551,7 @@ function setupStaffManagement() {
     const title = (data.get('staffTitle') || '').toString().trim();
     if (!validStaffDetails(v, title)) return;
     const list = getStaff();
-    if (list.some((s) => normName(s) === normName(v))) { window.alert('Bu personel zaten kayýtlý.'); return; }
+    if (list.some((s) => normName(s) === normName(v))) { window.alert('Bu personel zaten kayï¿½tlï¿½.'); return; }
     const meta = loadCommunity(STAFF_META_KEY);
     meta[v] = { title };
     if (!saveCommunity(STAFF_META_KEY, meta)) return;
@@ -561,11 +561,11 @@ function setupStaffManagement() {
     if (!acc[v]) acc[v] = [];
     saveAccess(acc);
     window._staffEdit = '';
-    renderDashboard('Personel Yönetimi');
+    renderDashboard('Personel Yï¿½netimi');
   });
   document.querySelectorAll('[data-edit-staff]').forEach((b) => b.addEventListener('click', () => {
     window._staffEdit = b.dataset.editStaff;
-    renderDashboard('Personel Yönetimi');
+    renderDashboard('Personel Yï¿½netimi');
   }));
   const ef = document.querySelector('#staff-edit-form');
   if (ef) ef.addEventListener('submit', (e) => {
@@ -576,7 +576,7 @@ function setupStaffManagement() {
     const title = (data.get('staffTitle') || '').toString().trim();
     const old = window._staffEdit;
     if (!old || !getStaff().includes(old) || !validStaffDetails(nv, title)) return;
-    if (getStaff().some((s) => s !== old && normName(s) === normName(nv))) { window.alert('Bu adla baþka bir personel var.'); return; }
+    if (getStaff().some((s) => s !== old && normName(s) === normName(nv))) { window.alert('Bu adla baï¿½ka bir personel var.'); return; }
     if (!updateStaffIdentity(old, nv, title)) return;
     saveStaff(getStaff().map((s) => (s === old ? nv : s)));
     const acc = getAccess();
@@ -589,7 +589,7 @@ function setupStaffManagement() {
     savePlans(plans);
     window._staffEdit = '';
     refreshCompanyCache();
-    renderDashboard('Personel Yönetimi');
+    renderDashboard('Personel Yï¿½netimi');
   });
 }
 
@@ -597,26 +597,26 @@ function renderPeriodContent() {
   const me = currentUser ? currentUser.name : '';
   const plans = getMyPlans().sort((a, b) => (a.date < b.date ? -1 : 1));
   const today = new Date().toISOString().slice(0, 10);
-  // Plan formunda yalnýzca giriþ yapan personelin yetkili olduðu cariler listelenir.
+  // Plan formunda yalnï¿½zca giriï¿½ yapan personelin yetkili olduï¿½u cariler listelenir.
   const myCompanies = getMyVisibleCompanies(me);
   const companyOptions = myCompanies.length
     ? myCompanies.map((c) => `<option>${c}</option>`).join('')
     : '<option value="">Yetkili cari yok</option>';
   const rows = plans.length ? plans.map((p) => {
     const due = p.date <= today;
-    return `<div class="task-row" style="cursor:default"><span class="task-box" style="border-radius:50%">${due ? '!' : '?'}</span><span class="task-name"><strong>${p.title}</strong><small>${p.date} · ${p.company}${p.remind ? ' · Hatýrlat açýk' : ''}${due ? ' · GÜNÜ GELDÝ' : ''}</small></span><span style="margin-left:auto;display:flex;gap:8px;"><button class="primary-btn work-submit" data-remind="${p.id}" type="button" style="min-width:110px;">${p.remind ? 'Uyarma' : 'Beni uyar'}</button><button class="primary-btn work-submit" data-del="${p.id}" type="button" style="min-width:80px;background:#b5443c;">Sil</button></span></div>`;
-  }).join('') : '<div class="permission-empty"><span class="permission-icon">?</span><div><strong>Henüz plan yok.</strong><p>Yukarýdaki kutudan ilk planýný ekleyin. Planlar yalnýzca size görünür.</p></div></div>';
+    return `<div class="task-row" style="cursor:default"><span class="task-box" style="border-radius:50%">${due ? '!' : '?'}</span><span class="task-name"><strong>${p.title}</strong><small>${p.date} ï¿½ ${p.company}${p.remind ? ' ï¿½ Hatï¿½rlat aï¿½ï¿½k' : ''}${due ? ' ï¿½ Gï¿½Nï¿½ GELDï¿½' : ''}</small></span><span style="margin-left:auto;display:flex;gap:8px;"><button class="primary-btn work-submit" data-remind="${p.id}" type="button" style="min-width:110px;">${p.remind ? 'Uyarma' : 'Beni uyar'}</button><button class="primary-btn work-submit" data-del="${p.id}" type="button" style="min-width:80px;background:#b5443c;">Sil</button></span></div>`;
+  }).join('') : '<div class="permission-empty"><span class="permission-icon">?</span><div><strong>Henï¿½z plan yok.</strong><p>Yukarï¿½daki kutudan ilk planï¿½nï¿½ ekleyin. Planlar yalnï¿½zca size gï¿½rï¿½nï¿½r.</p></div></div>';
   return `
-    <div class="page-heading"><div><h1>Yýl / Dönem Yönetimi</h1><p>Planlý iþlerinizi tarihe planlayýn. Her personel yalnýzca kendi planýný görür.</p></div><span class="access-badge">${me}</span></div>
-    <section class="panel"><div class="panel-header"><div><h2>Yeni plan ekle</h2><p class="panel-subtitle">Yetkili olduðunuz cariler listelenir. Baþlýk, firma ve tarih seçip Ekle'ye basýn.</p></div></div>
+    <div class="page-heading"><div><h1>Yï¿½l / Dï¿½nem Yï¿½netimi</h1><p>Planlï¿½ iï¿½lerinizi tarihe planlayï¿½n. Her personel yalnï¿½zca kendi planï¿½nï¿½ gï¿½rï¿½r.</p></div><span class="access-badge">${me}</span></div>
+    <section class="panel"><div class="panel-header"><div><h2>Yeni plan ekle</h2><p class="panel-subtitle">Yetkili olduï¿½unuz cariler listelenir. Baï¿½lï¿½k, firma ve tarih seï¿½ip Ekle'ye basï¿½n.</p></div></div>
       <form id="plan-form" class="work-form" style="grid-template-columns:1.4fr 1.2fr 1fr auto">
-        <label class="field">Plan<input type="text" name="title" placeholder="Örn: SGK bildirimi" required /></label>
+        <label class="field">Plan<input type="text" name="title" placeholder="ï¿½rn: SGK bildirimi" required /></label>
         <label class="field">Firma<select name="company">${companyOptions}</select></label>
         <label class="field">Tarih<input type="date" name="date" value="${today}" required /></label>
         <button class="primary-btn work-submit" type="submit">Ekle</button>
       </form>
     </section>
-    <section class="panel"><div class="panel-header"><div><h2>Planlarým (${plans.length})</h2><p class="panel-subtitle">Günü gelenler ! ile iþaretlenir ve giriþte uyarý çýkar.</p></div></div>
+    <section class="panel"><div class="panel-header"><div><h2>Planlarï¿½m (${plans.length})</h2><p class="panel-subtitle">Gï¿½nï¿½ gelenler ! ile iï¿½aretlenir ve giriï¿½te uyarï¿½ ï¿½ï¿½kar.</p></div></div>
       <div class="task-content">${rows}</div>
     </section>`;
 }
@@ -631,22 +631,22 @@ function setupPeriodPlans() {
     const list = loadPlans();
     list.push({ id: 'p' + Date.now(), staff: currentUser ? currentUser.name : '', title, company: fd.get('company'), date: fd.get('date'), remind: true, createdAt: new Date().toISOString() });
     savePlans(list);
-    renderDashboard('Yýl / Dönem Yönetimi');
+    renderDashboard('Yï¿½l / Dï¿½nem Yï¿½netimi');
   });
   document.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', () => {
     savePlans(loadPlans().filter((p) => p.id !== b.dataset.del || p.staff !== (currentUser ? currentUser.name : '')));
-    renderDashboard('Yýl / Dönem Yönetimi');
+    renderDashboard('Yï¿½l / Dï¿½nem Yï¿½netimi');
   }));
   document.querySelectorAll('[data-remind]').forEach((b) => b.addEventListener('click', () => {
     const list = loadPlans();
     const it = list.find((p) => p.id === b.dataset.remind && p.staff === (currentUser ? currentUser.name : ''));
     if (it) it.remind = !it.remind;
     savePlans(list);
-    renderDashboard('Yýl / Dönem Yönetimi');
+    renderDashboard('Yï¿½l / Dï¿½nem Yï¿½netimi');
   }));
   const today = new Date().toISOString().slice(0, 10);
   const due = getMyPlans().filter((p) => p.remind && p.date <= today);
-  if (due.length) setTimeout(() => window.alert(`Bugün ${due.length} planýnýzýn günü geldi:\n- ` + due.map((p) => `${p.date} ${p.title}`).join('\n- ')), 400);
+  if (due.length) setTimeout(() => window.alert(`Bugï¿½n ${due.length} planï¿½nï¿½zï¿½n gï¿½nï¿½ geldi:\n- ` + due.map((p) => `${p.date} ${p.title}`).join('\n- ')), 400);
 }
 
 function getReportData(staff, start, end) {
@@ -703,22 +703,22 @@ function renderReportContent() {
     const di = dayMap[d];
     const p = di.total ? Math.round((di.done / di.total) * 100) : 0;
     const miss = data.rows.filter((r) => r.date === d && !r.done);
-    return `<div class="task-row" style="cursor:default"><span class="task-box" style="border-radius:50%">${p === 100 ? '?' : '!'}</span><span class="task-name"><strong>${formatDate(new Date(`${d}T00:00:00`))} · %${p}</strong><small>${di.done}/${di.total} tamamlandý · ${Object.keys(di.companies).join(', ')}${miss.length ? ` · Yapýlmayan: ${miss.map((m) => `${m.task} (${m.company})`).join(', ')}` : ''}</small></span><span style="margin-left:auto;min-width:120px;"><span class="progress-bar"><i style="width:${p}%"></i></span></span></div>`;
-  }).join('') : '<div class="permission-empty"><span class="permission-icon">?</span><div><strong>Kayýt yok.</strong><p>Seçili aralýkta bu personele ait iþ kaydý bulunamadý.</p></div></div>';
+    return `<div class="task-row" style="cursor:default"><span class="task-box" style="border-radius:50%">${p === 100 ? '?' : '!'}</span><span class="task-name"><strong>${formatDate(new Date(`${d}T00:00:00`))} ï¿½ %${p}</strong><small>${di.done}/${di.total} tamamlandï¿½ ï¿½ ${Object.keys(di.companies).join(', ')}${miss.length ? ` ï¿½ Yapï¿½lmayan: ${miss.map((m) => `${m.task} (${m.company})`).join(', ')}` : ''}</small></span><span style="margin-left:auto;min-width:120px;"><span class="progress-bar"><i style="width:${p}%"></i></span></span></div>`;
+  }).join('') : '<div class="permission-empty"><span class="permission-icon">?</span><div><strong>Kayï¿½t yok.</strong><p>Seï¿½ili aralï¿½kta bu personele ait iï¿½ kaydï¿½ bulunamadï¿½.</p></div></div>';
   return `
-    <div class="page-heading"><div><h1>Raporlar</h1><p>${admin ? 'Personel seçin, tarih aralýðýnda tamamlanma raporunu görün.' : 'Kendi iþlem raporunuz (tarih bazlý).'}</p></div><span class="access-badge">${admin ? 'Yönetici' : me}</span></div>
+    <div class="page-heading"><div><h1>Raporlar</h1><p>${admin ? 'Personel seï¿½in, tarih aralï¿½ï¿½ï¿½nda tamamlanma raporunu gï¿½rï¿½n.' : 'Kendi iï¿½lem raporunuz (tarih bazlï¿½).'}</p></div><span class="access-badge">${admin ? 'Yï¿½netici' : me}</span></div>
     <section class="panel"><div class="panel-header"><div><h2>Rapor filtresi</h2></div></div>
       <form id="report-form" class="work-form" style="grid-template-columns:1fr 1fr 1fr auto">
         ${admin ? `<label class="field">Personel<select name="staff" id="report-staff">${people.map((s) => `<option${s === target ? ' selected' : ''}>${s}</option>`).join('')}</select></label>` : `<label class="field">Personel<input type="text" value="${me}" disabled /></label>`}
-        <label class="field">Baþlangýç<input type="date" name="start" value="${start}" /></label>
-        <label class="field">Bitiþ<input type="date" name="end" value="${end}" /></label>
+        <label class="field">Baï¿½langï¿½ï¿½<input type="date" name="start" value="${start}" /></label>
+        <label class="field">Bitiï¿½<input type="date" name="end" value="${end}" /></label>
         <button class="primary-btn work-submit" type="submit">Getir</button>
       </form>
     </section>
     <section class="stats-grid">
-      ${[['Tamamlanma', `%${data.pct}`, `${data.done}/${data.total} iþlem`], ['Yapýlan', `${data.done}`, 'tamamlanan iþlem'], ['Yapýlmayan', `${data.missing}`, 'eksik iþlem'], ['Kayýtlý gün', `${days.length}`, 'iþlem yapýlan gün']].map(([t, v, c]) => `<article class="stat-card"><div class="stat-top"><span>${t} · ${target}</span></div><div class="stat-number">${v}</div><span class="stat-change">${c}</span></article>`).join('')}
+      ${[['Tamamlanma', `%${data.pct}`, `${data.done}/${data.total} iï¿½lem`], ['Yapï¿½lan', `${data.done}`, 'tamamlanan iï¿½lem'], ['Yapï¿½lmayan', `${data.missing}`, 'eksik iï¿½lem'], ['Kayï¿½tlï¿½ gï¿½n', `${days.length}`, 'iï¿½lem yapï¿½lan gï¿½n']].map(([t, v, c]) => `<article class="stat-card"><div class="stat-top"><span>${t} ï¿½ ${target}</span></div><div class="stat-number">${v}</div><span class="stat-change">${c}</span></article>`).join('')}
     </section>
-    <section class="panel"><div class="panel-header"><div><h2>Tamamlanma grafiði</h2><p class="panel-subtitle">Yapýlan / yapýlmayan daðýlýmý.</p></div></div>
+    <section class="panel"><div class="panel-header"><div><h2>Tamamlanma grafiï¿½i</h2><p class="panel-subtitle">Yapï¿½lan / yapï¿½lmayan daï¿½ï¿½lï¿½mï¿½.</p></div></div>
       <div class="task-content" style="display:flex;align-items:center;gap:22px;flex-wrap:wrap;">
         <svg width="170" height="170" viewBox="0 0 42 42" role="img" aria-label="Tamamlanma %${data.pct}">
           <circle cx="21" cy="21" r="15.915" fill="none" stroke="#edf2ef" stroke-width="7"></circle>
@@ -726,21 +726,21 @@ function renderReportContent() {
           <text x="21" y="22" text-anchor="middle" font-size="7" font-weight="800" fill="#173b3a">%${data.pct}</text>
         </svg>
         <div style="display:grid;gap:8px;font-size:.86rem;">
-          <span><i style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#0f766e;margin-right:8px;"></i>Yapýlan: <strong>${data.done}</strong></span>
-          <span><i style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#edf2ef;border:1px solid #d9e5e0;margin-right:8px;"></i>Yapýlmayan: <strong>${data.missing}</strong></span>
-          <span style="color:var(--muted);font-size:.78rem;">${data.total} iþlem · ${days.length} gün · ${target}</span>
+          <span><i style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#0f766e;margin-right:8px;"></i>Yapï¿½lan: <strong>${data.done}</strong></span>
+          <span><i style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#edf2ef;border:1px solid #d9e5e0;margin-right:8px;"></i>Yapï¿½lmayan: <strong>${data.missing}</strong></span>
+          <span style="color:var(--muted);font-size:.78rem;">${data.total} iï¿½lem ï¿½ ${days.length} gï¿½n ï¿½ ${target}</span>
         </div>
       </div>
     </section>
-    <section class="panel"><div class="panel-header"><div><h2>Ýþ türü bazýnda rapor · ${target}</h2><p class="panel-subtitle">Yetkili olduðu iþ türlerinde hangi iþlemde eksik var.</p></div></div>
+    <section class="panel"><div class="panel-header"><div><h2>ï¿½ï¿½ tï¿½rï¿½ bazï¿½nda rapor ï¿½ ${target}</h2><p class="panel-subtitle">Yetkili olduï¿½u iï¿½ tï¿½rlerinde hangi iï¿½lemde eksik var.</p></div></div>
       <div class="task-content">${Object.keys(data.byTask).map((t) => {
         const bi = data.byTask[t];
         const p = bi.total ? Math.round((bi.done / bi.total) * 100) : 0;
         const missDays = data.rows.filter((r) => r.task === t && !r.done).map((r) => `${formatDate(new Date(`${r.date}T00:00:00`))} (${r.company})`);
-        return `<div class="task-row" style="cursor:default"><span class="task-box" style="border-radius:50%">${p === 100 ? '?' : bi.done === 0 ? '?' : '!'}</span><span class="task-name"><strong>${t} · %${p}</strong><small>${bi.done}/${bi.total} tamamlandý${missDays.length ? ` · Eksik günler: ${missDays.join(', ')}` : bi.total ? ' · Eksik yok' : ' · Bu aralýkta kayýt yok'}</small></span><span style="margin-left:auto;min-width:120px;"><span class="progress-bar"><i style="width:${p}%"></i></span></span></div>`;
+        return `<div class="task-row" style="cursor:default"><span class="task-box" style="border-radius:50%">${p === 100 ? '?' : bi.done === 0 ? '?' : '!'}</span><span class="task-name"><strong>${t} ï¿½ %${p}</strong><small>${bi.done}/${bi.total} tamamlandï¿½${missDays.length ? ` ï¿½ Eksik gï¿½nler: ${missDays.join(', ')}` : bi.total ? ' ï¿½ Eksik yok' : ' ï¿½ Bu aralï¿½kta kayï¿½t yok'}</small></span><span style="margin-left:auto;min-width:120px;"><span class="progress-bar"><i style="width:${p}%"></i></span></span></div>`;
       }).join('')}</div>
     </section>
-    <section class="panel"><div class="panel-header"><div><h2>Günlük döküm</h2><p class="panel-subtitle">Hangi tarihte hangi iþlem yapýldý / yapýlmadý.</p></div></div>
+    <section class="panel"><div class="panel-header"><div><h2>Gï¿½nlï¿½k dï¿½kï¿½m</h2><p class="panel-subtitle">Hangi tarihte hangi iï¿½lem yapï¿½ldï¿½ / yapï¿½lmadï¿½.</p></div></div>
       <div class="task-content">${dayRows}</div>
     </section>`;
 }
@@ -766,20 +766,20 @@ function renderQuestionContent() {
   const rows = list.length ? list.map((q) => {
     const canAnswer = admin || q.to === me;
     const answerBlock = q.answer
-      ? `<div class="task-row" style="cursor:default;background:#f3f8f6;border-radius:8px;"><span class="task-box" style="border-radius:50%">?</span><span class="task-name"><strong>Cevap — ${q.answeredBy}</strong><small>${formatUpdatedAt(q.answeredAt)}</small><span>${q.answer}</span></span></div>`
-      : `<div class="permission-empty"><span class="permission-icon">?</span><div><strong>Henüz cevaplanmadý.</strong></div></div>`;
+      ? `<div class="task-row" style="cursor:default;background:#f3f8f6;border-radius:8px;"><span class="task-box" style="border-radius:50%">?</span><span class="task-name"><strong>Cevap ï¿½ ${q.answeredBy}</strong><small>${formatUpdatedAt(q.answeredAt)}</small><span>${q.answer}</span></span></div>`
+      : `<div class="permission-empty"><span class="permission-icon">?</span><div><strong>Henï¿½z cevaplanmadï¿½.</strong></div></div>`;
     const answerForm = canAnswer && !q.answer
-      ? `<form data-answer-form="${q.id}" class="work-form" style="grid-template-columns:1fr auto;margin-top:10px;"><label class="field">Cevabýnýz<input type="text" name="answer" placeholder="Cevabý yazýn" required /></label><button class="primary-btn work-submit" type="submit">Cevapla</button></form>`
+      ? `<form data-answer-form="${q.id}" class="work-form" style="grid-template-columns:1fr auto;margin-top:10px;"><label class="field">Cevabï¿½nï¿½z<input type="text" name="answer" placeholder="Cevabï¿½ yazï¿½n" required /></label><button class="primary-btn work-submit" type="submit">Cevapla</button></form>`
       : '';
-    return `<div class="panel" style="margin-bottom:14px;"><div class="panel-header"><div><h2>${q.from} › ${q.to}</h2><p class="panel-subtitle">Soru: ${formatUpdatedAt(q.askedAt)}</p></div></div><div class="task-content"><div class="task-row" style="cursor:default;"><span class="task-box" style="border-radius:50%">?</span><span class="task-name"><strong>${q.title}</strong></span></div>${answerBlock}${answerForm}</div></div>`;
-  }).join('') : '<div class="permission-empty"><span class="permission-icon">?</span><div><strong>Soru yok.</strong><p>Yukarýdan personel seçip ilk sorunuzu sorun.</p></div></div>';
+    return `<div class="panel" style="margin-bottom:14px;"><div class="panel-header"><div><h2>${q.from} ï¿½ ${q.to}</h2><p class="panel-subtitle">Soru: ${formatUpdatedAt(q.askedAt)}</p></div></div><div class="task-content"><div class="task-row" style="cursor:default;"><span class="task-box" style="border-radius:50%">?</span><span class="task-name"><strong>${q.title}</strong></span></div>${answerBlock}${answerForm}</div></div>`;
+  }).join('') : '<div class="permission-empty"><span class="permission-icon">?</span><div><strong>Soru yok.</strong><p>Yukarï¿½dan personel seï¿½ip ilk sorunuzu sorun.</p></div></div>';
   return `
-    <div class="page-heading"><div><h1>Personel Sorularý</h1><p>${admin ? 'Tüm sorularý görür, cevap verebilirsiniz.' : 'Sadece sizin sorduðunuz ve size sorulan sorular görünür.'}</p></div><span class="access-badge">${admin ? 'Yönetici' : me}</span></div>
-    <section class="panel"><div class="panel-header"><div><h2>Soru sor</h2><p class="panel-subtitle">Personel seçin, sorunuzu yazýn, Gönder'e basýn. Tarih otomatik eklenir.</p></div></div>
+    <div class="page-heading"><div><h1>Personel Sorularï¿½</h1><p>${admin ? 'Tï¿½m sorularï¿½ gï¿½rï¿½r, cevap verebilirsiniz.' : 'Sadece sizin sorduï¿½unuz ve size sorulan sorular gï¿½rï¿½nï¿½r.'}</p></div><span class="access-badge">${admin ? 'Yï¿½netici' : me}</span></div>
+    <section class="panel"><div class="panel-header"><div><h2>Soru sor</h2><p class="panel-subtitle">Personel seï¿½in, sorunuzu yazï¿½n, Gï¿½nder'e basï¿½n. Tarih otomatik eklenir.</p></div></div>
       <form id="question-form" class="work-form" style="grid-template-columns:1fr 1.4fr auto">
         <label class="field">Personel<select name="to">${others.map((s) => `<option>${s}</option>`).join('')}</select></label>
-        <label class="field">Sorunuz<input type="text" name="title" placeholder="Sorunuzu yazýn" required /></label>
-        <button class="primary-btn work-submit" type="submit">Gönder</button>
+        <label class="field">Sorunuz<input type="text" name="title" placeholder="Sorunuzu yazï¿½n" required /></label>
+        <button class="primary-btn work-submit" type="submit">Gï¿½nder</button>
       </form>
       <div class="save-row"><span class="save-status" id="question-save-status"></span></div>
     </section>
@@ -797,7 +797,7 @@ function setupQuestions() {
     const list = loadQuestions();
     list.push({ id: 'q' + Date.now(), from: currentUser ? currentUser.name : '', to, title, askedAt: new Date().toISOString(), answer: '', answeredBy: '', answeredAt: '' });
     saveQuestions(list);
-    renderDashboard('Personel Sorularý');
+    renderDashboard('Personel Sorularï¿½');
   });
   document.querySelectorAll('[data-answer-form]').forEach((f) => f.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -813,7 +813,7 @@ function setupQuestions() {
     q.answeredBy = me;
     q.answeredAt = new Date().toISOString();
     saveQuestions(list);
-    renderDashboard('Personel Sorularý');
+    renderDashboard('Personel Sorularï¿½');
   }));
 }
 
@@ -823,24 +823,24 @@ function renderNoteContent() {
   const rows = list.length ? list.map((n) => {
     const attach = n.fileName
       ? (n.fileType && n.fileType.startsWith('image/')
-        ? `<a href="${n.fileData}" download="${n.fileName}" title="Ýndir"><img class="note-img" src="${n.fileData}" alt="${n.fileName}" /></a>`
+        ? `<a href="${n.fileData}" download="${n.fileName}" title="ï¿½ndir"><img class="note-img" src="${n.fileData}" alt="${n.fileName}" /></a>`
         : `<div style="margin-top:8px;"><a href="${n.fileData}" download="${n.fileName}">?? ${n.fileName}</a></div>`)
       : '';
-    return `<div class="panel" style="margin-bottom:14px;"><div class="panel-header"><div><h2>${n.title}</h2><p class="panel-subtitle">${formatUpdatedAt(n.createdAt)}${n.fileName ? ` · ?? ${n.fileName}` : ''}</p></div><button class="primary-btn work-submit" data-del-note="${n.id}" type="button" style="min-width:80px;background:#b5443c;">Sil</button></div><div class="task-content"><div class="task-name"><span class="note-body">${n.text || ''}</span></div>${attach}</div></div>`;
-  }).join('') : `<div class="permission-empty"><span class="permission-icon">?</span><div><strong>Not yok.</strong><p>Yukarýdaki formdan baþlýk + metin yazýp, isterseniz resim ekleyip Kaydet'e basýn. Notlar yalnýzca size görünür.</p></div></div>`;
+    return `<div class="panel" style="margin-bottom:14px;"><div class="panel-header"><div><h2>${n.title}</h2><p class="panel-subtitle">${formatUpdatedAt(n.createdAt)}${n.fileName ? ` ï¿½ ?? ${n.fileName}` : ''}</p></div><button class="primary-btn work-submit" data-del-note="${n.id}" type="button" style="min-width:80px;background:#b5443c;">Sil</button></div><div class="task-content"><div class="task-name"><span class="note-body">${n.text || ''}</span></div>${attach}</div></div>`;
+  }).join('') : `<div class="permission-empty"><span class="permission-icon">?</span><div><strong>Not yok.</strong><p>Yukarï¿½daki formdan baï¿½lï¿½k + metin yazï¿½p, isterseniz resim ekleyip Kaydet'e basï¿½n. Notlar yalnï¿½zca size gï¿½rï¿½nï¿½r.</p></div></div>`;
   return `
-    <div class="page-heading"><div><h1>Notlar</h1><p>Kiþisel notlarýnýz — metin ve resim ekleyin. Sadece siz görürsünüz.</p></div><span class="access-badge">${me}</span></div>
+    <div class="page-heading"><div><h1>Notlar</h1><p>Kiï¿½isel notlarï¿½nï¿½z ï¿½ metin ve resim ekleyin. Sadece siz gï¿½rï¿½rsï¿½nï¿½z.</p></div><span class="access-badge">${me}</span></div>
     <div class="notes-layout">
-      <section class="panel"><div class="panel-header"><div><h2>Yeni not</h2><p class="panel-subtitle">Baþlýk + geniþ metin alaný + resim seçip Kaydet'e basýn.</p></div></div>
+      <section class="panel"><div class="panel-header"><div><h2>Yeni not</h2><p class="panel-subtitle">Baï¿½lï¿½k + geniï¿½ metin alanï¿½ + resim seï¿½ip Kaydet'e basï¿½n.</p></div></div>
       <form id="note-form" class="note-form">
-        <label class="field">Baþlýk<input type="text" name="title" placeholder="Not baþlýðý" required /></label>
-        <label class="field">Resim yükle<input type="file" name="file" id="note-file" accept="image/*" /><small class="field-hint" id="note-file-hint">JPG / PNG, en fazla 1.5 MB. Seçince önizleme çýkar.</small></label>
-        <label class="field note-text-field">Not metni<textarea name="text" id="note-text" rows="9" placeholder="Notunuzu buraya yazýn..."></textarea><small class="field-hint" id="note-char-count">0 karakter</small></label>
+        <label class="field">Baï¿½lï¿½k<input type="text" name="title" placeholder="Not baï¿½lï¿½ï¿½ï¿½" required /></label>
+        <label class="field">Resim yï¿½kle<input type="file" name="file" id="note-file" accept="image/*" /><small class="field-hint" id="note-file-hint">JPG / PNG, en fazla 1.5 MB. Seï¿½ince ï¿½nizleme ï¿½ï¿½kar.</small></label>
+        <label class="field note-text-field">Not metni<textarea name="text" id="note-text" rows="9" placeholder="Notunuzu buraya yazï¿½n..."></textarea><small class="field-hint" id="note-char-count">0 karakter</small></label>
         <div class="note-save-cell"><img id="note-preview" class="note-preview" alt="" style="display:none;" /><button class="primary-btn work-submit" type="submit">Kaydet</button></div>
       </form>
       <div class="save-row"><span class="save-status" id="note-save-status"></span></div>
     </section>
-    <section class="panel calc-panel"><div class="panel-header"><div><h2>Hesap Makinesi</h2><p class="panel-subtitle">Hýzlý hesap yapýp sonucu nota aktarabilirsiniz.</p></div><span class="task-counter">Hesap</span></div>
+    <section class="panel calc-panel"><div class="panel-header"><div><h2>Hesap Makinesi</h2><p class="panel-subtitle">Hï¿½zlï¿½ hesap yapï¿½p sonucu nota aktarabilirsiniz.</p></div><span class="task-counter">Hesap</span></div>
       <div class="calc"><div class="calc-history" id="calc-history">&nbsp;</div><input class="calc-display" id="calc-display" value="0" readonly aria-label="Hesap sonucu" />
         <div class="calc-grid">
           <button type="button" class="calc-btn calc-fn" data-calc="C">C</button>
@@ -884,30 +884,30 @@ function setupNotes() {
     textArea.addEventListener('input', upd);
     upd();
   }
-  // Resim seçilince anýnda önizleme göster; 1.5 MB üzeri seçimleri reddet.
+  // Resim seï¿½ilince anï¿½nda ï¿½nizleme gï¿½ster; 1.5 MB ï¿½zeri seï¿½imleri reddet.
   if (fileInput && preview) {
     fileInput.addEventListener('change', () => {
       const f = fileInput.files && fileInput.files[0];
       preview.style.display = 'none';
       preview.removeAttribute('src');
-      if (fileHint) fileHint.textContent = 'JPG / PNG, en fazla 1.5 MB. Seçince önizleme çýkar.';
+      if (fileHint) fileHint.textContent = 'JPG / PNG, en fazla 1.5 MB. Seï¿½ince ï¿½nizleme ï¿½ï¿½kar.';
       if (!f) return;
       if (f.size > 1500000) {
         fileInput.value = '';
-        if (fileHint) fileHint.textContent = 'Seçilen resim 1.5 MB sýnýrýný aþýyor. Daha küçük bir resim seçin.';
+        if (fileHint) fileHint.textContent = 'Seï¿½ilen resim 1.5 MB sï¿½nï¿½rï¿½nï¿½ aï¿½ï¿½yor. Daha kï¿½ï¿½ï¿½k bir resim seï¿½in.';
         return;
       }
       if (!(f.type || '').startsWith('image/')) {
         fileInput.value = '';
         preview.style.display = 'none';
-        if (fileHint) fileHint.textContent = 'Yalnýzca resim dosyasý (JPG / PNG) yükleyebilirsiniz.';
+        if (fileHint) fileHint.textContent = 'Yalnï¿½zca resim dosyasï¿½ (JPG / PNG) yï¿½kleyebilirsiniz.';
         return;
       }
       const reader = new FileReader();
       reader.onload = () => {
         preview.src = reader.result;
         preview.style.display = 'block';
-        if (fileHint) fileHint.textContent = `${f.name} hazýr — Kaydet'e basýnca nota eklenir.`;
+        if (fileHint) fileHint.textContent = `${f.name} hazï¿½r ï¿½ Kaydet'e basï¿½nca nota eklenir.`;
       };
       reader.readAsDataURL(f);
     });
@@ -926,7 +926,7 @@ function setupNotes() {
       renderDashboard('Notlar');
     };
     if (file && file.size) {
-      if (file.size > 1500000) { const st = document.querySelector('#note-save-status'); if (st) st.textContent = 'Dosya 1.5 MB sýnýrýný aþýyor, daha küçük seçin.'; return; }
+      if (file.size > 1500000) { const st = document.querySelector('#note-save-status'); if (st) st.textContent = 'Dosya 1.5 MB sï¿½nï¿½rï¿½nï¿½ aï¿½ï¿½yor, daha kï¿½ï¿½ï¿½k seï¿½in.'; return; }
       const reader = new FileReader();
       reader.onload = () => push(file.name, file.type || '', reader.result);
       reader.readAsDataURL(file);
@@ -949,7 +949,7 @@ function setupCalculator() {
   let expr = '';
   const render = (histText) => {
     display.value = expr || '0';
-    if (history) history.textContent = histText !== undefined ? histText : (expr || ' ');
+    if (history) history.textContent = histText !== undefined ? histText : (expr || 'ï¿½');
   };
   const safeEval = (s) => {
     if (!s || !/^[0-9+\-*/.%\s()]+$/.test(s)) throw new Error('bad');
@@ -962,7 +962,7 @@ function setupCalculator() {
   document.querySelectorAll('[data-calc]').forEach((b) => b.addEventListener('click', () => {
     const k = b.dataset.calc;
     try {
-      if (k === 'C') { expr = ''; render(' '); }
+      if (k === 'C') { expr = ''; render('ï¿½'); }
       else if (k === 'back') { expr = expr.slice(0, -1); render(); }
       else if (k === '=') {
         if (!expr) return;
@@ -975,7 +975,7 @@ function setupCalculator() {
         expr += k;
         render();
       }
-    } catch (err) { render('Hatalý iþlem'); expr = ''; }
+    } catch (err) { render('Hatalï¿½ iï¿½lem'); expr = ''; }
   }));
   const toNote = document.querySelector('#calc-to-note');
   if (toNote) toNote.addEventListener('click', () => {
@@ -991,23 +991,23 @@ function setupCalculator() {
 function renderCompanyContent() {
   const me = currentUser ? currentUser.name : '';
   const admin = isAdminUser();
-  // Personel yalnýzca kendisine yetkilendirilmiþ carileri görür; yönetici tümünü görür.
+  // Personel yalnï¿½zca kendisine yetkilendirilmiï¿½ carileri gï¿½rï¿½r; yï¿½netici tï¿½mï¿½nï¿½ gï¿½rï¿½r.
   const list = admin ? getCompanies() : getMyVisibleCompanies(me);
   const meta = loadCompanyMeta();
   const editName = window._companyEdit || '';
   const editRow = admin && editName ? `<form id="company-edit-form" class="work-form" style="grid-template-columns:1fr 1fr auto"><label class="field">Firma<input type="text" value="${editName}" disabled /></label><label class="field">Yeni unvan<input type="text" name="newName" value="${editName}" required /></label><button class="primary-btn work-submit" type="submit">Kaydet</button></form>` : '';
   return `
-    <div class="page-heading"><div><h1>Firma Yönetimi</h1><p>${admin ? 'Cari ünvaný + tanýmlanma tarihi yazýp Kaydet ile ekleyin. Bu tarih, personelin Yönetim Panelinde iþlerinin baþlangýcý sayýlýr.' : 'Size tanýmlý cariler görünür (sadece görüntüleme).'}</p></div><span class="access-badge">${admin ? 'Yönetici' : me}</span></div>
-    ${admin ? `<section class="panel"><div class="panel-header"><div><h2>Yeni cari ekle</h2><p class="panel-subtitle">Kutucuða ünvan + tanýmlanma tarihi yazýn, Kaydet'e basýn.</p></div></div>
+    <div class="page-heading"><div><h1>Firma Yï¿½netimi</h1><p>${admin ? 'Cari ï¿½nvanï¿½ + tanï¿½mlanma tarihi yazï¿½p Kaydet ile ekleyin. Bu tarih, personelin Yï¿½netim Panelinde iï¿½lerinin baï¿½langï¿½cï¿½ sayï¿½lï¿½r.' : 'Size tanï¿½mlï¿½ cariler gï¿½rï¿½nï¿½r (sadece gï¿½rï¿½ntï¿½leme).'}</p></div><span class="access-badge">${admin ? 'Yï¿½netici' : me}</span></div>
+    ${admin ? `<section class="panel"><div class="panel-header"><div><h2>Yeni cari ekle</h2><p class="panel-subtitle">Kutucuï¿½a ï¿½nvan + tanï¿½mlanma tarihi yazï¿½n, Kaydet'e basï¿½n.</p></div></div>
       <form id="company-form" class="work-form" style="grid-template-columns:1.2fr 1fr auto">
-        <label class="field">Cari ünvaný<input type="text" name="companyName" placeholder="Örn: Yeni Cari A.Þ." required /></label>
-        <label class="field">Tanýmlanma tarihi<input type="date" name="createdAt" value="${new Date().toISOString().slice(0, 10)}" required /></label>
+        <label class="field">Cari ï¿½nvanï¿½<input type="text" name="companyName" placeholder="ï¿½rn: Yeni Cari A.ï¿½." required /></label>
+        <label class="field">Tanï¿½mlanma tarihi<input type="date" name="createdAt" value="${new Date().toISOString().slice(0, 10)}" required /></label>
         <button class="primary-btn work-submit" type="submit">Kaydet</button>
       </form>
       <div class="save-row"><span class="save-status" id="company-save-status"></span></div>${editRow}
     </section>` : ``}
-    <section class="panel"><div class="panel-header"><div><h2>${admin ? 'Kayýtlý firmalar' : 'Yetkili olduðum cariler'} (${list.length})</h2><p class="panel-subtitle">Tanýmlanma tarihi, personelin Yönetim Panelindeki sayaçlarýn baþlangýcýdýr.</p></div></div>
-      <div class="task-content">${list.length ? list.map((c) => { const d = (meta[c] && meta[c].createdAt) || getCompanyCreatedDate(c); return `<div class="task-row" style="cursor:default"><span class="task-box" style="border-radius:50%">?</span><span class="task-name"><strong>${c}</strong><small>Tanýmlanma: ${formatDateTr(d)}</small></span>${admin ? `<span style="margin-left:auto;"><button class="primary-btn work-submit" data-edit-company="${c}" type="button" style="min-width:90px;">Düzenle</button></span>` : ''}</div>`; }).join('') : '<div class="permission-empty"><span class="permission-icon">?</span><div><strong>Yetkili olduðunuz cari yok.</strong><p>Yöneticinizden firma eriþim yetkisi isteyin.</p></div></div>'}</div>
+    <section class="panel"><div class="panel-header"><div><h2>${admin ? 'Kayï¿½tlï¿½ firmalar' : 'Yetkili olduï¿½um cariler'} (${list.length})</h2><p class="panel-subtitle">Tanï¿½mlanma tarihi, personelin Yï¿½netim Panelindeki sayaï¿½larï¿½n baï¿½langï¿½cï¿½dï¿½r.</p></div></div>
+      <div class="task-content">${list.length ? list.map((c) => { const d = (meta[c] && meta[c].createdAt) || getCompanyCreatedDate(c); return `<div class="task-row" style="cursor:default"><span class="task-box" style="border-radius:50%">?</span><span class="task-name"><strong>${c}</strong><small>Tanï¿½mlanma: ${formatDateTr(d)}</small></span>${admin ? `<span style="margin-left:auto;"><button class="primary-btn work-submit" data-edit-company="${c}" type="button" style="min-width:90px;">Dï¿½zenle</button></span>` : ''}</div>`; }).join('') : '<div class="permission-empty"><span class="permission-icon">?</span><div><strong>Yetkili olduï¿½unuz cari yok.</strong><p>Yï¿½neticinizden firma eriï¿½im yetkisi isteyin.</p></div></div>'}</div>
     </section>`;
 }
 
@@ -1016,32 +1016,32 @@ function renderWorkTrackingContent() {
   const initialDate = getLastWorkDate(today);
   const staffName = currentUser ? currentUser.name : getStaff()[0];
   const visibleCompanies = getMyVisibleCompanies(staffName);
-  const companyOptions = (visibleCompanies.length ? visibleCompanies : [`Yetkiniz yok — yöneticiye baþvurun`]).map((c) => `<option>${c}</option>`).join('');
+  const companyOptions = (visibleCompanies.length ? visibleCompanies : [`Yetkiniz yok ï¿½ yï¿½neticiye baï¿½vurun`]).map((c) => `<option>${c}</option>`).join('');
   return `
-    <div class="page-heading"><div><h1>Ýþ Takip</h1><p>Yetkiniz olan firmalarda günlük iþlemlerinizi takip edin.</p></div><span class="access-badge">Personel çalýþma alaný</span></div>
+    <div class="page-heading"><div><h1>ï¿½ï¿½ Takip</h1><p>Yetkiniz olan firmalarda gï¿½nlï¿½k iï¿½lemlerinizi takip edin.</p></div><span class="access-badge">Personel ï¿½alï¿½ï¿½ma alanï¿½</span></div>
     <section class="panel work-filter">
-      <div class="panel-header"><div><h2>Çalýþma günleri seçimi</h2><p class="panel-subtitle">Personel alaný hesabýnýza kilitlidir ve deðiþtirilemez. Firma ve tarih aralýðýný seçerek iþlemleri görüntüleyin veya kaydedin.</p></div></div>
+      <div class="panel-header"><div><h2>ï¿½alï¿½ï¿½ma gï¿½nleri seï¿½imi</h2><p class="panel-subtitle">Personel alanï¿½ hesabï¿½nï¿½za kilitlidir ve deï¿½iï¿½tirilemez. Firma ve tarih aralï¿½ï¿½ï¿½nï¿½ seï¿½erek iï¿½lemleri gï¿½rï¿½ntï¿½leyin veya kaydedin.</p></div></div>
       <form id="work-form" class="work-form">
         <label class="field">Personel<input type="text" name="staff-display" value="${staffName}" disabled /><input type="hidden" name="staff" value="${staffName}" /></label>
         <label class="field">Firma<select name="company">${companyOptions}</select></label>
-        <label class="field">Baþlangýç tarihi<input type="date" name="date-from" value="${initialDate}" required /></label>
-        <label class="field">Bitiþ tarihi<input type="date" name="date-to" value="${initialDate}" required /></label>
-        <button class="primary-btn work-submit" type="submit">Ýþlemleri göster</button>
+        <label class="field">Baï¿½langï¿½ï¿½ tarihi<input type="date" name="date-from" value="${initialDate}" required /></label>
+        <label class="field">Bitiï¿½ tarihi<input type="date" name="date-to" value="${initialDate}" required /></label>
+        <button class="primary-btn work-submit" type="submit">ï¿½ï¿½lemleri gï¿½ster</button>
       </form>
     </section>
-    <section class="panel task-panel"><div class="panel-header"><div><h2 id="task-title">Günlük iþlemler</h2><p class="panel-subtitle" id="task-summary">Personel ve firma seçimi bekleniyor.</p></div><span class="task-counter" id="task-counter">0 / 0 tamamlandý</span></div><div id="task-content" class="task-content"></div><div class="save-row" id="task-save-row"><span class="save-status" id="task-save-status"></span><button class="primary-btn save-btn" id="task-save-btn" type="button">Kaydet</button></div></section>`;
+    <section class="panel task-panel"><div class="panel-header"><div><h2 id="task-title">Gï¿½nlï¿½k iï¿½lemler</h2><p class="panel-subtitle" id="task-summary">Personel ve firma seï¿½imi bekleniyor.</p></div><span class="task-counter" id="task-counter">0 / 0 tamamlandï¿½</span></div><div id="task-content" class="task-content"></div><div class="save-row" id="task-save-row"><span class="save-status" id="task-save-status"></span><button class="primary-btn save-btn" id="task-save-btn" type="button">Kaydet</button></div></section>`;
 }
 
 function updateTaskCounter(contentEl, counterEl, statusEl, initialSaved) {
   const boxes = contentEl.querySelectorAll('.task-check');
   const completed = contentEl.querySelectorAll('.task-check:checked').length;
-  counterEl.textContent = `${completed} / ${boxes.length} tamamlandý`;
+  counterEl.textContent = `${completed} / ${boxes.length} tamamlandï¿½`;
   if (!statusEl) return;
   const current = Array.from(boxes).map((box) => box.checked);
   const dirty = JSON.stringify(current) !== JSON.stringify(initialSaved);
   statusEl.dataset.dirty = dirty ? 'true' : 'false';
   if (dirty) {
-    statusEl.innerHTML = '<span class="unsaved-dot"></span>Kaydedilmemiþ deðiþiklik var — Kaydet\'e basýn.';
+    statusEl.innerHTML = '<span class="unsaved-dot"></span>Kaydedilmemiï¿½ deï¿½iï¿½iklik var ï¿½ Kaydet\'e basï¿½n.';
     statusEl.className = 'save-status is-dirty';
   }
 }
@@ -1067,10 +1067,10 @@ function renderWorkTasks(staff, company, dateFrom, dateTo) {
   const allowedCompanies = getMyVisibleCompanies(staff);
   const dates = getDateRange(dateFrom, dateTo);
   if (!dates.length) {
-    if (taskTitle) taskTitle.textContent = `${staff} · Günlük iþlemler`;
-    if (taskSummary) taskSummary.textContent = `${company} · Seçili tarih aralýðý yok`;
-    if (taskCounter) taskCounter.textContent = '0 / 0 tamamlandý';
-    if (taskContent) taskContent.innerHTML = '<div class="permission-empty"><span class="permission-icon">!</span><div><strong>Tarih aralýðý seçilmemiþ veya geçersiz.</strong><p>Baþlangýç ve bitiþ tarihlerini doðru þekilde seçin.</p></div></div>';
+    if (taskTitle) taskTitle.textContent = `${staff} ï¿½ Gï¿½nlï¿½k iï¿½lemler`;
+    if (taskSummary) taskSummary.textContent = `${company} ï¿½ Seï¿½ili tarih aralï¿½ï¿½ï¿½ yok`;
+    if (taskCounter) taskCounter.textContent = '0 / 0 tamamlandï¿½';
+    if (taskContent) taskContent.innerHTML = '<div class="permission-empty"><span class="permission-icon">!</span><div><strong>Tarih aralï¿½ï¿½ï¿½ seï¿½ilmemiï¿½ veya geï¿½ersiz.</strong><p>Baï¿½langï¿½ï¿½ ve bitiï¿½ tarihlerini doï¿½ru ï¿½ekilde seï¿½in.</p></div></div>';
     if (saveRow) saveRow.style.display = 'none';
     if (saveStatus) setSaveStatus(saveStatus, '', '');
     return;
@@ -1079,16 +1079,16 @@ function renderWorkTasks(staff, company, dateFrom, dateTo) {
   if (!canView(staff, company)) {
     if (taskCounter) taskCounter.textContent = 'Yetki yok';
     if (saveRow) saveRow.style.display = 'none';
-    if (taskContent) taskContent.innerHTML = '<div class="permission-empty"><span class="permission-icon">!</span><div><strong>Bu firma için görüntüleme yetkiniz bulunmuyor.</strong><p>Yöneticinizden firmaya eriþim yetkisi istemeniz gerekir.</p></div></div>';
+    if (taskContent) taskContent.innerHTML = '<div class="permission-empty"><span class="permission-icon">!</span><div><strong>Bu firma iï¿½in gï¿½rï¿½ntï¿½leme yetkiniz bulunmuyor.</strong><p>Yï¿½neticinizden firmaya eriï¿½im yetkisi istemeniz gerekir.</p></div></div>';
     if (saveStatus) setSaveStatus(saveStatus, '', '');
     return;
   }
 
   if (saveRow) saveRow.style.display = '';
   const tasks = getVisibleTasks(staff);
-  const formattedRange = (dateFrom && dateTo) ? `<span class="date-from">${formatDateTr(dateFrom)}</span> — <span class="date-to">${formatDateTr(dateTo)}</span>` : formattedDateTr(dateFrom || dateTo);
+  const formattedRange = (dateFrom && dateTo) ? `<span class="date-from">${formatDateTr(dateFrom)}</span> ï¿½ <span class="date-to">${formatDateTr(dateTo)}</span>` : formattedDateTr(dateFrom || dateTo);
 
-  // Her tarih için ayrý bölüm oluþtur
+  // Her tarih iï¿½in ayrï¿½ bï¿½lï¿½m oluï¿½tur
   let totalTasks = 0;
   let totalCompleted = 0;
   let lastRecordDate = '';
@@ -1104,24 +1104,24 @@ function renderWorkTasks(staff, company, dateFrom, dateTo) {
     const dateFormatted = formatDateTr(date);
     return `
       <div class="task-date-block">
-        <div class="task-date-head"><span class="task-date-label">${dateFormatted}</span><span class="task-date-summary">${completedSaved} / ${tasks.length} tamamlandý</span></div>
+        <div class="task-date-head"><span class="task-date-label">${dateFormatted}</span><span class="task-date-summary">${completedSaved} / ${tasks.length} tamamlandï¿½</span></div>
         <div class="task-date-content">
-          ${tasks.map((task, idx) => `<label class="task-row"><input type="checkbox" class="task-check" data-date="${date}" data-task="${task}" ${saved[idx] ? 'checked' : ''} /><span class="task-box"></span><span class="task-name"><strong>${task}</strong><small>${dateFormatted} · ${company}</small></span></label>`).join('')}
+          ${tasks.map((task, idx) => `<label class="task-row"><input type="checkbox" class="task-check" data-date="${date}" data-task="${task}" ${saved[idx] ? 'checked' : ''} /><span class="task-box"></span><span class="task-name"><strong>${task}</strong><small>${dateFormatted} ï¿½ ${company}</small></span></label>`).join('')}
         </div>
       </div>
     `;
   }).join('');
 
-  if (taskTitle) taskTitle.textContent = `${staff} · Günlük iþlemler`;
-  if (taskSummary) taskSummary.innerHTML = `${company} · ${formattedRange}`;
-  if (taskCounter) taskCounter.textContent = `${totalCompleted} / ${totalTasks} tamamlandý`;
+  if (taskTitle) taskTitle.textContent = `${staff} ï¿½ Gï¿½nlï¿½k iï¿½lemler`;
+  if (taskSummary) taskSummary.innerHTML = `${company} ï¿½ ${formattedRange}`;
+  if (taskCounter) taskCounter.textContent = `${totalCompleted} / ${totalTasks} tamamlandï¿½`;
   if (taskContent) taskContent.innerHTML = dateBlocks;
 
   if (saveStatus) {
     if (lastRecordDate) {
-      setSaveStatus(saveStatus, 'ok', `? ${dates.length} gün için kayýtlý veri yüklendi. Son kayýt: ${formatUpdatedAt(lastRecordDate)}`);
+      setSaveStatus(saveStatus, 'ok', `? ${dates.length} gï¿½n iï¿½in kayï¿½tlï¿½ veri yï¿½klendi. Son kayï¿½t: ${formatUpdatedAt(lastRecordDate)}`);
     } else {
-      setSaveStatus(saveStatus, '', `${dates.length} gün için henüz kayýt yok — iþaretleyip Kaydet'e basýn.`);
+      setSaveStatus(saveStatus, '', `${dates.length} gï¿½n iï¿½in henï¿½z kayï¿½t yok ï¿½ iï¿½aretleyip Kaydet'e basï¿½n.`);
     }
   }
 
@@ -1129,10 +1129,10 @@ function renderWorkTasks(staff, company, dateFrom, dateTo) {
     taskContent.querySelectorAll('.task-check').forEach((checkbox) => checkbox.addEventListener('change', () => {
       const completed = taskContent.querySelectorAll('.task-check:checked').length;
       const total = taskContent.querySelectorAll('.task-check').length;
-      if (taskCounter) taskCounter.textContent = `${completed} / ${total} tamamlandý`;
+      if (taskCounter) taskCounter.textContent = `${completed} / ${total} tamamlandï¿½`;
       if (saveStatus) {
         const dirty = Array.from(taskContent.querySelectorAll('.task-check')).some((box) => box.checked);
-        setSaveStatus(saveStatus, dirty ? 'dirty' : 'ok', dirty ? 'Kaydedilmemiþ deðiþiklik var — Kaydet\'e basýn.' : `${dates.length} gün için kayýt yüklendi.`);
+        setSaveStatus(saveStatus, dirty ? 'dirty' : 'ok', dirty ? 'Kaydedilmemiï¿½ deï¿½iï¿½iklik var ï¿½ Kaydet\'e basï¿½n.' : `${dates.length} gï¿½n iï¿½in kayï¿½t yï¿½klendi.`);
       }
     }));
   }
@@ -1140,7 +1140,7 @@ function renderWorkTasks(staff, company, dateFrom, dateTo) {
   if (saveBtn) {
     saveBtn.onclick = () => {
       if (!canEdit(staff, company)) {
-        setSaveStatus(saveStatus, 'dirty', 'Ýþlem yetkiniz yok — sadece görüntüleyebilirsiniz.');
+        setSaveStatus(saveStatus, 'dirty', 'ï¿½ï¿½lem yetkiniz yok ï¿½ sadece gï¿½rï¿½ntï¿½leyebilirsiniz.');
         return;
       }
       const checkedBoxes = Array.from(taskContent.querySelectorAll('.task-check:checked'));
@@ -1160,8 +1160,8 @@ function renderWorkTasks(staff, company, dateFrom, dateTo) {
         savedCount += current.filter(Boolean).length;
       });
 
-      if (taskCounter) taskCounter.textContent = `${savedCount} / ${totalBoxes} tamamlandý`;
-      setSaveStatus(saveStatus, 'ok', `? ${dates.length} gün kaydedildi — ${savedCount}/${totalBoxes} tamamlandý. Her tarih ayrý saklandý.`);
+      if (taskCounter) taskCounter.textContent = `${savedCount} / ${totalBoxes} tamamlandï¿½`;
+      setSaveStatus(saveStatus, 'ok', `? ${dates.length} gï¿½n kaydedildi ï¿½ ${savedCount}/${totalBoxes} tamamlandï¿½. Her tarih ayrï¿½ saklandï¿½.`);
     };
   }
 }
@@ -1175,13 +1175,13 @@ function setupWorkTracking() {
     event.preventDefault();
     const formData = new FormData(form);
     const statusEl = document.querySelector('#task-save-status');
-    if (statusEl && statusEl.dataset.dirty === 'true' && !window.confirm('Kaydedilmemiþ deðiþiklik var. Yine de baþka tarihe geçilsin mi?')) return;
+    if (statusEl && statusEl.dataset.dirty === 'true' && !window.confirm('Kaydedilmemiï¿½ deï¿½iï¿½iklik var. Yine de baï¿½ka tarihe geï¿½ilsin mi?')) return;
     renderWorkTasks(formData.get('staff'), formData.get('company'), formData.get('date'));
   });
 }
 
-// Yönetim Paneli altýnda açýlýr/kapanýr iþ takip paneli.
-// Ayný personel+firma+tarih deposunu kullanýr; her tarih kendi kaydýný saklar.
+// Yï¿½netim Paneli altï¿½nda aï¿½ï¿½lï¿½r/kapanï¿½r iï¿½ takip paneli.
+// Aynï¿½ personel+firma+tarih deposunu kullanï¿½r; her tarih kendi kaydï¿½nï¿½ saklar.
 function renderDashboardWorkPanel() {
   const staffName = currentUser ? currentUser.name : staffMembers[0];
   let open = true;
@@ -1189,17 +1189,17 @@ function renderDashboardWorkPanel() {
   return `
     <section class="panel dash-work-panel${open ? '' : ' is-collapsed'}" id="dash-work-panel">
       <div class="panel-header dash-work-head">
-        <div><h2>Ýþ Takip — Günlük Ýþlemler</h2><p class="panel-subtitle">Tarih seçin, o güne ait görevleri iþaretleyip Kaydet'e basýn. Her tarih ayrý saklanýr.</p></div>
-        <div class="dash-work-head-actions"><span class="task-counter" id="dash-task-counter">0 / 0 tamamlandý</span><button class="collapse-toggle" id="dash-work-toggle" type="button" aria-expanded="${open}"><span class="collapse-chevron">?</span><span id="dash-work-toggle-text">${open ? 'Kapat' : 'Aç'}</span></button></div>
+        <div><h2>ï¿½ï¿½ Takip ï¿½ Gï¿½nlï¿½k ï¿½ï¿½lemler</h2><p class="panel-subtitle">Tarih seï¿½in, o gï¿½ne ait gï¿½revleri iï¿½aretleyip Kaydet'e basï¿½n. Her tarih ayrï¿½ saklanï¿½r.</p></div>
+        <div class="dash-work-head-actions"><span class="task-counter" id="dash-task-counter">0 / 0 tamamlandï¿½</span><button class="collapse-toggle" id="dash-work-toggle" type="button" aria-expanded="${open}"><span class="collapse-chevron">?</span><span id="dash-work-toggle-text">${open ? 'Kapat' : 'Aï¿½'}</span></button></div>
       </div>
       <div class="dash-work-body" id="dash-work-body">
         <form id="dash-work-form" class="work-form">
           <label class="field">Personel<input type="text" name="staff-display" value="${staffName}" disabled /><input type="hidden" name="staff" value="${staffName}" /></label>
           <label class="field">Firma<select name="company">${companies.map((company) => `<option>${company}</option>`).join('')}</select></label>
-          <label class="field">Ýþlem tarihi<input type="date" name="date" value="2026-01-01" max="2026-12-31" required /></label>
-          <button class="primary-btn work-submit" type="submit">Ýþlemleri göster</button>
+          <label class="field">ï¿½ï¿½lem tarihi<input type="date" name="date" value="2026-01-01" max="2026-12-31" required /></label>
+          <button class="primary-btn work-submit" type="submit">ï¿½ï¿½lemleri gï¿½ster</button>
         </form>
-        <div class="panel-header task-subhead"><div><h2 id="dash-task-title">Günlük iþlemler</h2><p class="panel-subtitle" id="dash-task-summary">Tarih seçimi bekleniyor.</p></div></div>
+        <div class="panel-header task-subhead"><div><h2 id="dash-task-title">Gï¿½nlï¿½k iï¿½lemler</h2><p class="panel-subtitle" id="dash-task-summary">Tarih seï¿½imi bekleniyor.</p></div></div>
         <div id="dash-task-content" class="task-content"></div>
         <div class="save-row" id="dash-save-row"><span class="save-status" id="dash-save-status"></span><button class="primary-btn save-btn" id="dash-save-btn" type="button">Kaydet</button></div>
       </div>
@@ -1211,17 +1211,17 @@ function renderLogin() {
   app.innerHTML = `
     <section class="login-shell">
       <div class="login-art">
-        <div class="brand"><span class="brand-mark">ÝÞ</span><span>Ýþ Süreç Yönetimi</span></div>
-        <div class="art-copy"><h1>Süreçlerinize netlik kazandýrýn.</h1><p>Ekibinizin iþ akýþlarýný tek merkezden yönetin, ölçün ve geliþtirin.</p></div>
+        <div class="brand"><span class="brand-mark">ï¿½ï¿½</span><span>ï¿½ï¿½ Sï¿½reï¿½ Yï¿½netimi</span></div>
+        <div class="art-copy"><h1>Sï¿½reï¿½lerinize netlik kazandï¿½rï¿½n.</h1><p>Ekibinizin iï¿½ akï¿½ï¿½larï¿½nï¿½ tek merkezden yï¿½netin, ï¿½lï¿½ï¿½n ve geliï¿½tirin.</p></div>
       </div>
       <div class="login-panel">
         <form class="login-card" id="login-form">
-          <h2>Tekrar hoþ geldiniz</h2>
-          <p>Yönetim panelinize eriþmek için giriþ yapýn.</p>
+          <h2>Tekrar hoï¿½ geldiniz</h2>
+          <p>Yï¿½netim panelinize eriï¿½mek iï¿½in giriï¿½ yapï¿½n.</p>
           <label class="field">E-posta adresi<input type="email" name="email" placeholder="ad@firma.com" required /></label>
-          <label class="field">Þifre<input type="password" name="password" placeholder="••••••••" required /></label>
-          <button class="primary-btn" type="submit">Panele giriþ yap</button>
-          <div class="demo-note" id="login-note">Kendi kullanýcý bilgilerinizle giriþ yapýn. Demo: ayse.yilmaz@firma.com / 1234</div>
+          <label class="field">ï¿½ifre<input type="password" name="password" placeholder="ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½" required /></label>
+          <button class="primary-btn" type="submit">Panele giriï¿½ yap</button>
+          <div class="demo-note" id="login-note">Kendi kullanï¿½cï¿½ bilgilerinizle giriï¿½ yapï¿½n. Demo: ayse.yilmaz@firma.com / 1234</div>
         </form>
       </div>
     </section>`;
@@ -1241,7 +1241,7 @@ function renderLogin() {
       const valid = typeof verification === 'boolean' ? verification : await verification;
       if (!form.isConnected) return;
       if (!valid) {
-        note.textContent = 'E-posta veya þifre hatalý. Lütfen kendi kullanýcý bilgilerinizle tekrar deneyin.';
+        note.textContent = 'E-posta veya ï¿½ifre hatalï¿½. Lï¿½tfen kendi kullanï¿½cï¿½ bilgilerinizle tekrar deneyin.';
         note.style.background = '#fdecec';
         note.style.color = '#a33a3a';
         return;
@@ -1249,7 +1249,7 @@ function renderLogin() {
       currentUser = { email: matchedUser.email, title: matchedUser.title, name: resolveUserName(matchedUser) };
       renderDashboard();
     } catch (err) {
-      note.textContent = 'Giriþ doðrulanamadý. Tarayýcýnýzýn þifre deposuna eriþimini kontrol edin.';
+      note.textContent = 'Giriï¿½ doï¿½rulanamadï¿½. Tarayï¿½cï¿½nï¿½zï¿½n ï¿½ifre deposuna eriï¿½imini kontrol edin.';
     } finally { button.disabled = false; }
   });
 }
@@ -1257,72 +1257,72 @@ function renderLogin() {
 function renderPageBody(active) {
   try {
     if (active === 'Yetkilendirme') return renderAccessMatrixContent();
-    if (active === 'Ýþ Takip') return renderWorkTrackingContent();
-    if (active === 'Firma Yönetimi') return renderCompanyContent();
-    if (active === 'Yýl / Dönem Yönetimi') return renderPeriodContent();
-    if (active === 'Personel Yönetimi') return renderStaffContent();
+    if (active === 'ï¿½ï¿½ Takip') return renderWorkTrackingContent();
+    if (active === 'Firma Yï¿½netimi') return renderCompanyContent();
+    if (active === 'Yï¿½l / Dï¿½nem Yï¿½netimi') return renderPeriodContent();
+    if (active === 'Personel Yï¿½netimi') return renderStaffContent();
     if (active === 'Raporlar') return renderReportContent();
-    if (active === 'Personel Sorularý') return renderQuestionContent();
+    if (active === 'Personel Sorularï¿½') return renderQuestionContent();
     if (active === 'Notlar') return renderNoteContent();
-    if (active === 'Kullanýcý Yönetimi') return renderMyDashboardStats();
+    if (active === 'Kullanï¿½cï¿½ Yï¿½netimi') return renderMyDashboardStats();
     if (active === 'Duyurular') return renderAnnouncementsContent();
-    if (active === 'Ayýn Elemaný') return renderEmployeeContent();
-    if (active === 'Yönetim Paneli') return renderMyDashboardStats() + renderPasswordPanel() + renderEmployeeSpotlight() + renderAnnouncementsContent(true);
-    return '<div class="page-heading"><div><h1>' + active + '</h1><p>Bugünkü iþ akýþýnýza genel bakýþ.</p></div></div>'
+    if (active === 'Ayï¿½n Elemanï¿½') return renderEmployeeContent();
+    if (active === 'Yï¿½netim Paneli') return renderMyDashboardStats() + renderPasswordPanel() + renderEmployeeSpotlight() + renderAnnouncementsContent(true);
+    return '<div class="page-heading"><div><h1>' + active + '</h1><p>Bugï¿½nkï¿½ iï¿½ akï¿½ï¿½ï¿½nï¿½za genel bakï¿½ï¿½.</p></div></div>'
       + '<section class="stats-grid">'
-      + [['Aktif kullanýcý', '128'], ['Kayýtlý firma', '46'], ['Toplam personel', '1.284'], ['Bekleyen iþlem', '23']].map(function (row) {
+      + [['Aktif kullanï¿½cï¿½', '128'], ['Kayï¿½tlï¿½ firma', '46'], ['Toplam personel', '1.284'], ['Bekleyen iï¿½lem', '23']].map(function (row) {
         return '<article class="stat-card"><div class="stat-top"><span>' + row[0] + '</span></div><div class="stat-number">' + row[1] + '</div></article>';
       }).join('') + '</section>';
   } catch (err) {
-    return '<div class="permission-empty"><span class="permission-icon">!</span><div><strong>Sayfa yüklenirken hata oluþtu.</strong><p>' + ((err && err.message) || err) + '</p></div></div>';
+    return '<div class="permission-empty"><span class="permission-icon">!</span><div><strong>Sayfa yï¿½klenirken hata oluï¿½tu.</strong><p>' + ((err && err.message) || err) + '</p></div></div>';
   }
 }
 
-function renderDashboard(active = 'Yönetim Paneli') {
+function renderDashboard(active = 'Yï¿½netim Paneli') {
   try {
   if (!currentUser) { renderLogin(); return; }
   const user = currentUser;
-  const requested = active || 'Yönetim Paneli';
-  const safeActive = requested === 'Yetkilendirme' && !isAdminUser() ? 'Yönetim Paneli' : requested;
+  const requested = active || 'Yï¿½netim Paneli';
+  const safeActive = requested === 'Yetkilendirme' && !isAdminUser() ? 'Yï¿½netim Paneli' : requested;
   window._lastPage = safeActive;
   app.innerHTML = `
     <section class="app-shell">
       <aside class="sidebar" id="sidebar">
-        <div class="brand"><span class="brand-mark">ÝÞ</span><span>Ýþ Süreç Yönetimi</span></div>
-        <p class="nav-label">Çalýþma alaný</p>
+        <div class="brand"><span class="brand-mark">ï¿½ï¿½</span><span>ï¿½ï¿½ Sï¿½reï¿½ Yï¿½netimi</span></div>
+        <p class="nav-label">ï¿½alï¿½ï¿½ma alanï¿½</p>
         <nav class="nav">${menuItems.filter(([, label]) => label !== 'Yetkilendirme' || isAdminUser()).map(([icon, label]) => {
-if (label === 'Kullanýcý Yönetimi') {
-const parentCls = safeActive === 'Kullanýcý Yönetimi' ? ' active' : '';
-const childCls = safeActive === 'Ýþ Takip' ? ' active' : '';
-return `<div class="nav-group is-open"><button type="button" class="nav-item${parentCls}" data-page="Kullanýcý Yönetimi"><span class="nav-icon">${icon}</span><span>${label}</span><span class="nav-caret">?</span></button><div class="nav-submenu"><button type="button" class="nav-item nav-child${childCls}" data-page="Ýþ Takip"><span class="nav-icon">?</span><span>Ýþ Takip</span></button></div></div>`;
+if (label === 'Kullanï¿½cï¿½ Yï¿½netimi') {
+const parentCls = safeActive === 'Kullanï¿½cï¿½ Yï¿½netimi' ? ' active' : '';
+const childCls = safeActive === 'ï¿½ï¿½ Takip' ? ' active' : '';
+return `<div class="nav-group is-open"><button type="button" class="nav-item${parentCls}" data-page="Kullanï¿½cï¿½ Yï¿½netimi"><span class="nav-icon">${icon}</span><span>${label}</span><span class="nav-caret">?</span></button><div class="nav-submenu"><button type="button" class="nav-item nav-child${childCls}" data-page="ï¿½ï¿½ Takip"><span class="nav-icon">?</span><span>ï¿½ï¿½ Takip</span></button></div></div>`;
 }
 const cls = label === safeActive ? ' active' : '';
 return `<button type="button" class="nav-item${cls}" data-page="${label}"><span class="nav-icon">${icon}</span><span>${label}</span></button>`;
 }).join('')}</nav>
-        <div class="sidebar-footer"><div class="profile"><span class="avatar">${getInitials(user.name)}</span><div><strong>${escapeHtml(user.name)}</strong><small>${escapeHtml(getStaffTitle(user.name))}</small></div></div><button class="logout" id="logout">? &nbsp; Güvenli çýkýþ</button></div>
+        <div class="sidebar-footer"><div class="profile"><span class="avatar">${getInitials(user.name)}</span><div><strong>${escapeHtml(user.name)}</strong><small>${escapeHtml(getStaffTitle(user.name))}</small></div></div><button class="logout" id="logout">? &nbsp; Gï¿½venli ï¿½ï¿½kï¿½ï¿½</button></div>
       </aside>
       <div class="content">
-        <header class="topbar"><button class="mobile-menu" id="menu-toggle" aria-label="Menüyü aç">?</button><div class="breadcrumb">Ana sayfa&nbsp; / &nbsp;<strong>${safeActive}</strong></div><div class="top-actions"><button class="notification" aria-label="Bildirimler">?</button><span class="date-chip">10 Eylül 2026</span></div></header>
+        <header class="topbar"><button class="mobile-menu" id="menu-toggle" aria-label="Menï¿½yï¿½ aï¿½">?</button><div class="breadcrumb">Ana sayfa&nbsp; / &nbsp;<strong>${safeActive}</strong></div><div class="top-actions"><button class="notification" aria-label="Bildirimler">?</button><span class="date-chip">10 Eylï¿½l 2026</span></div></header>
         ${renderPageBody(safeActive)}
       </div>
     </section>`;
   document.querySelector('#logout').addEventListener('click', renderLogin);
   document.querySelector('#menu-toggle').addEventListener('click', () => document.querySelector('#sidebar').classList.toggle('open'));
-  document.querySelectorAll('[data-page]').forEach((item) => item.addEventListener('click', (e) => { if (e) { e.preventDefault(); e.stopPropagation(); } const p = item.getAttribute('data-page'); renderDashboard(p || 'Yönetim Paneli'); }));
-  document.querySelector('.nav').addEventListener('click', (e) => { const b = e.target.closest('[data-page]'); if (!b) return; e.preventDefault(); e.stopPropagation(); renderDashboard(b.getAttribute('data-page') || 'Yönetim Paneli'); });
+  document.querySelectorAll('[data-page]').forEach((item) => item.addEventListener('click', (e) => { if (e) { e.preventDefault(); e.stopPropagation(); } const p = item.getAttribute('data-page'); renderDashboard(p || 'Yï¿½netim Paneli'); }));
+  document.querySelector('.nav').addEventListener('click', (e) => { const b = e.target.closest('[data-page]'); if (!b) return; e.preventDefault(); e.stopPropagation(); renderDashboard(b.getAttribute('data-page') || 'Yï¿½netim Paneli'); });
   if (safeActive === 'Yetkilendirme') { setupAccessMatrix(); setupAnnouncementPermissions(); }
-  if (safeActive === 'Yönetim Paneli') setupPasswordPanel();
+  if (safeActive === 'Yï¿½netim Paneli') setupPasswordPanel();
   if (safeActive === 'Duyurular') setupAnnouncements();
-  if (safeActive === 'Ayýn Elemaný') setupEmployeeSelection();
-  if (safeActive === 'Firma Yönetimi') setupCompanyManagement();
-  if (safeActive === 'Yýl / Dönem Yönetimi') setupPeriodPlans();
-  if (safeActive === 'Personel Yönetimi') setupStaffManagement();
+  if (safeActive === 'Ayï¿½n Elemanï¿½') setupEmployeeSelection();
+  if (safeActive === 'Firma Yï¿½netimi') setupCompanyManagement();
+  if (safeActive === 'Yï¿½l / Dï¿½nem Yï¿½netimi') setupPeriodPlans();
+  if (safeActive === 'Personel Yï¿½netimi') setupStaffManagement();
   if (safeActive === 'Raporlar') setupReports();
-  if (safeActive === 'Personel Sorularý') setupQuestions();
+  if (safeActive === 'Personel Sorularï¿½') setupQuestions();
   if (safeActive === 'Notlar') setupNotes();
-  if (safeActive === 'Ýþ Takip') setupWorkTracking();
+  if (safeActive === 'ï¿½ï¿½ Takip') setupWorkTracking();
   } catch (err) {
-    app.innerHTML = '<div class="permission-empty" style="margin:40px;"><span class="permission-icon">!</span><div><strong>Sayfa açýlamadý.</strong><p>' + ((err && err.message) || err) + '</p><button class="primary-btn" onclick="location.reload()">Yenile</button></div></div>';
+    app.innerHTML = '<div class="permission-empty" style="margin:40px;"><span class="permission-icon">!</span><div><strong>Sayfa aï¿½ï¿½lamadï¿½.</strong><p>' + ((err && err.message) || err) + '</p><button class="primary-btn" onclick="location.reload()">Yenile</button></div></div>';
   }
 }
 
