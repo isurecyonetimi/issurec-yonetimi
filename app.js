@@ -15,10 +15,257 @@ const menuItems = [
 const app = document.querySelector('#app');
 
 const DEFAULT_STAFF = ['Ayşe Yılmaz', 'Mehmet Kaya', 'Elif Demir', 'Ahmet Şahin', 'Zeynep Aras'];
+```js
+const app = document.querySelector('#app');
+
+const DEFAULT_STAFF = [
+  'Ayşe Yılmaz',
+  'Mehmet Kaya',
+  'Elif Demir',
+  'Ahmet Şahin',
+  'Zeynep Aras'
+];
+
 const STAFF_STORAGE_KEY = 'isSurecStaffV1';
-function loadStaff() { try { const raw = localStorage.getItem(STAFF_STORAGE_KEY); const p = raw ? JSON.parse(raw) : null; if (Array.isArray(p) && p.length) return p.filter((s) => typeof s === 'string' && s.trim()); } catch (err) {} return [...DEFAULT_STAFF]; }
-function saveStaff(list) { try { localStorage.setItem(STAFF_STORAGE_KEY, JSON.stringify(list)); } catch (err) {} }
-function getStaff() { return loadStaff(); }
+
+// Firebase'den gelen ortak personel listesi burada tutulur.
+// getStaff() senkron çalışmaya devam ettiği için mevcut ekranları bozmaz.
+let sharedStaffCache = null;
+
+// ---------------------------------------------------------
+// PERSONEL LİSTESİ - GEÇİCİ YEREL ÖNBELLEK
+// ---------------------------------------------------------
+
+function loadStaff() {
+  try {
+    const raw = localStorage.getItem(STAFF_STORAGE_KEY);
+    const p = raw ? JSON.parse(raw) : null;
+
+    if (
+      Array.isArray(p) &&
+      p.length
+    ) {
+      return p.filter(
+        (s) => typeof s === 'string' && s.trim()
+      );
+    }
+  } catch (err) {}
+
+  return [...DEFAULT_STAFF];
+}
+
+function saveStaff(list) {
+  try {
+    const cleanList = Array.from(
+      new Set(
+        (Array.isArray(list) ? list : [])
+          .filter((s) => typeof s === 'string')
+          .map((s) => s.trim())
+          .filter(Boolean)
+      )
+    );
+
+    localStorage.setItem(
+      STAFF_STORAGE_KEY,
+      JSON.stringify(cleanList)
+    );
+
+    // Aynı anda bellekteki ortak listeyi de güncelle.
+    sharedStaffCache = [...cleanList];
+
+    return true;
+  } catch (err) {
+    console.error('Personel listesi kaydedilemedi:', err);
+    return false;
+  }
+}
+
+// ---------------------------------------------------------
+// MERKEZİ PERSONEL LİSTESİ
+// ---------------------------------------------------------
+
+function getStaff() {
+  if (Array.isArray(sharedStaffCache)) {
+    return [...sharedStaffCache];
+  }
+
+  return loadStaff();
+}
+
+// Firebase'deki ortak personel belgesinin adresi.
+// Daha sonra firmalar, yetkiler ve diğer ortak veriler için
+// benzer merkezi yapılar oluşturacağız.
+const STAFF_FIREBASE_DOC = 'staff';
+const STAFF_FIREBASE_COLLECTION = 'settings';
+
+// Firebase'deki ortak personel listesini okur.
+async function loadSharedStaffFromFirebase() {
+async function initializeSharedStaff() {
+  const loaded = await loadSharedStaffFromFirebase();
+
+  if (loaded) {
+    console.log('✓ Ortak personel listesi Firebase üzerinden hazır.');
+  } else {
+    console.log('Firebase personel listesi henüz yüklenemedi.');
+  }
+}
+  try {
+    if (
+      !window.firebaseDb ||
+      !window.firebaseDoc ||
+      !window.firebaseGetDoc
+    ) {
+      return false;
+    }
+
+    const staffRef = window.firebaseDoc(
+      window.firebaseDb,
+      STAFF_FIREBASE_COLLECTION,
+      STAFF_FIREBASE_DOC
+    );
+
+    const snapshot = await window.firebaseGetDoc(staffRef);
+
+    if (!snapshot.exists()) {
+      return false;
+    }
+
+    const data = snapshot.data();
+
+    if (!Array.isArray(data.staff)) {
+      return false;
+    }
+
+    const cleanList = Array.from(
+      new Set(
+        data.staff
+          .filter((s) => typeof s === 'string')
+          .map((s) => s.trim())
+          .filter(Boolean)
+      )
+    );
+
+    if (!cleanList.length) {
+      return false;
+    }
+
+    sharedStaffCache = [...cleanList];
+
+    // Eski yerel listeyi de Firebase'deki güncel listeyle eşitle.
+    try {
+      localStorage.setItem(
+        STAFF_STORAGE_KEY,
+        JSON.stringify(cleanList)
+      );
+    } catch (err) {}
+
+    console.log('Firebase ortak personel listesi yüklendi:', cleanList);
+
+    return true;
+  } catch (err) {
+    console.error(
+      'Firebase personel listesi okunamadı:',
+      err
+    );
+
+    return false;
+  }
+}
+
+// Firebase'e ortak personel listesini kaydeder.
+async function saveSharedStaffToFirebase(list) {
+  try {
+    if (
+      !window.firebaseDb ||
+      !window.firebaseDoc ||
+      !window.firebaseSetDoc
+    ) {
+      return false;
+    }
+
+    const cleanList = Array.from(
+      new Set(
+        (Array.isArray(list) ? list : [])
+          .filter((s) => typeof s === 'string')
+          .map((s) => s.trim())
+          .filter(Boolean)
+      )
+    );
+
+    const staffRef = window.firebaseDoc(
+      window.firebaseDb,
+      STAFF_FIREBASE_COLLECTION,
+      STAFF_FIREBASE_DOC
+    );
+
+    await window.firebaseSetDoc(
+      staffRef,
+      {
+        staff: cleanList,
+        updatedAt: new Date().toISOString()
+      }
+    );
+
+    sharedStaffCache = [...cleanList];
+
+    try {
+      localStorage.setItem(
+        STAFF_STORAGE_KEY,
+        JSON.stringify(cleanList)
+      );
+    } catch (err) {}
+
+    console.log('Firebase ortak personel listesi kaydedildi:', cleanList);
+
+    return true;
+  } catch (err) {
+    console.error(
+      'Firebase personel listesi kaydedilemedi:',
+      err
+    );
+
+    return false;
+  }
+}
+
+const staffMembers = loadStaff();
+
+const DEFAULT_COMPANIES = [
+  'Artemis Teknoloji A.Ş.',
+  'Nova İnsan Kaynakları Ltd.',
+  'Yapıtaş Proje ve Danışmanlık'
+];
+
+const COMPANY_STORAGE_KEY = 'isSurecCompaniesV1';
+
+const ACCESS_STORAGE_KEY = 'isSurecStaffAccessV1';
+
+const DEFAULT_ACCESS = {
+  'Ayşe Yılmaz': [
+    'Artemis Teknoloji A.Ş.',
+    'Nova İnsan Kaynakları Ltd.',
+    'Yapıtaş Proje ve Danışmanlık'
+  ],
+
+  'Mehmet Kaya': [
+    'Artemis Teknoloji A.Ş.',
+    'Yapıtaş Proje ve Danışmanlık'
+  ],
+
+  'Elif Demir': [
+    'Nova İnsan Kaynakları Ltd.'
+  ],
+
+  'Ahmet Şahin': [
+    'Artemis Teknoloji A.Ş.'
+  ],
+
+  'Zeynep Aras': [
+    'Yapıtaş Proje ve Danışmanlık'
+  ]
+};
+```
+
 const staffMembers = loadStaff();
 const DEFAULT_COMPANIES = ['Artemis Teknoloji A.Ş.', 'Nova İnsan Kaynakları Ltd.', 'Yapıtaş Proje ve Danışmanlık'];
 const COMPANY_STORAGE_KEY = 'isSurecCompaniesV1';
@@ -889,6 +1136,16 @@ if (!saveCommunity(STAFF_META_KEY, meta)) return;
 
 list.push(name);
 saveStaff(list);
+
+// Personel listesini ortak Firebase kaynağına kaydet
+const firebaseStaffSaved = await saveSharedStaffToFirebase(list);
+
+if (!firebaseStaffSaved) {
+  document.getElementById('staff-save-status').textContent =
+    'Personel hesabı oluşturuldu ancak ortak personel listesi Firebase''e kaydedilemedi.';
+  document.getElementById('staff-save-status').className = 'save-status';
+  return;
+}
 
 const acc = getAccess();
 if (!acc[name]) acc[name] = [];
@@ -1817,6 +2074,25 @@ function renderPageBody(active) {
 function renderDashboard(active = 'Yönetim Paneli') {
   try {
   if (!currentUser) { renderLogin(); return; }
+   // Firebase'deki ortak personel listesini ilk açılışta yükle.
+  if (!window._sharedStaffLoaded && !window._sharedStaffLoading) {
+    window._sharedStaffLoading = true;
+
+    loadSharedStaffFromFirebase()
+      .then((loaded) => {
+        window._sharedStaffLoading = false;
+        window._sharedStaffLoaded = true;
+
+        if (loaded) {
+          renderDashboard(active);
+        }
+      })
+      .catch((err) => {
+        console.error('Ortak personel listesi yüklenemedi:', err);
+        window._sharedStaffLoading = false;
+        window._sharedStaffLoaded = true;
+      });
+  }
   const user = currentUser;
   const requested = active || 'Yönetim Paneli';
   const safeActive = requested === 'Yetkilendirme' && !isAdminUser() ? 'Yönetim Paneli' : requested;
