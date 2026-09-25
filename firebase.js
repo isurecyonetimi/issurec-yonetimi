@@ -1,5 +1,12 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  updatePassword,
+  reauthenticateWithCredential,
+  EmailAuthProvider
+} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 import { getStorage } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-storage.js";
 
@@ -28,6 +35,9 @@ window.firebaseSetDoc = setDoc;
 window.firebaseStorage = storage;
 window.firebaseSignIn = signInWithEmailAndPassword;
 window.firebaseCreateUser = createUserWithEmailAndPassword;
+window.firebaseUpdatePassword = updatePassword;
+window.firebaseReauthenticate = reauthenticateWithCredential;
+window.firebaseEmailAuthProvider = EmailAuthProvider;
 
 export { app, auth, db, storage };
 
