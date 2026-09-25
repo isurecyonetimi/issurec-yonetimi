@@ -697,23 +697,125 @@ function renderStaffContent() {
   const list = getStaff();
   const admin = isAdminUser();
   const editName = window._staffEdit || '';
-  const editRow = admin && editName ? `<form id="staff-edit-form" class="work-form community-form"><label class="field">Ad Soyad<input type="text" name="newName" value="${escapeHtml(editName)}" maxlength="100" required /></label><label class="field">Ünvan<input type="text" name="staffTitle" value="${escapeHtml(loadCommunity(STAFF_META_KEY)[editName]?.title || '')}" maxlength="100" required /></label><button class="primary-btn work-submit" type="submit">Kaydet</button></form>` : '';
+
+  const editRow = admin && editName
+    ? `<form id="staff-edit-form" class="work-form community-form">
+        <label class="field">
+          Ad Soyad
+          <input type="text" name="newName" value="${escapeHtml(editName)}" maxlength="100" required />
+        </label>
+
+        <label class="field">
+          Ünvan
+          <input type="text" name="staffTitle" value="${escapeHtml(loadCommunity(STAFF_META_KEY)[editName]?.title || '')}" maxlength="100" required />
+        </label>
+
+        <button class="primary-btn work-submit" type="submit">Kaydet</button>
+      </form>`
+    : '';
+
   return `
-    <div class="page-heading"><div><h1>Personel Yönetimi</h1><p>${admin ? 'Personel ekleyin; adını ve ünvanını düzenleyin. Ünvan, yönetici yetkisi vermez.' : 'Kayıtlı personeller ve ünvanları (sadece görüntüleme).'}</p></div><span class="access-badge">${admin ? 'Yönetici' : 'Personel'}</span></div>
-    ${admin ? `<section class="panel"><div class="panel-header"><div><h2>Yeni personel ekle</h2><p class="panel-subtitle">Ad Soyad ve ünvan yazıp Ekle'ye basın.</p></div></div>
-      <form id="staff-form" class="work-form community-form">
-        <label class="field">Ad Soyad<input type="text" name="staffName" placeholder="Örn: Ali Veli" maxlength="100" required /></label>
-        <label class="field">Ünvan<input type="text" name="staffTitle" placeholder="Örn: Muhasebe Uzmanı" maxlength="100" required /></label>
-        <label class="field">E-posta (kullanıcı adı)<input type="email" name="staffEmail" placeholder="ali.veli@firma.com" required /></label>
-        <label class="field">Şifre<input type="password" name="staffPassword" minlength="8" maxlength="128" required /></label>
-        <label class="field">Şifre tekrar<input type="password" name="staffPasswordRepeat" minlength="8" maxlength="128" required /></label>
-        <button class="primary-btn work-submit" type="submit">Ekle</button>
-        <span class="field-hint">Şifre en az 8, en fazla 128 karakter olmalıdır.</span>
-      </form>
-      <div class="save-row"><span class="save-status" id="staff-save-status"></span></div>${editRow}</section>` : ``}
-    <section class="panel"><div class="panel-header"><div><h2>Kayıtlı personeller (${list.length})</h2></div></div>
-      <div class="task-content">${list.map((s) => `<div class="task-row" style="cursor:default"><span class="task-box" style="border-radius:50%">♟</span><span class="task-name">${staffIdentity(s)}</span>${admin ? `<span style="margin-left:auto;"><button class="primary-btn work-submit" data-edit-staff="${escapeHtml(s)}" type="button" style="min-width:90px;">Düzenle</button></span>` : ''}</div>`).join('')}</div>
-    </section>`;
+    <div class="page-heading">
+      <div>
+        <h1>Personel Yönetimi</h1>
+        <p>${admin
+          ? 'Personel ekleyin; adını ve ünvanını düzenleyin. Ünvan, yönetici yetkisi vermez.'
+          : 'Kayıtlı personeller ve ünvanları (sadece görüntüleme).'}
+        </p>
+      </div>
+      <span class="access-badge">${admin ? 'Yönetici' : 'Personel'}</span>
+    </div>
+
+    ${admin ? `
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <h2>Yeni personel ekle</h2>
+            <p class="panel-subtitle">Ad Soyad ve ünvan yazıp Ekle'ye basın.</p>
+          </div>
+        </div>
+
+        <form id="staff-form" class="work-form community-form">
+          <label class="field">
+            Ad Soyad
+            <input type="text" name="staffName" placeholder="Örn: Ali Veli" maxlength="100" required />
+          </label>
+
+          <label class="field">
+            Ünvan
+            <input type="text" name="staffTitle" placeholder="Örn: Muhasebe Uzmanı" maxlength="100" required />
+          </label>
+
+          <label class="field">
+            E-posta (kullanıcı adı)
+            <input type="email" name="staffEmail" placeholder="ali.veli@firma.com" required />
+          </label>
+
+          <label class="field">
+            Şifre
+            <input type="password" name="staffPassword" minlength="8" maxlength="128" required />
+          </label>
+
+          <label class="field">
+            Şifre tekrar
+            <input type="password" name="staffPasswordRepeat" minlength="8" maxlength="128" required />
+          </label>
+
+          <button class="primary-btn work-submit" type="submit">Ekle</button>
+
+          <span class="field-hint">
+            Şifre en az 8, en fazla 128 karakter olmalıdır.
+          </span>
+        </form>
+
+        <div class="save-row">
+          <span class="save-status" id="staff-save-status"></span>
+        </div>
+
+        ${editRow}
+      </section>
+    ` : ''}
+
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Kayıtlı personeller (${list.length})</h2>
+        </div>
+      </div>
+
+      <div class="task-content">
+        ${list.map((s) => `
+          <div class="task-row" style="cursor:default">
+            <span class="task-box" style="border-radius:50%">♟</span>
+
+            <span class="task-name">
+              ${staffIdentity(s)}
+            </span>
+
+            ${admin ? `
+              <span style="margin-left:auto; display:flex; gap:8px;">
+                <button
+                  class="primary-btn work-submit"
+                  data-edit-staff="${escapeHtml(s)}"
+                  type="button"
+                  style="min-width:90px;">
+                  Düzenle
+                </button>
+
+                <button
+                  class="primary-btn work-submit"
+                  data-delete-staff="${escapeHtml(s)}"
+                  type="button"
+                  style="min-width:70px; background:#b42318;">
+                  Sil
+                </button>
+              </span>
+            ` : ''}
+          </div>
+        `).join('')}
+      </div>
+    </section>
+  `;
 }
 
 function setupStaffManagement() {
@@ -812,6 +914,53 @@ renderDashboard('Personel Yönetimi');
     window._staffEdit = b.dataset.editStaff;
     renderDashboard('Personel Yönetimi');
   }));
+  document.querySelectorAll('[data-delete-staff]').forEach((b) =>
+  b.addEventListener('click', () => {
+    if (!isAdminUser()) return;
+
+    const name = b.dataset.deleteStaff;
+
+    const confirmed = window.confirm(
+      `"${name}" isimli personeli silmek istediğinize emin misiniz?`
+    );
+
+    if (!confirmed) return;
+
+    // Personel listesinden sil
+    const list = getStaff().filter((s) => s !== name);
+    saveStaff(list);
+
+    // Personel bilgilerini sil
+    const meta = loadCommunity(STAFF_META_KEY);
+    delete meta[name];
+    saveCommunity(STAFF_META_KEY, meta);
+
+    // Yetkilerini sil
+    const acc = getAccess();
+    delete acc[name];
+    saveAccess(acc);
+
+    // Kullanıcı adı eşleşmesini sil
+    const um = loadUserNames();
+
+    Object.keys(um).forEach((email) => {
+      if (um[email] === name) {
+        delete um[email];
+      }
+    });
+
+    saveUserNames(um);
+
+    // Planlardaki personel kayıtlarını sil
+    const plans = loadPlans().filter((p) => p.staff !== name);
+    savePlans(plans);
+
+    window._staffEdit = '';
+
+    refreshCompanyCache();
+    renderDashboard('Personel Yönetimi');
+  })
+);
   const ef = document.querySelector('#staff-edit-form');
   if (ef) ef.addEventListener('submit', (e) => {
     e.preventDefault();
