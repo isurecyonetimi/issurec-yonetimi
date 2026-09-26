@@ -1,4 +1,3 @@
-```js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
 
 import {
@@ -44,6 +43,8 @@ window.firebaseDoc = doc;
 window.firebaseGetDoc = getDoc;
 window.firebaseSetDoc = setDoc;
 
+window.firebaseWorkRecordCollection = 'workRecords';
+
 window.firebaseStorage = storage;
 
 window.firebaseSignIn = signInWithEmailAndPassword;
@@ -59,4 +60,3 @@ export {
   db,
   storage
 };
-```

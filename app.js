@@ -14,10 +14,6 @@ const menuItems = [
 
 const app = document.querySelector('#app');
 
-const DEFAULT_STAFF = ['Ayşe Yılmaz', 'Mehmet Kaya', 'Elif Demir', 'Ahmet Şahin', 'Zeynep Aras'];
-```js
-const app = document.querySelector('#app');
-
 const DEFAULT_STAFF = [
   'Ayşe Yılmaz',
   'Mehmet Kaya',
@@ -97,18 +93,147 @@ function getStaff() {
 // benzer merkezi yapılar oluşturacağız.
 const STAFF_FIREBASE_DOC = 'staff';
 const STAFF_FIREBASE_COLLECTION = 'settings';
+const STAFF_META_FIREBASE_DOC = 'staffMeta';
+
+let sharedStaffMetaCache = null;
+
+async function loadSharedStaffMetaFromFirebase() {
+  try {
+    if (!window.firebaseDb || !window.firebaseDoc || !window.firebaseGetDoc) {
+      return false;
+    }
+
+    const metaRef = window.firebaseDoc(
+      window.firebaseDb,
+      'settings',
+      STAFF_META_FIREBASE_DOC
+    );
+
+    const snapshot = await window.firebaseGetDoc(metaRef);
+
+    if (!snapshot.exists()) {
+      return false;
+    }
+
+    const data = snapshot.data();
+
+    if (!data.staffMeta || typeof data.staffMeta !== 'object') {
+      return false;
+    }
+
+    sharedStaffMetaCache = { ...data.staffMeta };
+
+    console.log(
+      'Firebase ortak personel ünvanları yüklendi:',
+      sharedStaffMetaCache
+    );
+
+    return true;
+  } catch (err) {
+    console.error('Firebase personel ünvanları okunamadı:', err);
+    return false;
+  }
+}
+
+async function saveSharedStaffMetaToFirebase(meta) {
+  try {
+    if (!window.firebaseDb || !window.firebaseDoc || !window.firebaseSetDoc) {
+      return false;
+    }
+
+    const cleanMeta = {};
+
+    Object.entries(meta || {}).forEach(([name, value]) => {
+      if (!name || !value || typeof value !== 'object') return;
+
+      cleanMeta[name] = {
+        title: String(value.title || '').trim()
+      };
+    });
+
+    const metaRef = window.firebaseDoc(
+      window.firebaseDb,
+      'settings',
+      STAFF_META_FIREBASE_DOC
+    );
+
+    await window.firebaseSetDoc(
+      metaRef,
+      {
+        staffMeta: cleanMeta,
+        updatedAt: new Date().toISOString()
+      }
+    );
+
+    sharedStaffMetaCache = { ...cleanMeta };
+
+    console.log(
+      'Firebase ortak personel ünvanları kaydedildi:',
+      cleanMeta
+    );
+
+    return true;
+  } catch (err) {
+    console.error('Firebase personel ünvanları kaydedilemedi:', err);
+    return false;
+  }
+}
+async function saveSharedStaffToFirebase(list) {
+  try {
+    if (!window.firebaseDb || !window.firebaseDoc || !window.firebaseSetDoc) {
+      return false;
+    }
+
+    const cleanList = Array.from(
+      new Set(
+        (Array.isArray(list) ? list : [])
+          .filter((s) => typeof s === 'string')
+          .map((s) => s.trim())
+          .filter(Boolean)
+      )
+    );
+
+    const staffRef = window.firebaseDoc(
+      window.firebaseDb,
+      STAFF_FIREBASE_COLLECTION,
+      STAFF_FIREBASE_DOC
+    );
+
+    await window.firebaseSetDoc(
+      staffRef,
+      {
+        staff: cleanList,
+        updatedAt: new Date().toISOString()
+      }
+    );
+
+    sharedStaffCache = [...cleanList];
+
+    try {
+      localStorage.setItem(
+        STAFF_STORAGE_KEY,
+        JSON.stringify(cleanList)
+      );
+    } catch (err) {}
+
+    console.log(
+      'Firebase ortak personel listesi kaydedildi:',
+      cleanList
+    );
+
+    return true;
+  } catch (err) {
+    console.error(
+      'Firebase personel listesi kaydedilemedi:',
+      err
+    );
+
+    return false;
+  }
+}
 
 // Firebase'deki ortak personel listesini okur.
 async function loadSharedStaffFromFirebase() {
-async function initializeSharedStaff() {
-  const loaded = await loadSharedStaffFromFirebase();
-
-  if (loaded) {
-    console.log('✓ Ortak personel listesi Firebase üzerinden hazır.');
-  } else {
-    console.log('Firebase personel listesi henüz yüklenemedi.');
-  }
-}
   try {
     if (
       !window.firebaseDb ||
@@ -151,7 +276,6 @@ async function initializeSharedStaff() {
 
     sharedStaffCache = [...cleanList];
 
-    // Eski yerel listeyi de Firebase'deki güncel listeyle eşitle.
     try {
       localStorage.setItem(
         STAFF_STORAGE_KEY,
@@ -159,7 +283,10 @@ async function initializeSharedStaff() {
       );
     } catch (err) {}
 
-    console.log('Firebase ortak personel listesi yüklendi:', cleanList);
+    console.log(
+      'Firebase ortak personel listesi yüklendi:',
+      cleanList
+    );
 
     return true;
   } catch (err) {
@@ -172,63 +299,9 @@ async function initializeSharedStaff() {
   }
 }
 
-// Firebase'e ortak personel listesini kaydeder.
-async function saveSharedStaffToFirebase(list) {
-  try {
-    if (
-      !window.firebaseDb ||
-      !window.firebaseDoc ||
-      !window.firebaseSetDoc
-    ) {
-      return false;
-    }
-
-    const cleanList = Array.from(
-      new Set(
-        (Array.isArray(list) ? list : [])
-          .filter((s) => typeof s === 'string')
-          .map((s) => s.trim())
-          .filter(Boolean)
-      )
-    );
-
-    const staffRef = window.firebaseDoc(
-      window.firebaseDb,
-      STAFF_FIREBASE_COLLECTION,
-      STAFF_FIREBASE_DOC
-    );
-
-    await window.firebaseSetDoc(
-      staffRef,
-      {
-        staff: cleanList,
-        updatedAt: new Date().toISOString()
-      }
-    );
-
-    sharedStaffCache = [...cleanList];
-
-    try {
-      localStorage.setItem(
-        STAFF_STORAGE_KEY,
-        JSON.stringify(cleanList)
-      );
-    } catch (err) {}
-
-    console.log('Firebase ortak personel listesi kaydedildi:', cleanList);
-
-    return true;
-  } catch (err) {
-    console.error(
-      'Firebase personel listesi kaydedilemedi:',
-      err
-    );
-
-    return false;
-  }
-}
-
 const staffMembers = loadStaff();
+
+loadSharedStaffMetaFromFirebase();
 
 const DEFAULT_COMPANIES = [
   'Artemis Teknoloji A.Ş.',
@@ -264,19 +337,6 @@ const DEFAULT_ACCESS = {
     'Yapıtaş Proje ve Danışmanlık'
   ]
 };
-```
-
-const staffMembers = loadStaff();
-const DEFAULT_COMPANIES = ['Artemis Teknoloji A.Ş.', 'Nova İnsan Kaynakları Ltd.', 'Yapıtaş Proje ve Danışmanlık'];
-const COMPANY_STORAGE_KEY = 'isSurecCompaniesV1';
-const ACCESS_STORAGE_KEY = 'isSurecStaffAccessV1';
-const DEFAULT_ACCESS = {
-  'Ayşe Yılmaz': ['Artemis Teknoloji A.Ş.', 'Nova İnsan Kaynakları Ltd.', 'Yapıtaş Proje ve Danışmanlık'],
-  'Mehmet Kaya': ['Artemis Teknoloji A.Ş.', 'Yapıtaş Proje ve Danışmanlık'],
-  'Elif Demir': ['Nova İnsan Kaynakları Ltd.'],
-  'Ahmet Şahin': ['Artemis Teknoloji A.Ş.'],
-  'Zeynep Aras': ['Yapıtaş Proje ve Danışmanlık']
-};
 
 function loadCompanies() {
   try {
@@ -299,6 +359,135 @@ function loadAccess() {
 }
 function saveAccess(obj) {
   try { localStorage.setItem(ACCESS_STORAGE_KEY, JSON.stringify(obj)); } catch (err) {}
+}
+const COMPANY_FIREBASE_COLLECTION = 'settings';
+const COMPANY_FIREBASE_DOC = 'companies';
+
+let sharedCompaniesCache = null;
+
+async function loadSharedCompaniesFromFirebase() {
+  try {
+    if (
+      !window.firebaseDb ||
+      !window.firebaseDoc ||
+      !window.firebaseGetDoc
+    ) {
+      return false;
+    }
+
+    const companiesRef = window.firebaseDoc(
+      window.firebaseDb,
+      COMPANY_FIREBASE_COLLECTION,
+      COMPANY_FIREBASE_DOC
+    );
+
+    const snapshot = await window.firebaseGetDoc(companiesRef);
+
+    if (!snapshot.exists()) {
+      return false;
+    }
+
+    const data = snapshot.data();
+
+    if (!Array.isArray(data.companies)) {
+      return false;
+    }
+
+    const cleanList = Array.from(
+      new Set(
+        data.companies
+          .filter((c) => typeof c === 'string')
+          .map((c) => c.trim())
+          .filter(Boolean)
+      )
+    );
+
+    if (!cleanList.length) {
+      return false;
+    }
+
+    sharedCompaniesCache = [...cleanList];
+
+    try {
+      localStorage.setItem(
+        COMPANY_STORAGE_KEY,
+        JSON.stringify(cleanList)
+      );
+    } catch (err) {}
+
+    console.log(
+      'Firebase ortak firma listesi yüklendi:',
+      cleanList
+    );
+
+    
+    return true;
+  } catch (err) {
+    console.error(
+      'Firebase firma listesi okunamadı:',
+      err
+    );
+
+    return false;
+  }
+}
+
+async function saveSharedCompaniesToFirebase(list) {
+  try {
+    if (
+      !window.firebaseDb ||
+      !window.firebaseDoc ||
+      !window.firebaseSetDoc
+    ) {
+      return false;
+    }
+
+    const cleanList = Array.from(
+      new Set(
+        (Array.isArray(list) ? list : [])
+          .filter((c) => typeof c === 'string')
+          .map((c) => c.trim())
+          .filter(Boolean)
+      )
+    );
+
+    const companiesRef = window.firebaseDoc(
+      window.firebaseDb,
+      COMPANY_FIREBASE_COLLECTION,
+      COMPANY_FIREBASE_DOC
+    );
+
+    await window.firebaseSetDoc(
+      companiesRef,
+      {
+        companies: cleanList,
+        updatedAt: new Date().toISOString()
+      }
+    );
+
+    sharedCompaniesCache = [...cleanList];
+
+    try {
+      localStorage.setItem(
+        COMPANY_STORAGE_KEY,
+        JSON.stringify(cleanList)
+      );
+    } catch (err) {}
+
+    console.log(
+      'Firebase ortak firma listesi kaydedildi:',
+      cleanList
+    );
+
+    return true;
+  } catch (err) {
+    console.error(
+      'Firebase firma listesi kaydedilemedi:',
+      err
+    );
+
+    return false;
+  }
 }
 const COMPANY_META_KEY = 'isSurecCompanyMetaV1';
 function loadCompanyMeta() { try { const raw = localStorage.getItem(COMPANY_META_KEY); const p = raw ? JSON.parse(raw) : null; if (p && typeof p === 'object') return p; } catch (err) {} return {}; }
@@ -342,12 +531,23 @@ function getPermRecord(staff, company) {
     const p = loadPerms();
     const sn = normName(staff);
     const cn = normName(company);
+
     for (const k of Object.keys(p)) {
       const parts = k.split(' || ');
+
       if (parts.length < 2) continue;
-      if (normName(parts[0]) === sn && normName(parts[1]) === cn) return p[k];
+
+      if (
+        normName(parts[0]) === sn &&
+        normName(parts[1]) === cn
+      ) {
+        return p[k];
+      }
     }
-  } catch (err) {}
+  } catch (err) {
+    console.error('Yetki kontrolünde hata:', err);
+  }
+
   return undefined;
 }
 function getMyVisibleCompanies(staff) {
@@ -427,10 +627,29 @@ function renderMyDashboardStats() {
     </section>`;
   } catch (err) { return '<div class="permission-empty"><span class="permission-icon">!</span><div><strong>Panel yüklenemedi.</strong></div></div>'; }
 }
-function getCompanies() { return loadCompanies(); }
+function getCompanies() {
+  let result = [];
+
+  if (
+    typeof sharedCompaniesCache !== 'undefined' &&
+    Array.isArray(sharedCompaniesCache) &&
+    sharedCompaniesCache.length
+  ) {
+    result = [...sharedCompaniesCache];
+  } else {
+    result = loadCompanies();
+  }
+
+  console.log('GET COMPANIES TEST:', result);
+
+  return result;
+}
+
 function getAccess() { return loadAccess(); }
 function isAdminUser() { return currentUser && currentUser.title === 'Yönetici'; }
-let companies = loadCompanies();
+let companies = Array.isArray(sharedCompaniesCache)
+  ? [...sharedCompaniesCache]
+  : loadCompanies();
 let staffCompanyAccess = loadAccess();
 function refreshCompanyCache() { companies = loadCompanies(); staffCompanyAccess = loadAccess(); }
 const PLAN_STORAGE_KEY = 'isSurecPlanlarV1';
@@ -438,15 +657,438 @@ function loadPlans() { try { const raw = localStorage.getItem(PLAN_STORAGE_KEY);
 function savePlans(list) { try { localStorage.setItem(PLAN_STORAGE_KEY, JSON.stringify(list)); } catch (err) {} }
 function getMyPlans() { const me = currentUser ? currentUser.name : ''; return loadPlans().filter((p) => p.staff === me); }
 const TASK_TYPE_KEY = 'isSurecTaskTypesV1';
-const DEFAULT_TASKS = ['Sevk tanımlandı', 'Evrak yüklendi'];
-function loadTaskTypes() { try { const raw = localStorage.getItem(TASK_TYPE_KEY); const p = raw ? JSON.parse(raw) : null; if (Array.isArray(p) && p.length) return p.filter((t) => typeof t === 'string' && t.trim()); } catch (err) {} return [...DEFAULT_TASKS]; }
-function saveTaskTypes(list) { try { localStorage.setItem(TASK_TYPE_KEY, JSON.stringify(list)); } catch (err) {} }
-function getTaskTypes() { return loadTaskTypes(); }
+
+const DEFAULT_TASKS = [
+  'Sevk tanımlandı',
+  'Evrak yüklendi'
+];
+
+const TASK_TYPE_FIREBASE_COLLECTION = 'settings';
+const TASK_TYPE_FIREBASE_DOC = 'taskTypes';
+
+let sharedTaskTypesCache = null;
+
+function loadTaskTypes() {
+  if (
+    Array.isArray(sharedTaskTypesCache) &&
+    sharedTaskTypesCache.length
+  ) {
+    return [...sharedTaskTypesCache];
+  }
+
+  try {
+    const raw = localStorage.getItem(TASK_TYPE_KEY);
+    const p = raw ? JSON.parse(raw) : null;
+
+    if (Array.isArray(p) && p.length) {
+      return p.filter(
+        (t) =>
+          typeof t === 'string' &&
+          t.trim()
+      );
+    }
+  } catch (err) {}
+
+  return [...DEFAULT_TASKS];
+}
+
+function saveTaskTypes(list) {
+  try {
+    const cleanList = Array.from(
+      new Set(
+        (Array.isArray(list) ? list : [])
+          .filter((t) => typeof t === 'string')
+          .map((t) => t.trim())
+          .filter(Boolean)
+      )
+    );
+
+    localStorage.setItem(
+      TASK_TYPE_KEY,
+      JSON.stringify(cleanList)
+    );
+
+    sharedTaskTypesCache = [...cleanList];
+
+    return true;
+  } catch (err) {
+    console.error(
+      'İş türleri kaydedilemedi:',
+      err
+    );
+
+    return false;
+  }
+}
+
+function getTaskTypes() {
+  return loadTaskTypes();
+}
+
+async function loadSharedTaskTypesFromFirebase() {
+  try {
+    if (
+      !window.firebaseDb ||
+      !window.firebaseDoc ||
+      !window.firebaseGetDoc
+    ) {
+      return false;
+    }
+
+    const taskTypesRef = window.firebaseDoc(
+      window.firebaseDb,
+      TASK_TYPE_FIREBASE_COLLECTION,
+      TASK_TYPE_FIREBASE_DOC
+    );
+
+    const snapshot = await window.firebaseGetDoc(
+      taskTypesRef
+    );
+
+    if (!snapshot.exists()) {
+      return false;
+    }
+
+    const data = snapshot.data();
+
+    if (!Array.isArray(data.taskTypes)) {
+      return false;
+    }
+
+    const cleanList = Array.from(
+      new Set(
+        data.taskTypes
+          .filter((t) => typeof t === 'string')
+          .map((t) => t.trim())
+          .filter(Boolean)
+      )
+    );
+
+    if (!cleanList.length) {
+      return false;
+    }
+
+    sharedTaskTypesCache = [...cleanList];
+
+    try {
+      localStorage.setItem(
+        TASK_TYPE_KEY,
+        JSON.stringify(cleanList)
+      );
+    } catch (err) {}
+
+    console.log(
+      'Firebase ortak iş türleri yüklendi:',
+      cleanList
+    );
+
+    return true;
+  } catch (err) {
+    console.error(
+      'Firebase iş türleri okunamadı:',
+      err
+    );
+
+    return false;
+  }
+}
+
+async function saveSharedTaskTypesToFirebase(list) {
+  try {
+    if (
+      !window.firebaseDb ||
+      !window.firebaseDoc ||
+      !window.firebaseSetDoc
+    ) {
+      return false;
+    }
+
+    const cleanList = Array.from(
+      new Set(
+        (Array.isArray(list) ? list : [])
+          .filter((t) => typeof t === 'string')
+          .map((t) => t.trim())
+          .filter(Boolean)
+      )
+    );
+
+    const taskTypesRef = window.firebaseDoc(
+      window.firebaseDb,
+      TASK_TYPE_FIREBASE_COLLECTION,
+      TASK_TYPE_FIREBASE_DOC
+    );
+
+    await window.firebaseSetDoc(
+      taskTypesRef,
+      {
+        taskTypes: cleanList,
+        updatedAt: new Date().toISOString()
+      }
+    );
+
+    sharedTaskTypesCache = [...cleanList];
+
+    try {
+      localStorage.setItem(
+        TASK_TYPE_KEY,
+        JSON.stringify(cleanList)
+      );
+    } catch (err) {}
+
+    console.log(
+      'Firebase ortak iş türleri kaydedildi:',
+      cleanList
+    );
+
+    return true;
+  } catch (err) {
+    console.error(
+      'Firebase iş türleri kaydedilemedi:',
+      err
+    );
+
+    return false;
+  }
+}
+
+
 const TASK_PERM_KEY = 'isSurecTaskPermsV1';
-function loadTaskPerms() { try { const raw = localStorage.getItem(TASK_PERM_KEY); const p = raw ? JSON.parse(raw) : null; if (p && typeof p === 'object') return p; } catch (err) {} return {}; }
-function saveTaskPerms(o) { try { localStorage.setItem(TASK_PERM_KEY, JSON.stringify(o)); } catch (err) {} }
-function getVisibleTasks(staff) { const p = loadTaskPerms(); const v = p[staff]; if (!Array.isArray(v)) return getTaskTypes(); return getTaskTypes().filter((t) => v.includes(t)); }
-const dailyTasks = ['Sevk tanımlandı', 'Evrak yüklendi'];
+
+const TASK_PERM_FIREBASE_COLLECTION = 'settings';
+const TASK_PERM_FIREBASE_DOC = 'taskPermissions';
+
+let sharedTaskPermsCache = null;
+
+function loadTaskPerms() {
+  if (
+    sharedTaskPermsCache &&
+    typeof sharedTaskPermsCache === 'object'
+  ) {
+    return { ...sharedTaskPermsCache };
+  }
+
+  try {
+    const raw = localStorage.getItem(
+      TASK_PERM_KEY
+    );
+
+    const p = raw ? JSON.parse(raw) : null;
+
+    if (
+      p &&
+      typeof p === 'object'
+    ) {
+      return p;
+    }
+  } catch (err) {}
+
+  return {};
+}
+
+function saveTaskPerms(o) {
+  try {
+    const cleanPerms = {};
+
+    Object.entries(o || {}).forEach(
+      ([staff, tasks]) => {
+        if (
+          typeof staff !== 'string' ||
+          !staff.trim() ||
+          !Array.isArray(tasks)
+        ) {
+          return;
+        }
+
+        cleanPerms[staff] = Array.from(
+          new Set(
+            tasks
+              .filter(
+                (t) =>
+                  typeof t === 'string'
+              )
+              .map((t) => t.trim())
+              .filter(Boolean)
+          )
+        );
+      }
+    );
+
+    localStorage.setItem(
+      TASK_PERM_KEY,
+      JSON.stringify(cleanPerms)
+    );
+
+    sharedTaskPermsCache = {
+      ...cleanPerms
+    };
+
+    return true;
+  } catch (err) {
+    console.error(
+      'İş türü yetkileri kaydedilemedi:',
+      err
+    );
+
+    return false;
+  }
+}
+
+async function loadSharedTaskPermsFromFirebase() {
+  try {
+    if (
+      !window.firebaseDb ||
+      !window.firebaseDoc ||
+      !window.firebaseGetDoc
+    ) {
+      return false;
+    }
+
+    const taskPermRef = window.firebaseDoc(
+      window.firebaseDb,
+      TASK_PERM_FIREBASE_COLLECTION,
+      TASK_PERM_FIREBASE_DOC
+    );
+
+    const snapshot = await window.firebaseGetDoc(
+      taskPermRef
+    );
+
+    if (!snapshot.exists()) {
+      return false;
+    }
+
+    const data = snapshot.data();
+
+    if (
+      !data.taskPermissions ||
+      typeof data.taskPermissions !== 'object'
+    ) {
+      return false;
+    }
+
+    sharedTaskPermsCache = {
+      ...data.taskPermissions
+    };
+
+    try {
+      localStorage.setItem(
+        TASK_PERM_KEY,
+        JSON.stringify(
+          sharedTaskPermsCache
+        )
+      );
+    } catch (err) {}
+
+    console.log(
+      'Firebase ortak iş türü yetkileri yüklendi:',
+      sharedTaskPermsCache
+    );
+
+    return true;
+  } catch (err) {
+    console.error(
+      'Firebase iş türü yetkileri okunamadı:',
+      err
+    );
+
+    return false;
+  }
+}
+
+async function saveSharedTaskPermsToFirebase(o) {
+  try {
+    if (
+      !window.firebaseDb ||
+      !window.firebaseDoc ||
+      !window.firebaseSetDoc
+    ) {
+      return false;
+    }
+
+    const cleanPerms = {};
+
+    Object.entries(o || {}).forEach(
+      ([staff, tasks]) => {
+        if (
+          typeof staff !== 'string' ||
+          !staff.trim() ||
+          !Array.isArray(tasks)
+        ) {
+          return;
+        }
+
+        cleanPerms[staff] = Array.from(
+          new Set(
+            tasks
+              .filter(
+                (t) =>
+                  typeof t === 'string'
+              )
+              .map((t) => t.trim())
+              .filter(Boolean)
+          )
+        );
+      }
+    );
+
+    const taskPermRef = window.firebaseDoc(
+      window.firebaseDb,
+      TASK_PERM_FIREBASE_COLLECTION,
+      TASK_PERM_FIREBASE_DOC
+    );
+
+    await window.firebaseSetDoc(
+      taskPermRef,
+      {
+        taskPermissions: cleanPerms,
+        updatedAt: new Date().toISOString()
+      }
+    );
+
+    sharedTaskPermsCache = {
+      ...cleanPerms
+    };
+
+    try {
+      localStorage.setItem(
+        TASK_PERM_KEY,
+        JSON.stringify(cleanPerms)
+      );
+    } catch (err) {}
+
+    console.log(
+      'Firebase ortak iş türü yetkileri kaydedildi:',
+      cleanPerms
+    );
+
+    return true;
+  } catch (err) {
+    console.error(
+      'Firebase iş türü yetkileri kaydedilemedi:',
+      err
+    );
+
+    return false;
+  }
+}
+
+function getVisibleTasks(staff) {
+  const p = loadTaskPerms();
+  const v = p[staff];
+
+  if (!Array.isArray(v)) {
+    return getTaskTypes();
+  }
+
+  return getTaskTypes().filter(
+    (t) => v.includes(t)
+  );
+}
+
+const dailyTasks = [
+  'Sevk tanımlandı',
+  'Evrak yüklendi'
+];
 
 // Tarih bazlı iş takip kayıtları (personel + firma + tarih üçlüsüne özel).
 // localStorage'da saklanır: { "PERSONEL || FİRMA || YYYY-MM-DD": { tasks: [bool], updatedAt: iso } }
@@ -474,24 +1116,102 @@ function saveWorkStore(store) {
 }
 
 function getWorkKey(staff, company, date) {
-  return `${staff} || ${company} || ${date}`;
+  return `${company} || ${date}`;
 }
 
-function getWorkRecord(staff, company, date) {
-  const store = loadWorkStore();
-  const record = store[getWorkKey(staff, company, date)];
-  if (!record || !Array.isArray(record.tasks)) return null;
-  return record;
+async function getWorkRecord(staff, company, date) {
+  try {
+    if (
+      !window.firebaseDb ||
+      !window.firebaseDoc ||
+      !window.firebaseGetDoc
+    ) {
+      console.error('Firebase bağlantısı hazır değil.');
+      return null;
+    }
+
+    const recordKey = getWorkKey(staff, company, date);
+
+    const workRef = window.firebaseDoc(
+      window.firebaseDb,
+      window.firebaseWorkRecordCollection || 'workRecords',
+      recordKey
+    );
+
+    const snapshot = await window.firebaseGetDoc(workRef);
+
+    if (!snapshot.exists()) {
+      return null;
+    }
+
+    const record = snapshot.data();
+
+    if (!Array.isArray(record.tasks)) {
+      return null;
+    }
+
+    console.log(
+      'Firebase firma bazlı günlük iş kaydı yüklendi:',
+      recordKey,
+      record
+    );
+
+    return record;
+  } catch (err) {
+    console.error(
+      'Firebase günlük iş kaydı okunamadı:',
+      err
+    );
+
+    return null;
+  }
 }
 
-function saveWorkRecord(staff, company, date, tasks, byName) {
-  const store = loadWorkStore();
-  store[getWorkKey(staff, company, date)] = {
-    tasks: tasks.slice(0, getTaskTypes().length),
-    tasksByName: byName || {},
-    updatedAt: new Date().toISOString()
-  };
-  saveWorkStore(store);
+async function saveWorkRecord(staff, company, date, tasks, byName) {
+  try {
+    if (
+      !window.firebaseDb ||
+      !window.firebaseDoc ||
+      !window.firebaseSetDoc
+    ) {
+      console.error('Firebase bağlantısı hazır değil.');
+      return false;
+    }
+
+    const recordKey = getWorkKey(staff, company, date);
+
+    const record = {
+      company: company,
+      date: date,
+      tasks: tasks.slice(0, getTaskTypes().length),
+      tasksByName: byName || {},
+      updatedAt: new Date().toISOString(),
+      updatedBy: staff
+    };
+
+    const workRef = window.firebaseDoc(
+      window.firebaseDb,
+      window.firebaseWorkRecordCollection || 'workRecords',
+      recordKey
+    );
+
+    await window.firebaseSetDoc(workRef, record);
+
+    console.log(
+      'Firebase firma bazlı günlük iş kaydı kaydedildi:',
+      recordKey,
+      record
+    );
+
+    return true;
+  } catch (err) {
+    console.error(
+      'Firebase günlük iş kaydı kaydedilemedi:',
+      err
+    );
+
+    return false;
+  }
 }
 
 function formatUpdatedAt(iso) {
@@ -727,10 +1447,167 @@ function getDateRange(startValue, endValue) {
 }
 
 const PERM_KEY = 'isSurecPermsV1';
-function loadPerms() { try { const raw = localStorage.getItem(PERM_KEY); const p = raw ? JSON.parse(raw) : null; if (p && typeof p === 'object') return p; } catch (err) {} return {}; }
+function loadPerms() {
+  if (
+    typeof sharedPermsCache !== 'undefined' &&
+    sharedPermsCache &&
+    typeof sharedPermsCache === 'object'
+  ) {
+    return { ...sharedPermsCache };
+  }
+
+  try {
+    const raw = localStorage.getItem(PERM_KEY);
+    const p = raw ? JSON.parse(raw) : null;
+
+    if (p && typeof p === 'object') {
+      return p;
+    }
+  } catch (err) {}
+
+  return {};
+}
 function savePerms(o) { try { localStorage.setItem(PERM_KEY, JSON.stringify(o)); } catch (err) {} }
+const PERM_FIREBASE_COLLECTION = 'settings';
+const PERM_FIREBASE_DOC = 'permissions';
+
+let sharedPermsCache = null;
+
+async function loadSharedPermsFromFirebase() {
+  try {
+    if (
+      !window.firebaseDb ||
+      !window.firebaseDoc ||
+      !window.firebaseGetDoc
+    ) {
+      return false;
+    }
+
+    const permsRef = window.firebaseDoc(
+      window.firebaseDb,
+      PERM_FIREBASE_COLLECTION,
+      PERM_FIREBASE_DOC
+    );
+
+    const snapshot = await window.firebaseGetDoc(permsRef);
+
+    if (!snapshot.exists()) {
+      return false;
+    }
+
+    const data = snapshot.data();
+
+    if (!data.permissions || typeof data.permissions !== 'object') {
+      return false;
+    }
+
+    sharedPermsCache = { ...data.permissions };
+
+    try {
+      localStorage.setItem(
+        PERM_KEY,
+        JSON.stringify(sharedPermsCache)
+      );
+    } catch (err) {}
+
+    console.log(
+      'Firebase ortak yetkiler yüklendi:',
+      sharedPermsCache
+    );
+
+    return true;
+  } catch (err) {
+    console.error(
+      'Firebase yetkileri okunamadı:',
+      err
+    );
+
+    return false;
+  }
+}
+
+async function saveSharedPermsToFirebase(obj) {
+  try {
+    if (
+      !window.firebaseDb ||
+      !window.firebaseDoc ||
+      !window.firebaseSetDoc
+    ) {
+      return false;
+    }
+
+    const cleanPerms = {};
+
+    Object.entries(obj || {}).forEach(([key, value]) => {
+      if (
+        typeof key !== 'string' ||
+        !key.trim()
+      ) {
+        return;
+      }
+
+      if (
+        value !== 'islem' &&
+        value !== 'gor' &&
+        value !== 'yok'
+      ) {
+        return;
+      }
+
+      cleanPerms[key] = value;
+    });
+
+    const permsRef = window.firebaseDoc(
+      window.firebaseDb,
+      PERM_FIREBASE_COLLECTION,
+      PERM_FIREBASE_DOC
+    );
+
+    await window.firebaseSetDoc(
+      permsRef,
+      {
+        permissions: cleanPerms,
+        updatedAt: new Date().toISOString()
+      }
+    );
+
+    sharedPermsCache = { ...cleanPerms };
+
+    try {
+      localStorage.setItem(
+        PERM_KEY,
+        JSON.stringify(cleanPerms)
+      );
+    } catch (err) {}
+
+    console.log(
+      'Firebase ortak yetkiler kaydedildi:',
+      cleanPerms
+    );
+
+    return true;
+  } catch (err) {
+    console.error(
+      'Firebase yetkileri kaydedilemedi:',
+      err
+    );
+
+    return false;
+  }
+}
 function getPerm(staff, company) { const p = loadPerms(); const v = p[`${staff} || ${company}`]; return v === 'islem' ? 'islem' : v === 'gor' ? 'gor' : 'yok'; }
-function canView(staff, company) { const v = getPermRecord(staff, company); return v === 'islem' || v === 'gor'; }
+function canView(staff, company) {
+  const v = getPermRecord(staff, company);
+
+  console.log(
+    'CAN VIEW TEST:',
+    'personel =', staff,
+    '| firma =', company,
+    '| yetki =', v
+  );
+
+  return v === 'islem' || v === 'gor';
+}
 function canEdit(staff, company) { return getPermRecord(staff, company) === 'islem'; }
 
 function renderAccessMatrixContent() {
@@ -765,11 +1642,11 @@ function renderAccessMatrixContent() {
       <div class="task-content">${listRows}</div>
     </section>
     <section class="panel"><div class="panel-header"><div><h2>İş türleri</h2><p class="panel-subtitle">Yeni iş türü ekleyin (örn: Sevk tanımlandı). Aşağıdan personele hangi işleri göreceğini seçin.</p></div></div>
-      <form id="tasktype-form" class="work-form" style="grid-template-columns:1fr auto">
+       <form id="tasktype-form" class="work-form" style="grid-template-columns:1fr auto">
         <label class="field">İş türü<input type="text" name="taskName" placeholder="Örn: Fatura kesildi" required /></label>
         <button class="primary-btn work-submit" type="submit">Ekle</button>
       </form>
-      <div class="task-content">${getTaskTypes().map((t) => `<div class="task-row" style="cursor:default"><span class="task-box" style="border-radius:50%">✓</span><span class="task-name"><strong>${t}</strong></span></div>`).join('')}</div>
+      <div class="task-content">${getTaskTypes().map((t) => `<div class="task-row" style="cursor:default"><span class="task-box" style="border-radius:50%">✓</span><span class="task-name"><strong>${t}</strong></span><button type="button" class="primary-btn work-submit" data-del-task="${t}" style="margin-left:auto;min-width:80px;background:#b5443c;">Sil</button></div>`).join('')}</div>
     </section>
     <section class="panel"><div class="panel-header"><div><h2>Personel iş türü yetkisi</h2><p class="panel-subtitle">Personel seçin, göreceği işleri işaretleyip Kaydet'e basın.</p></div></div>
       <form id="taskperm-form" class="work-form" style="grid-template-columns:1fr auto">
@@ -815,7 +1692,7 @@ function setupCompanyManagement() {
   } catch (err) {}
   const form = document.querySelector('#company-form');
   if (!form) return;
-  form.addEventListener('submit', (e) => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const fd = new FormData(form);
     const v = (fd.get('companyName') || '').toString().trim();
@@ -828,8 +1705,20 @@ function setupCompanyManagement() {
       return;
     }
     list.push(v);
-    saveCompanies(list);
-    const mm = loadCompanyMeta();
+
+saveCompanies(list);
+
+const firebaseCompanySaved = await saveSharedCompaniesToFirebase(list);
+
+if (!firebaseCompanySaved) {
+  if (st) {
+    st.textContent =
+      "Firma bilgisayardaki listede oluşturuldu ancak Firebase ortak listesine kaydedilemedi.";
+  }
+  return;
+}
+
+const mm = loadCompanyMeta();
     mm[v] = { createdAt };
     saveCompanyMeta(mm);
     refreshCompanyCache();
@@ -870,76 +1759,354 @@ function setupCompanyManagement() {
 
 function setupAccessMatrix() {
   if (!isAdminUser()) return;
-  const form = document.querySelector('#perm-form');
-  if (form) form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const fd = new FormData(form);
-    const o = loadPerms();
-    // Aynı personel+firma için büyük/küçük harf veya boşluk farkıyla çift anahtar
-    // oluşmasın diye önce eşleşen eski anahtarı temizle.
-    try {
-      const sn = normName(fd.get('staff'));
-      const cn = normName(fd.get('company'));
-      Object.keys(o).forEach((k) => {
-        const parts = k.split(' || ');
-        if (parts.length >= 2 && normName(parts[0]) === sn && normName(parts[1]) === cn) delete o[k];
-      });
-    } catch (err) {}
-    o[`${fd.get('staff')} || ${fd.get('company')}`] = fd.get('perm');
-    savePerms(o);
-    const st = document.querySelector('#perm-save-status');
-    if (st) { st.className = 'save-status is-ok'; st.textContent = `✓ Kaydedildi: ${fd.get('staff')} → ${fd.get('company')}`; }
-    setTimeout(() => renderDashboard('Yetkilendirme'), 600);
-  });
-  document.querySelectorAll('[data-del-perm]').forEach((b) => b.addEventListener('click', () => {
-    const o = loadPerms();
-    delete o[b.dataset.delPerm];
-    savePerms(o);
-    renderDashboard('Yetkilendirme');
-  }));
-  const ff = document.querySelector('#perm-focus-form');
-  if (ff) ff.addEventListener('submit', (e) => {
-    e.preventDefault();
-    window._permFocus = document.querySelector('#perm-focus-staff').value;
-    renderDashboard('Yetkilendirme');
-  });
-  const tf = document.querySelector('#tasktype-form');
-  if (tf) tf.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const v = (new FormData(tf).get('taskName') || '').toString().trim();
-    if (!v) return;
-    const list = getTaskTypes();
-    if (list.some((t) => t.toLocaleLowerCase('tr') === v.toLocaleLowerCase('tr'))) return;
-    list.push(v);
-    saveTaskTypes(list);
-    const tp = loadTaskPerms();
-    Object.keys(tp).forEach((s) => { if (Array.isArray(tp[s]) && !tp[s].includes(v)) tp[s].push(v); });
-    saveTaskPerms(tp);
-    renderDashboard('Yetkilendirme');
-  });
-  const renderTaskPermList = () => {
-    const box = document.querySelector('#taskperm-list');
-    const sel = document.querySelector('#taskperm-staff');
-    if (!box || !sel) return;
-    const cur = loadTaskPerms()[sel.value] || getTaskTypes();
-    box.innerHTML = getTaskTypes().map((t) => `<label class="task-row"><input type="checkbox" class="task-check taskperm-check" value="${t}" ${cur.includes(t) ? 'checked' : ''} /><span class="task-box"></span><span class="task-name"><strong>${t}</strong></span></label>`).join('');
-  };
-  renderTaskPermList();
-  const tps = document.querySelector('#taskperm-staff');
-  if (tps) tps.addEventListener('change', renderTaskPermList);
-  const tpf = document.querySelector('#taskperm-form');
-  if (tpf) tpf.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const staff = document.querySelector('#taskperm-staff').value;
-    const checked = Array.from(document.querySelectorAll('.taskperm-check:checked')).map((c) => c.value);
-    const o = loadTaskPerms();
-    o[staff] = checked;
-    saveTaskPerms(o);
-    const st = document.querySelector('#perm-save-status');
-    if (st) { st.className = 'save-status is-ok'; st.textContent = `✓ Kaydedildi: ${staff} ${checked.length} iş türü görür.`; }
-  });
-}
 
+  const form = document.querySelector('#perm-form');
+
+  if (form) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const fd = new FormData(form);
+      const o = loadPerms();
+
+      try {
+        const sn = normName(fd.get('staff'));
+        const cn = normName(fd.get('company'));
+
+        Object.keys(o).forEach((k) => {
+          const parts = k.split(' || ');
+
+          if (
+            parts.length >= 2 &&
+            normName(parts[0]) === sn &&
+            normName(parts[1]) === cn
+          ) {
+            delete o[k];
+          }
+        });
+      } catch (err) {}
+
+      o[`${fd.get('staff')} || ${fd.get('company')}`] =
+        fd.get('perm');
+
+      savePerms(o);
+
+      const firebasePermSaved =
+        await saveSharedPermsToFirebase(o);
+
+      const st =
+        document.querySelector('#perm-save-status');
+
+      if (!firebasePermSaved) {
+        if (st) {
+          st.className = 'save-status';
+          st.textContent =
+            'Yetki bilgisayardaki listede kaydedildi ancak Firebase ortak yetki listesine kaydedilemedi.';
+        }
+
+        return;
+      }
+
+      if (st) {
+        st.className = 'save-status is-ok';
+        st.textContent =
+          `✓ Kaydedildi: ${fd.get('staff')} → ${fd.get('company')}`;
+      }
+
+      setTimeout(
+        () => renderDashboard('Yetkilendirme'),
+        600
+      );
+    });
+  }
+
+  document
+    .querySelectorAll('[data-del-perm]')
+    .forEach((b) =>
+      b.addEventListener('click', () => {
+        const o = loadPerms();
+
+        delete o[b.dataset.delPerm];
+
+        savePerms(o);
+
+        renderDashboard('Yetkilendirme');
+      })
+    );
+
+  document
+    .querySelectorAll('[data-del-task]')
+    .forEach((b) =>
+      b.addEventListener('click', async () => {
+        const taskName = b.dataset.delTask;
+
+        if (!taskName) return;
+
+        const list = getTaskTypes().filter(
+          (t) => t !== taskName
+        );
+
+        saveTaskTypes(list);
+
+        const firebaseTaskSaved =
+          await saveSharedTaskTypesToFirebase(list);
+
+        if (!firebaseTaskSaved) {
+          const st =
+            document.querySelector(
+              '#perm-save-status'
+            );
+
+          if (st) {
+            st.className = 'save-status';
+            st.textContent =
+              'İş türü bilgisayardaki listede silindi ancak Firebase ortak iş türleri listesinden silinemedi.';
+          }
+
+          return;
+        }
+
+        const taskPerms = loadTaskPerms();
+
+        Object.keys(taskPerms).forEach((staff) => {
+          if (Array.isArray(taskPerms[staff])) {
+            taskPerms[staff] =
+              taskPerms[staff].filter(
+                (t) => t !== taskName
+              );
+          }
+        });
+
+        saveTaskPerms(taskPerms);
+
+        const firebaseTaskPermSaved =
+          await saveSharedTaskPermsToFirebase(
+            taskPerms
+          );
+
+        if (!firebaseTaskPermSaved) {
+          const st =
+            document.querySelector(
+              '#perm-save-status'
+            );
+
+          if (st) {
+            st.className = 'save-status';
+            st.textContent =
+              'İş türü Firebase listesinden silindi ancak personel iş türü yetkilerinden temizlenemedi.';
+          }
+
+          return;
+        }
+
+        renderDashboard('Yetkilendirme');
+      })
+    );
+
+  const ff =
+    document.querySelector('#perm-focus-form');
+
+  if (ff) {
+    ff.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      window._permFocus =
+        document.querySelector(
+          '#perm-focus-staff'
+        ).value;
+
+      renderDashboard('Yetkilendirme');
+    });
+  }
+
+  const tf =
+    document.querySelector('#tasktype-form');
+
+  if (tf) {
+    tf.addEventListener(
+      'submit',
+      async (e) => {
+        e.preventDefault();
+
+        const v = (
+          new FormData(tf).get('taskName') || ''
+        )
+          .toString()
+          .trim();
+
+        if (!v) return;
+
+        const list = getTaskTypes();
+
+        if (
+          list.some(
+            (t) =>
+              t.toLocaleLowerCase('tr') ===
+              v.toLocaleLowerCase('tr')
+          )
+        ) {
+          return;
+        }
+
+        list.push(v);
+
+        saveTaskTypes(list);
+
+        const firebaseTaskSaved =
+          await saveSharedTaskTypesToFirebase(
+            list
+          );
+
+        if (!firebaseTaskSaved) {
+          const st =
+            document.querySelector(
+              '#perm-save-status'
+            );
+
+          if (st) {
+            st.className = 'save-status';
+            st.textContent =
+              'İş türü bilgisayardaki listede kaydedildi ancak Firebase ortak iş türleri listesine kaydedilemedi.';
+          }
+
+          return;
+        }
+
+        const tp = loadTaskPerms();
+
+        Object.keys(tp).forEach((s) => {
+          if (
+            Array.isArray(tp[s]) &&
+            !tp[s].includes(v)
+          ) {
+            tp[s].push(v);
+          }
+        });
+
+        saveTaskPerms(tp);
+
+        const firebaseTaskPermSaved =
+          await saveSharedTaskPermsToFirebase(
+            tp
+          );
+
+        const st =
+          document.querySelector(
+            '#perm-save-status'
+          );
+
+        if (!firebaseTaskPermSaved) {
+          if (st) {
+            st.className = 'save-status';
+            st.textContent =
+              'İş türü Firebase’e kaydedildi ancak personel iş türü yetkileri Firebase’e kaydedilemedi.';
+          }
+
+          return;
+        }
+
+        if (st) {
+          st.className = 'save-status is-ok';
+          st.textContent =
+            `✓ İş türü eklendi: ${v}`;
+        }
+
+        setTimeout(
+          () => renderDashboard('Yetkilendirme'),
+          600
+        );
+      }
+    );
+  }
+
+  const renderTaskPermList = () => {
+    const box =
+      document.querySelector('#taskperm-list');
+
+    const sel =
+      document.querySelector('#taskperm-staff');
+
+    if (!box || !sel) return;
+
+    const cur =
+      loadTaskPerms()[sel.value] ||
+      getTaskTypes();
+
+    box.innerHTML = getTaskTypes()
+      .map(
+        (t) =>
+          `<label class="task-row"><input type="checkbox" class="task-check taskperm-check" value="${t}" ${cur.includes(t) ? 'checked' : ''} /><span class="task-box"></span><span class="task-name"><strong>${t}</strong></span></label>`
+      )
+      .join('');
+  };
+
+  renderTaskPermList();
+
+  const tps =
+    document.querySelector('#taskperm-staff');
+
+  if (tps) {
+    tps.addEventListener(
+      'change',
+      renderTaskPermList
+    );
+  }
+
+  const tpf =
+    document.querySelector('#taskperm-form');
+
+  if (tpf) {
+    tpf.addEventListener(
+      'submit',
+      async (e) => {
+        e.preventDefault();
+
+        const staff =
+          document.querySelector(
+            '#taskperm-staff'
+          ).value;
+
+        const checked = Array.from(
+          document.querySelectorAll(
+            '.taskperm-check:checked'
+          )
+        ).map((c) => c.value);
+
+        const o = loadTaskPerms();
+
+        o[staff] = checked;
+
+        saveTaskPerms(o);
+
+        const firebaseTaskPermSaved =
+          await saveSharedTaskPermsToFirebase(
+            o
+          );
+
+        const st =
+          document.querySelector(
+            '#perm-save-status'
+          );
+
+        if (!firebaseTaskPermSaved) {
+          if (st) {
+            st.className = 'save-status';
+            st.textContent =
+              'İş türü yetkisi bilgisayardaki listede kaydedildi ancak Firebase ortak iş türü yetkilerine kaydedilemedi.';
+          }
+
+          return;
+        }
+
+        if (st) {
+          st.className = 'save-status is-ok';
+          st.textContent =
+            `✓ Kaydedildi: ${staff} ${checked.length} iş türü görür.`;
+        }
+      }
+    );
+  }
+}
 function renderStaffContent() {
   const list = getStaff();
   const admin = isAdminUser();
@@ -1130,11 +2297,23 @@ await window.firebaseSetDoc(
 users.push(newUser);
 
 const meta = loadCommunity(STAFF_META_KEY);
+
 meta[name] = { title };
 
 if (!saveCommunity(STAFF_META_KEY, meta)) return;
 
+// Personel ünvanını ortak Firebase kaynağına kaydet
+const firebaseMetaSaved = await saveSharedStaffMetaToFirebase(meta);
+
+if (!firebaseMetaSaved) {
+  document.getElementById('staff-save-status').textContent =
+    "Personel oluşturuldu ancak ünvan bilgisi Firebase'e kaydedilemedi.";
+  document.getElementById('staff-save-status').className = 'save-status';
+  return;
+}
+
 list.push(name);
+
 saveStaff(list);
 
 // Personel listesini ortak Firebase kaynağına kaydet
@@ -1142,7 +2321,7 @@ const firebaseStaffSaved = await saveSharedStaffToFirebase(list);
 
 if (!firebaseStaffSaved) {
   document.getElementById('staff-save-status').textContent =
-    'Personel hesabı oluşturuldu ancak ortak personel listesi Firebase''e kaydedilemedi.';
+    "Personel hesabı oluşturuldu ancak ortak personel listesi Firebase'e kaydedilemedi.";
   document.getElementById('staff-save-status').className = 'save-status';
   return;
 }
@@ -1172,7 +2351,7 @@ renderDashboard('Personel Yönetimi');
     renderDashboard('Personel Yönetimi');
   }));
   document.querySelectorAll('[data-delete-staff]').forEach((b) =>
-  b.addEventListener('click', () => {
+  b.addEventListener('click', async () => {
     if (!isAdminUser()) return;
 
     const name = b.dataset.deleteStaff;
@@ -1184,10 +2363,18 @@ renderDashboard('Personel Yönetimi');
     if (!confirmed) return;
 
     // Personel listesinden sil
-    const list = getStaff().filter((s) => s !== name);
-    saveStaff(list);
+const list = getStaff().filter((s) => s !== name);
+saveStaff(list);
 
-    // Personel bilgilerini sil
+// Personel listesini ortak Firebase kaynağına da kaydet
+const firebaseStaffSaved = await saveSharedStaffToFirebase(list);
+
+if (!firebaseStaffSaved) {
+  alert("Personel yerel listeden silindi ancak ortak Firebase listesi güncellenemedi.");
+  return;
+}
+
+// Personel bilgilerini sil
     const meta = loadCommunity(STAFF_META_KEY);
     delete meta[name];
     saveCommunity(STAFF_META_KEY, meta);
@@ -1219,7 +2406,7 @@ renderDashboard('Personel Yönetimi');
   })
 );
   const ef = document.querySelector('#staff-edit-form');
-  if (ef) ef.addEventListener('submit', (e) => {
+  if (ef) ef.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!isAdminUser()) return;
     const data = new FormData(ef);
@@ -1229,7 +2416,15 @@ renderDashboard('Personel Yönetimi');
     if (!old || !getStaff().includes(old) || !validStaffDetails(nv, title)) return;
     if (getStaff().some((s) => s !== old && normName(s) === normName(nv))) { window.alert('Bu adla başka bir personel var.'); return; }
     if (!updateStaffIdentity(old, nv, title)) return;
-    saveStaff(getStaff().map((s) => (s === old ? nv : s)));
+    const updatedStaffList = getStaff().map((s) => (s === old ? nv : s));
+saveStaff(updatedStaffList);
+
+const firebaseStaffSaved = await saveSharedStaffToFirebase(updatedStaffList);
+
+if (!firebaseStaffSaved) {
+  alert("Personel adı bilgisayardaki listede değiştirildi ancak Firebase ortak listesi güncellenemedi.");
+  return;
+}
     const acc = getAccess();
     if (old !== nv && acc[old]) { acc[nv] = acc[old]; delete acc[old]; saveAccess(acc); }
     const um = loadUserNames();
@@ -1705,8 +2900,7 @@ function setSaveStatus(statusEl, mode, message) {
     ? '<span class="unsaved-dot"></span>' + message
     : message;
 }
-
-function renderWorkTasks(staff, company, dateFrom, dateTo) {
+async function renderWorkTasks(staff, company, dateFrom, dateTo) {
   const taskContent = document.querySelector('#task-content');
   const taskTitle = document.querySelector('#task-title');
   const taskSummary = document.querySelector('#task-summary');
@@ -1717,102 +2911,302 @@ function renderWorkTasks(staff, company, dateFrom, dateTo) {
 
   const allowedCompanies = getMyVisibleCompanies(staff);
   const dates = getDateRange(dateFrom, dateTo);
+
   if (!dates.length) {
-    if (taskTitle) taskTitle.textContent = `${staff} · Günlük işlemler`;
-    if (taskSummary) taskSummary.textContent = `${company} · Seçili tarih aralığı yok`;
-    if (taskCounter) taskCounter.textContent = '0 / 0 tamamlandı';
-    if (taskContent) taskContent.innerHTML = '<div class="permission-empty"><span class="permission-icon">!</span><div><strong>Tarih aralığı seçilmemiş veya geçersiz.</strong><p>Başlangıç ve bitiş tarihlerini doğru şekilde seçin.</p></div></div>';
-    if (saveRow) saveRow.style.display = 'none';
-    if (saveStatus) setSaveStatus(saveStatus, '', '');
+    if (taskTitle) {
+      taskTitle.textContent = `${staff} · Günlük işlemler`;
+    }
+
+    if (taskSummary) {
+      taskSummary.textContent =
+        `${company} · Seçili tarih aralığı yok`;
+    }
+
+    if (taskCounter) {
+      taskCounter.textContent = '0 / 0 tamamlandı';
+    }
+
+    if (taskContent) {
+      taskContent.innerHTML =
+        '<div class="permission-empty"><span class="permission-icon">!</span><div><strong>Tarih aralığı seçilmemiş veya geçersiz.</strong><p>Başlangıç ve bitiş tarihlerini doğru şekilde seçin.</p></div></div>';
+    }
+
+    if (saveRow) {
+      saveRow.style.display = 'none';
+    }
+
+    if (saveStatus) {
+      setSaveStatus(saveStatus, '', '');
+    }
+
     return;
   }
 
   if (!canView(staff, company)) {
-    if (taskCounter) taskCounter.textContent = 'Yetki yok';
-    if (saveRow) saveRow.style.display = 'none';
-    if (taskContent) taskContent.innerHTML = '<div class="permission-empty"><span class="permission-icon">!</span><div><strong>Bu firma için görüntüleme yetkiniz bulunmuyor.</strong><p>Yöneticinizden firmaya erişim yetkisi istemeniz gerekir.</p></div></div>';
-    if (saveStatus) setSaveStatus(saveStatus, '', '');
+    if (taskCounter) {
+      taskCounter.textContent = 'Yetki yok';
+    }
+
+    if (saveRow) {
+      saveRow.style.display = 'none';
+    }
+
+    if (taskContent) {
+      taskContent.innerHTML =
+        '<div class="permission-empty"><span class="permission-icon">!</span><div><strong>Bu firma için görüntüleme yetkiniz bulunmuyor.</strong><p>Yöneticinizden firmaya erişim yetkisi istemeniz gerekir.</p></div></div>';
+    }
+
+    if (saveStatus) {
+      setSaveStatus(saveStatus, '', '');
+    }
+
     return;
   }
 
-  if (saveRow) saveRow.style.display = '';
-  const tasks = getVisibleTasks(staff);
-  const formattedRange = (dateFrom && dateTo) ? `<span class="date-from">${formatDateTr(dateFrom)}</span> — <span class="date-to">${formatDateTr(dateTo)}</span>` : formatDateTr(dateFrom || dateTo);
+  if (saveRow) {
+    saveRow.style.display = '';
+  }
 
-  // Her tarih için ayrı bölüm oluştur
+  const tasks = getVisibleTasks(staff);
+
+  const formattedRange =
+    dateFrom && dateTo
+      ? `<span class="date-from">${formatDateTr(dateFrom)}</span> — <span class="date-to">${formatDateTr(dateTo)}</span>`
+      : formatDateTr(dateFrom || dateTo);
+
   let totalTasks = 0;
   let totalCompleted = 0;
   let lastRecordDate = '';
 
-  const dateBlocks = dates.map((date) => {
-    const record = getWorkRecord(staff, company, date);
-    const saved = record ? tasks.map((t) => !!(record.tasksByName && record.tasksByName[t])) : tasks.map(() => false);
-    const completedSaved = saved.filter(Boolean).length;
-    totalTasks += tasks.length;
-    totalCompleted += completedSaved;
-    lastRecordDate = record && record.updatedAt ? record.updatedAt : lastRecordDate;
+  /*
+   * Firebase'den seçilen bütün tarihlerdeki kayıtları
+   * önce bekliyoruz.
+   */
+  const records = await Promise.all(
+    dates.map((date) =>
+      getWorkRecord(staff, company, date)
+    )
+  );
 
-    const dateFormatted = formatDateTr(date);
-    return `
-      <div class="task-date-block">
-        <div class="task-date-head"><span class="task-date-label">${dateFormatted}</span><span class="task-date-summary">${completedSaved} / ${tasks.length} tamamlandı</span></div>
-        <div class="task-date-content">
-          ${tasks.map((task, idx) => `<label class="task-row"><input type="checkbox" class="task-check" data-date="${date}" data-task="${task}" ${saved[idx] ? 'checked' : ''} /><span class="task-box"></span><span class="task-name"><strong>${task}</strong><small>${dateFormatted} · ${company}</small></span></label>`).join('')}
+  const dateBlocks = dates
+    .map((date, dateIndex) => {
+      const record = records[dateIndex];
+
+      const saved = record
+        ? tasks.map(
+            (t) =>
+              !!(
+                record.tasksByName &&
+                record.tasksByName[t]
+              )
+          )
+        : tasks.map(() => false);
+
+      const completedSaved =
+        saved.filter(Boolean).length;
+
+      totalTasks += tasks.length;
+      totalCompleted += completedSaved;
+
+      if (
+        record &&
+        record.updatedAt &&
+        (!lastRecordDate ||
+          record.updatedAt > lastRecordDate)
+      ) {
+        lastRecordDate = record.updatedAt;
+      }
+
+      const dateFormatted = formatDateTr(date);
+
+      return `
+        <div class="task-date-block">
+          <div class="task-date-head">
+            <span class="task-date-label">${dateFormatted}</span>
+            <span class="task-date-summary">${completedSaved} / ${tasks.length} tamamlandı</span>
+          </div>
+
+          <div class="task-date-content">
+            ${tasks
+              .map(
+                (task, idx) =>
+                  `<label class="task-row">
+                    <input
+                      type="checkbox"
+                      class="task-check"
+                      data-date="${date}"
+                      data-task="${task}"
+                      ${saved[idx] ? 'checked' : ''}
+                    />
+                    <span class="task-box"></span>
+                    <span class="task-name">
+                      <strong>${task}</strong>
+                      <small>${dateFormatted} · ${company}</small>
+                    </span>
+                  </label>`
+              )
+              .join('')}
+          </div>
         </div>
-      </div>
-    `;
-  }).join('');
+      `;
+    })
+    .join('');
 
-  if (taskTitle) taskTitle.textContent = `${staff} · Günlük işlemler`;
-  if (taskSummary) taskSummary.innerHTML = `${company} · ${formattedRange}`;
-  if (taskCounter) taskCounter.textContent = `${totalCompleted} / ${totalTasks} tamamlandı`;
-  if (taskContent) taskContent.innerHTML = dateBlocks;
+  if (taskTitle) {
+    taskTitle.textContent =
+      `${staff} · Günlük işlemler`;
+  }
+
+  if (taskSummary) {
+    taskSummary.innerHTML =
+      `${company} · ${formattedRange}`;
+  }
+
+  if (taskCounter) {
+    taskCounter.textContent =
+      `${totalCompleted} / ${totalTasks} tamamlandı`;
+  }
+
+  if (taskContent) {
+    taskContent.innerHTML = dateBlocks;
+  }
 
   if (saveStatus) {
     if (lastRecordDate) {
-      setSaveStatus(saveStatus, 'ok', `✓ ${dates.length} gün için kayıtlı veri yüklendi. Son kayıt: ${formatUpdatedAt(lastRecordDate)}`);
+      setSaveStatus(
+        saveStatus,
+        'ok',
+        `✓ ${dates.length} gün için kayıtlı veri yüklendi. Son kayıt: ${formatUpdatedAt(lastRecordDate)}`
+      );
     } else {
-      setSaveStatus(saveStatus, '', `${dates.length} gün için henüz kayıt yok — işaretleyip Kaydet'e basın.`);
+      setSaveStatus(
+        saveStatus,
+        '',
+        `${dates.length} gün için henüz kayıt yok — işaretleyip Kaydet'e basın.`
+      );
     }
   }
 
   if (taskContent) {
-    taskContent.querySelectorAll('.task-check').forEach((checkbox) => checkbox.addEventListener('change', () => {
-      const completed = taskContent.querySelectorAll('.task-check:checked').length;
-      const total = taskContent.querySelectorAll('.task-check').length;
-      if (taskCounter) taskCounter.textContent = `${completed} / ${total} tamamlandı`;
-      if (saveStatus) {
-        const dirty = Array.from(taskContent.querySelectorAll('.task-check')).some((box) => box.checked);
-        setSaveStatus(saveStatus, dirty ? 'dirty' : 'ok', dirty ? 'Kaydedilmemiş değişiklik var — Kaydet\'e basın.' : `${dates.length} gün için kayıt yüklendi.`);
-      }
-    }));
+    taskContent
+      .querySelectorAll('.task-check')
+      .forEach((checkbox) => {
+        checkbox.addEventListener('change', () => {
+          const completed =
+            taskContent.querySelectorAll(
+              '.task-check:checked'
+            ).length;
+
+          const total =
+            taskContent.querySelectorAll(
+              '.task-check'
+            ).length;
+
+          if (taskCounter) {
+            taskCounter.textContent =
+              `${completed} / ${total} tamamlandı`;
+          }
+
+          if (saveStatus) {
+            setSaveStatus(
+              saveStatus,
+              'dirty',
+              'Kaydedilmemiş değişiklik var — Kaydet\'e basın.'
+            );
+          }
+        });
+      });
   }
 
   if (saveBtn) {
-    saveBtn.onclick = () => {
+    saveBtn.onclick = async () => {
       if (!canEdit(staff, company)) {
-        setSaveStatus(saveStatus, 'dirty', 'İşlem yetkiniz yok — sadece görüntüleyebilirsiniz.');
+        setSaveStatus(
+          saveStatus,
+          'dirty',
+          'İşlem yetkiniz yok — sadece görüntüleyebilirsiniz.'
+        );
+
         return;
       }
-      const checkedBoxes = Array.from(taskContent.querySelectorAll('.task-check:checked'));
-      const totalBoxes = taskContent.querySelectorAll('.task-check').length;
+
+      if (!taskContent) {
+        return;
+      }
+
+      const totalBoxes =
+        taskContent.querySelectorAll(
+          '.task-check'
+        ).length;
+
       let savedCount = 0;
+      let firebaseSaveFailed = false;
 
-      dates.forEach((date) => {
-        const dateBoxes = Array.from(taskContent.querySelectorAll(`.task-check[data-date="${date}"]`));
-        const current = dateBoxes.map((box) => box.checked);
+      for (const date of dates) {
+        const dateBoxes = Array.from(
+          taskContent.querySelectorAll(
+            `.task-check[data-date="${date}"]`
+          )
+        );
+
+        const current =
+          dateBoxes.map(
+            (box) => box.checked
+          );
+
         const byName = {};
-        dateBoxes.forEach((box, idx) => {
-          const taskName = box.getAttribute('data-task');
-          if (taskName) byName[taskName] = current[idx];
-        });
-        saveWorkRecord(staff, company, date, current, byName);
-        rememberLastWorkDate(date);
-        savedCount += current.filter(Boolean).length;
-      });
 
-      if (taskCounter) taskCounter.textContent = `${savedCount} / ${totalBoxes} tamamlandı`;
-      setSaveStatus(saveStatus, 'ok', `✓ ${dates.length} gün kaydedildi — ${savedCount}/${totalBoxes} tamamlandı. Her tarih ayrı saklandı.`);
+        dateBoxes.forEach(
+          (box, idx) => {
+            const taskName =
+              box.getAttribute('data-task');
+
+            if (taskName) {
+              byName[taskName] =
+                current[idx];
+            }
+          }
+        );
+
+        const saved =
+          await saveWorkRecord(
+            staff,
+            company,
+            date,
+            current,
+            byName
+          );
+
+        if (!saved) {
+          firebaseSaveFailed = true;
+        } else {
+          savedCount +=
+            current.filter(Boolean).length;
+
+          rememberLastWorkDate(date);
+        }
+      }
+
+      if (firebaseSaveFailed) {
+        setSaveStatus(
+          saveStatus,
+          'dirty',
+          'Bazı günlük kayıtlar Firebase\'e kaydedilemedi. İnternet bağlantınızı kontrol edip tekrar deneyin.'
+        );
+
+        return;
+      }
+
+      if (taskCounter) {
+        taskCounter.textContent =
+          `${savedCount} / ${totalBoxes} tamamlandı`;
+      }
+
+      setSaveStatus(
+        saveStatus,
+        'ok',
+        `✓ ${dates.length} gün Firebase'e kaydedildi — ${savedCount}/${totalBoxes} tamamlandı.`
+      );
     };
   }
 }
@@ -1901,6 +3295,7 @@ function renderDashboardWorkContent() {
 // Aynı personel+firma+tarih deposunu kullanır; her tarih kendi kaydını saklar.
 function renderDashboardWorkPanel() {
   const staffName = currentUser ? currentUser.name : staffMembers[0];
+  const visibleCompanies = getCompanies().filter((company) => canView(staffName, company));
   let open = true;
   try { open = localStorage.getItem(DASH_PANEL_KEY) !== 'closed'; } catch (err) {}
   return `
@@ -1912,7 +3307,7 @@ function renderDashboardWorkPanel() {
       <div class="dash-work-body" id="dash-work-body">
         <form id="dash-work-form" class="work-form">
           <label class="field">Personel<input type="text" name="staff-display" value="${staffName}" disabled /><input type="hidden" name="staff" value="${staffName}" /></label>
-          <label class="field">Firma<select name="company">${companies.map((company) => `<option>${company}</option>`).join('')}</select></label>
+          <label class="field">Firma<select name="company">${visibleCompanies.map((company) => `<option>${company}</option>`).join('')}</select></label>
           <label class="field">İşlem tarihi<input type="date" name="date" value="2026-01-01" max="2026-12-31" required /></label>
           <button class="primary-btn work-submit" type="submit">İşlemleri göster</button>
         </form>
@@ -2025,11 +3420,15 @@ function renderLogin() {
 
       const profile = userDoc.data();
 
-      currentUser = {
-        email: firebaseUser.email,
-        title: profile.title || 'Personel',
-        name: profile.name || firebaseUser.email
-      };
+console.log('FIREBASE PROFİL TEST:', profile);
+
+currentUser = {
+  email: firebaseUser.email,
+  title: profile.title || 'Personel',
+  name: profile.name || firebaseUser.email
+};
+
+console.log('CURRENT USER TEST:', currentUser);
 
       renderDashboard();
 
@@ -2074,25 +3473,70 @@ function renderPageBody(active) {
 function renderDashboard(active = 'Yönetim Paneli') {
   try {
   if (!currentUser) { renderLogin(); return; }
-   // Firebase'deki ortak personel listesini ilk açılışta yükle.
-  if (!window._sharedStaffLoaded && !window._sharedStaffLoading) {
-    window._sharedStaffLoading = true;
+  // Firebase'deki ortak personel listesini ilk açılışta yükle.
+if (!window._sharedStaffLoaded && !window._sharedStaffLoading) {
 
-    loadSharedStaffFromFirebase()
-      .then((loaded) => {
-        window._sharedStaffLoading = false;
-        window._sharedStaffLoaded = true;
+  // Firebase henüz hazır değilse biraz bekleyip tekrar dene.
+  if (!window.firebaseDb || !window.firebaseDoc || !window.firebaseGetDoc) {
+    setTimeout(() => {
+      renderDashboard(active);
+    }, 500);
 
-        if (loaded) {
-          renderDashboard(active);
-        }
-      })
-      .catch((err) => {
-        console.error('Ortak personel listesi yüklenemedi:', err);
-        window._sharedStaffLoading = false;
-        window._sharedStaffLoaded = true;
-      });
+    return;
   }
+window._sharedStaffLoading = true;
+
+loadSharedStaffFromFirebase()
+  .then((loaded) => {
+    if (loaded) {
+      window._sharedStaffLoaded = true;
+    } else {
+      console.error(
+        'Firebase ortak personel listesi yüklenemedi.'
+      );
+
+      window._sharedStaffLoaded = true;
+    }
+
+    return loadSharedStaffMetaFromFirebase();
+  })
+  .then(() => {
+    return loadSharedCompaniesFromFirebase();
+  })
+  .then(() => {
+    if (
+      typeof sharedCompaniesCache !== 'undefined' &&
+      Array.isArray(sharedCompaniesCache)
+    ) {
+      companies = [...sharedCompaniesCache];
+    }
+
+    return loadSharedPermsFromFirebase();
+  })
+  .then(() => {
+    return loadSharedTaskTypesFromFirebase();
+  })
+  .then(() => {
+    return loadSharedTaskPermsFromFirebase();
+  })
+  .then(() => {
+    window._sharedStaffLoading = false;
+    renderDashboard(active);
+  })
+  .catch((err) => {
+    console.error(
+      'Ortak Firebase verileri yüklenemedi:',
+      err
+    );
+
+    window._sharedStaffLoading = false;
+    window._sharedStaffLoaded = true;
+
+    renderDashboard(active);
+  });
+
+return;
+}
   const user = currentUser;
   const requested = active || 'Yönetim Paneli';
   const safeActive = requested === 'Yetkilendirme' && !isAdminUser() ? 'Yönetim Paneli' : requested;

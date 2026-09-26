@@ -19,8 +19,18 @@ function saveCommunity(key, value) {
   catch (err) { window.alert('Kayıt yapılamadı. Tarayıcı depolama alanını kontrol edin.'); return false; }
 }
 function getStaffTitle(name) {
+  if (
+    typeof sharedStaffMetaCache !== 'undefined' &&
+    sharedStaffMetaCache &&
+    sharedStaffMetaCache[name] &&
+    sharedStaffMetaCache[name].title
+  ) {
+    return sharedStaffMetaCache[name].title;
+  }
+
   const meta = loadCommunity(STAFF_META_KEY);
   return meta[name]?.title || 'Ünvan belirtilmedi';
+
 }
 function staffIdentity(name) {
   return `<span class="staff-identity"><strong>${escapeHtml(name)}</strong><small>${escapeHtml(getStaffTitle(name))}</small></span>`;
