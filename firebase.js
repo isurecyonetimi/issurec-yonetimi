@@ -13,7 +13,10 @@ import {
   getFirestore,
   doc,
   getDoc,
-  setDoc
+  setDoc,
+  deleteDoc,
+  collection,
+  getDocs
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
 import { getStorage } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-storage.js";
@@ -42,6 +45,9 @@ window.firebaseDb = db;
 window.firebaseDoc = doc;
 window.firebaseGetDoc = getDoc;
 window.firebaseSetDoc = setDoc;
+window.firebaseDeleteDoc = deleteDoc;
+window.firebaseCollection = collection;
+window.firebaseGetDocs = getDocs;
 
 window.firebaseWorkRecordCollection = 'workRecords';
 
