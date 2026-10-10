@@ -1,15 +1,29 @@
 const menuItems = [
+
   ['⌂', 'Yönetim Paneli'],
+
   ['♙', 'Kullanıcı Yönetimi'],
+
   ['▣', 'Firma Yönetimi'],
+
   ['◷', 'Yıl / Dönem Yönetimi'],
+
   ['♟', 'Personel Yönetimi'],
+
+  ['▤', 'Personel İzin ve Özlük'],
+
   ['⚿', 'Yetkilendirme'],
+
   ['▥', 'Raporlar'],
+
   ['☏', 'Personel Soruları'],
+
   ['★', 'Ayın Elemanı'],
+
   ['◉', 'Duyurular'],
+
   ['✎', 'Notlar']
+
 ];
 
 const app = document.querySelector('#app');
@@ -45,7 +59,7 @@ function loadStaff() {
         (s) => typeof s === 'string' && s.trim()
       );
     }
-  } catch (err) {}
+  } catch (err) { }
 
   return [...DEFAULT_STAFF];
 }
@@ -214,7 +228,7 @@ async function saveSharedStaffToFirebase(list) {
         STAFF_STORAGE_KEY,
         JSON.stringify(cleanList)
       );
-    } catch (err) {}
+    } catch (err) { }
 
     console.log(
       'Firebase ortak personel listesi kaydedildi:',
@@ -230,6 +244,127 @@ async function saveSharedStaffToFirebase(list) {
 
     return false;
   }
+}
+function listenSharedStaffFromFirebase() {
+
+  if (
+    !window.firebaseDb ||
+    !window.firebaseDoc ||
+    !window.firebaseOnSnapshot
+  ) {
+
+    console.error(
+      'Firebase canlı personel bağlantısı hazır değil.'
+    );
+
+    return null;
+
+  }
+
+
+  const staffRef =
+    window.firebaseDoc(
+      window.firebaseDb,
+      STAFF_FIREBASE_COLLECTION,
+      STAFF_FIREBASE_DOC
+    );
+
+
+  const unsubscribe =
+    window.firebaseOnSnapshot(
+      staffRef,
+      (snapshot) => {
+
+        if (!snapshot.exists()) {
+          return;
+        }
+
+
+        const data =
+          snapshot.data();
+
+
+        if (
+          !Array.isArray(
+            data.staff
+          )
+        ) {
+          return;
+        }
+
+
+        const cleanList =
+          Array.from(
+            new Set(
+              data.staff
+                .filter(
+                  (s) =>
+                    typeof s === 'string'
+                )
+                .map(
+                  (s) =>
+                    s.trim()
+                )
+                .filter(Boolean)
+            )
+          );
+
+
+        sharedStaffCache =
+          [...cleanList];
+
+
+        try {
+
+          localStorage.setItem(
+            STAFF_STORAGE_KEY,
+            JSON.stringify(
+              cleanList
+            )
+          );
+
+        } catch (err) { }
+
+
+        console.log(
+          'Firebase canlı personel listesi güncellendi:',
+          cleanList
+        );
+
+
+        const activePage =
+          document.querySelector(
+            '.nav-item.active'
+          );
+
+
+        if (
+          activePage &&
+          activePage.textContent.includes(
+            'Personel Yönetimi'
+          )
+        ) {
+
+          renderDashboard(
+            'Personel Yönetimi'
+          );
+
+        }
+
+      },
+      (error) => {
+
+        console.error(
+          'Firebase canlı personel dinleyicisi çalışmadı:',
+          error
+        );
+
+      }
+    );
+
+
+  return unsubscribe;
+
 }
 
 // Firebase'deki ortak personel listesini okur.
@@ -281,7 +416,7 @@ async function loadSharedStaffFromFirebase() {
         STAFF_STORAGE_KEY,
         JSON.stringify(cleanList)
       );
-    } catch (err) {}
+    } catch (err) { }
 
     console.log(
       'Firebase ortak personel listesi yüklendi:',
@@ -343,22 +478,22 @@ function loadCompanies() {
     const raw = localStorage.getItem(COMPANY_STORAGE_KEY);
     const parsed = raw ? JSON.parse(raw) : null;
     if (Array.isArray(parsed) && parsed.length) return parsed.filter((c) => typeof c === 'string' && c.trim());
-  } catch (err) {}
+  } catch (err) { }
   return [...DEFAULT_COMPANIES];
 }
 function saveCompanies(list) {
-  try { localStorage.setItem(COMPANY_STORAGE_KEY, JSON.stringify(list)); } catch (err) {}
+  try { localStorage.setItem(COMPANY_STORAGE_KEY, JSON.stringify(list)); } catch (err) { }
 }
 function loadAccess() {
   try {
     const raw = localStorage.getItem(ACCESS_STORAGE_KEY);
     const parsed = raw ? JSON.parse(raw) : null;
     if (parsed && typeof parsed === 'object') return parsed;
-  } catch (err) {}
+  } catch (err) { }
   return JSON.parse(JSON.stringify(DEFAULT_ACCESS));
 }
 function saveAccess(obj) {
-  try { localStorage.setItem(ACCESS_STORAGE_KEY, JSON.stringify(obj)); } catch (err) {}
+  try { localStorage.setItem(ACCESS_STORAGE_KEY, JSON.stringify(obj)); } catch (err) { }
 }
 const COMPANY_FIREBASE_COLLECTION = 'settings';
 const COMPANY_FIREBASE_DOC = 'companies';
@@ -413,14 +548,14 @@ async function loadSharedCompaniesFromFirebase() {
         COMPANY_STORAGE_KEY,
         JSON.stringify(cleanList)
       );
-    } catch (err) {}
+    } catch (err) { }
 
     console.log(
       'Firebase ortak firma listesi yüklendi:',
       cleanList
     );
 
-    
+
     return true;
   } catch (err) {
     console.error(
@@ -430,6 +565,130 @@ async function loadSharedCompaniesFromFirebase() {
 
     return false;
   }
+}
+function listenSharedCompaniesFromFirebase() {
+
+  if (
+    !window.firebaseDb ||
+    !window.firebaseDoc ||
+    !window.firebaseOnSnapshot
+  ) {
+    console.error(
+      'Firebase canlı firma bağlantısı hazır değil.'
+    );
+
+    return null;
+  }
+
+
+  const companiesRef =
+    window.firebaseDoc(
+      window.firebaseDb,
+      COMPANY_FIREBASE_COLLECTION,
+      COMPANY_FIREBASE_DOC
+    );
+
+
+  const unsubscribe =
+    window.firebaseOnSnapshot(
+      companiesRef,
+      (snapshot) => {
+
+        if (!snapshot.exists()) {
+          return;
+        }
+
+
+        const data =
+          snapshot.data();
+
+
+        if (
+          !Array.isArray(
+            data.companies
+          )
+        ) {
+          return;
+        }
+
+
+        const cleanList =
+          Array.from(
+            new Set(
+              data.companies
+                .filter(
+                  (c) =>
+                    typeof c === 'string'
+                )
+                .map(
+                  (c) =>
+                    c.trim()
+                )
+                .filter(Boolean)
+            )
+          );
+
+
+        sharedCompaniesCache =
+          [...cleanList];
+
+
+        try {
+
+          localStorage.setItem(
+            COMPANY_STORAGE_KEY,
+            JSON.stringify(
+              cleanList
+            )
+          );
+
+        } catch (err) { }
+
+
+        console.log(
+          'Firebase canlı firma listesi güncellendi:',
+          cleanList
+        );
+
+
+        /*
+         * Firma Yönetimi ekranı açıksa
+         * listeyi yenile.
+         */
+
+        const activePage =
+          document.querySelector(
+            '.nav-item.active'
+          );
+
+
+        if (
+          activePage &&
+          activePage.textContent.includes(
+            'Firma Yönetimi'
+          )
+        ) {
+
+          renderDashboard(
+            'Firma Yönetimi'
+          );
+
+        }
+
+      },
+      (error) => {
+
+        console.error(
+          'Firebase canlı firma dinleyicisi çalışmadı:',
+          error
+        );
+
+      }
+    );
+
+
+  return unsubscribe;
+
 }
 
 async function saveSharedCompaniesToFirebase(list) {
@@ -472,7 +731,7 @@ async function saveSharedCompaniesToFirebase(list) {
         COMPANY_STORAGE_KEY,
         JSON.stringify(cleanList)
       );
-    } catch (err) {}
+    } catch (err) { }
 
     console.log(
       'Firebase ortak firma listesi kaydedildi:',
@@ -490,8 +749,8 @@ async function saveSharedCompaniesToFirebase(list) {
   }
 }
 const COMPANY_META_KEY = 'isSurecCompanyMetaV1';
-function loadCompanyMeta() { try { const raw = localStorage.getItem(COMPANY_META_KEY); const p = raw ? JSON.parse(raw) : null; if (p && typeof p === 'object') return p; } catch (err) {} return {}; }
-function saveCompanyMeta(o) { try { localStorage.setItem(COMPANY_META_KEY, JSON.stringify(o)); } catch (err) {} }
+function loadCompanyMeta() { try { const raw = localStorage.getItem(COMPANY_META_KEY); const p = raw ? JSON.parse(raw) : null; if (p && typeof p === 'object') return p; } catch (err) { } return {}; }
+function saveCompanyMeta(o) { try { localStorage.setItem(COMPANY_META_KEY, JSON.stringify(o)); } catch (err) { } }
 function getCompanyCreatedDate(company) {
   const meta = loadCompanyMeta();
   if (meta && meta[company] && meta[company].createdAt) return meta[company].createdAt;
@@ -501,11 +760,11 @@ function getCompanyCreatedDate(company) {
       const sorted = recs.map((r) => r.date).filter(Boolean).sort();
       if (sorted.length) return sorted[0];
     }
-  } catch (err) {}
+  } catch (err) { }
   return new Date().toISOString().slice(0, 10);
 }
 function formatDateTr(iso) { if (!iso) return '—'; const p = (iso || '').split('-'); if (p.length !== 3) return iso; return `${p[2]}.${p[1]}.${p[0]}`; }
-function getAllowedTasks(staff) { try { if (typeof getVisibleTasks === 'function') return getVisibleTasks(staff); } catch (err) {} try { return getTaskTypes(); } catch (err) {} return []; }
+function getAllowedTasks(staff) { try { if (typeof getVisibleTasks === 'function') return getVisibleTasks(staff); } catch (err) { } try { return getTaskTypes(); } catch (err) { } return []; }
 function loadWork() {
   try {
     const store = typeof loadWorkStore === 'function' ? loadWorkStore() : {};
@@ -574,52 +833,52 @@ function getMyVisibleCompanies(staff) {
           if (normName(k) === sn && Array.isArray(acc[k])) return all.filter((c) => acc[k].some((x) => normName(x) === normName(c)));
         }
       }
-    } catch (err) {}
+    } catch (err) { }
     return [];
   } catch (err) { return []; }
 }
 function getMyDashboardStats() {
   try {
-  const me = currentUser ? currentUser.name : '';
-  const allCompanies = getCompanies();
-  const visibleCompanies = getMyVisibleCompanies(me);
-  const allowedTasks = getAllowedTasks(me);
-  const myWork = loadWork().filter((w) => w.staff === me && visibleCompanies.includes(w.company));
-  const perCompany = visibleCompanies.map((company) => {
-    const createdAt = getCompanyCreatedDate(company);
-    const expected = allowedTasks.length;
-    let done = 0;
-    allowedTasks.forEach((t) => {
-      const rec = myWork.find((w) => w.company === company && w.date >= createdAt && w.state && w.state[t]);
-      if (rec) done += 1;
+    const me = currentUser ? currentUser.name : '';
+    const allCompanies = getCompanies();
+    const visibleCompanies = getMyVisibleCompanies(me);
+    const allowedTasks = getAllowedTasks(me);
+    const myWork = loadWork().filter((w) => w.staff === me && visibleCompanies.includes(w.company));
+    const perCompany = visibleCompanies.map((company) => {
+      const createdAt = getCompanyCreatedDate(company);
+      const expected = allowedTasks.length;
+      let done = 0;
+      allowedTasks.forEach((t) => {
+        const rec = myWork.find((w) => w.company === company && w.date >= createdAt && w.state && w.state[t]);
+        if (rec) done += 1;
+      });
+      return { company, createdAt, expected, done, missing: Math.max(0, expected - done) };
     });
-    return { company, createdAt, expected, done, missing: Math.max(0, expected - done) };
-  });
-  const totalExpected = perCompany.reduce((s, r) => s + r.expected, 0);
-  const totalDone = perCompany.reduce((s, r) => s + r.done, 0);
-  const totalMissing = Math.max(0, totalExpected - totalDone);
-  const pct = totalExpected ? Math.round((totalDone / totalExpected) * 100) : 0;
-  let earliest = '';
-  if (perCompany.length) { earliest = perCompany.map((r) => r.createdAt).filter(Boolean).sort()[0] || ''; }
-  return { me, visibleCompanies, allowedTasks, perCompany, totalExpected, totalDone, totalMissing, pct, earliest };
+    const totalExpected = perCompany.reduce((s, r) => s + r.expected, 0);
+    const totalDone = perCompany.reduce((s, r) => s + r.done, 0);
+    const totalMissing = Math.max(0, totalExpected - totalDone);
+    const pct = totalExpected ? Math.round((totalDone / totalExpected) * 100) : 0;
+    let earliest = '';
+    if (perCompany.length) { earliest = perCompany.map((r) => r.createdAt).filter(Boolean).sort()[0] || ''; }
+    return { me, visibleCompanies, allowedTasks, perCompany, totalExpected, totalDone, totalMissing, pct, earliest };
   } catch (err) { return { me: (currentUser && currentUser.name) || '', visibleCompanies: [], allowedTasks: [], perCompany: [], totalExpected: 0, totalDone: 0, totalMissing: 0, pct: 0, earliest: '' }; }
 }
 function renderMyDashboardStats() {
   try {
-  const s = getMyDashboardStats();
-  const cards = [
-    ['▣', 'Görebildiğim cari', `${s.visibleCompanies.length}`, s.earliest ? `${formatDateTr(s.earliest)} itibarıyla` : 'tanımlı cari'],
-    ['◷', 'Yapmam gereken iş', `${s.totalExpected}`, `${s.visibleCompanies.length} cari × ${s.allowedTasks.length} iş türü`],
-    ['✓', 'Tamamladığım', `${s.totalDone}`, `%${s.pct} tamamlanma`],
-    ['!', 'Eksik / bekleyen', `${s.totalMissing}`, 'carinin tanımlandığı tarihten itibaren']
-  ].map(([icon, title, value, change]) => `<article class="stat-card"><div class="stat-top"><span>${title}</span><span class="stat-icon">${icon}</span></div><div class="stat-number">${value}</div><span class="stat-change">${change}</span></article>`).join('');
-  const rows = s.perCompany.length ? s.perCompany.map((r) => `
+    const s = getMyDashboardStats();
+    const cards = [
+      ['▣', 'Görebildiğim cari', `${s.visibleCompanies.length}`, s.earliest ? `${formatDateTr(s.earliest)} itibarıyla` : 'tanımlı cari'],
+      ['◷', 'Yapmam gereken iş', `${s.totalExpected}`, `${s.visibleCompanies.length} cari × ${s.allowedTasks.length} iş türü`],
+      ['✓', 'Tamamladığım', `${s.totalDone}`, `%${s.pct} tamamlanma`],
+      ['!', 'Eksik / bekleyen', `${s.totalMissing}`, 'carinin tanımlandığı tarihten itibaren']
+    ].map(([icon, title, value, change]) => `<article class="stat-card"><div class="stat-top"><span>${title}</span><span class="stat-icon">${icon}</span></div><div class="stat-number">${value}</div><span class="stat-change">${change}</span></article>`).join('');
+    const rows = s.perCompany.length ? s.perCompany.map((r) => `
     <div class="task-row" style="cursor:default">
       <span class="task-box" style="${r.missing === 0 ? 'border-color:var(--teal);background:var(--teal);color:white;' : ''}">${r.missing === 0 ? '✓' : '▣'}</span>
       <div class="task-name"><strong>${r.company}</strong><small>Tanımlanma: ${formatDateTr(r.createdAt)} · Gereken: ${r.expected} · Yapılan: ${r.done} · Kalan: ${r.missing}</small></div>
       <span class="task-counter">${r.missing === 0 ? 'Tamam' : r.missing + ' eksik'}</span>
     </div>`).join('') : '<div class="permission-empty"><span class="permission-icon">▣</span><div><strong>Henüz görebildiğiniz cari yok.</strong><p>Yöneticinizden firma erişim yetkisi isteyin.</p></div></div>';
-  return `
+    return `
     <div class="page-heading"><div><h1>Yönetim Paneli</h1><p>Hoş geldin ${s.me} — bu sayfadaki tüm sayılar yalnızca sana ait. Carilerin ve tanımlanma tarihlerinden itibaren yapman gereken işler.</p></div><span class="access-badge">${s.me}</span></div>
     <section class="stats-grid">${cards}</section>
     <section class="panel"><div class="panel-header"><div><h2>Carilerime göre durum</h2><p class="panel-subtitle">Her cari, tanımlandığı tarihten sonraki kayıtlarına göre değerlendirilir.</p></div><span class="task-counter">${s.totalDone}/${s.totalExpected} tamamlandı</span></div>
@@ -713,6 +972,7 @@ async function loadSharedPlansFromFirebase() {
   }
 }
 
+
 async function saveSharedPlansToFirebase(list) {
   try {
     if (
@@ -788,7 +1048,7 @@ function loadPlans() {
       return p;
     }
 
-  } catch (err) {}
+  } catch (err) { }
 
   return [];
 }
@@ -863,11 +1123,10 @@ function loadTaskTypes() {
           t.trim()
       );
     }
-  } catch (err) {}
+  } catch (err) { }
 
   return [...DEFAULT_TASKS];
 }
-
 function saveTaskTypes(list) {
   try {
     const cleanList = Array.from(
@@ -888,11 +1147,7 @@ function saveTaskTypes(list) {
 
     return true;
   } catch (err) {
-    console.error(
-      'İş türleri kaydedilemedi:',
-      err
-    );
-
+    console.error('İş türleri kaydedilemedi:', err);
     return false;
   }
 }
@@ -917,9 +1172,7 @@ async function loadSharedTaskTypesFromFirebase() {
       TASK_TYPE_FIREBASE_DOC
     );
 
-    const snapshot = await window.firebaseGetDoc(
-      taskTypesRef
-    );
+    const snapshot = await window.firebaseGetDoc(taskTypesRef);
 
     if (!snapshot.exists()) {
       return false;
@@ -960,11 +1213,7 @@ async function loadSharedTaskTypesFromFirebase() {
 
     return true;
   } catch (err) {
-    console.error(
-      'Firebase iş türleri okunamadı:',
-      err
-    );
-
+    console.error('Firebase iş türleri okunamadı:', err);
     return false;
   }
 }
@@ -994,13 +1243,10 @@ async function saveSharedTaskTypesToFirebase(list) {
       TASK_TYPE_FIREBASE_DOC
     );
 
-    await window.firebaseSetDoc(
-      taskTypesRef,
-      {
-        taskTypes: cleanList,
-        updatedAt: new Date().toISOString()
-      }
-    );
+    await window.firebaseSetDoc(taskTypesRef, {
+      taskTypes: cleanList,
+      updatedAt: new Date().toISOString()
+    });
 
     sharedTaskTypesCache = [...cleanList];
 
@@ -1022,11 +1268,92 @@ async function saveSharedTaskTypesToFirebase(list) {
       'Firebase iş türleri kaydedilemedi:',
       err
     );
-
     return false;
   }
 }
 
+function listenSharedTaskTypesFromFirebase() {
+  if (
+    !window.firebaseDb ||
+    !window.firebaseDoc ||
+    !window.firebaseOnSnapshot
+  ) {
+    console.error(
+      'Firebase canlı iş türleri bağlantısı hazır değil.'
+    );
+    return null;
+  }
+
+  const taskTypesRef = window.firebaseDoc(
+    window.firebaseDb,
+    TASK_TYPE_FIREBASE_COLLECTION,
+    TASK_TYPE_FIREBASE_DOC
+  );
+
+  const unsubscribe = window.firebaseOnSnapshot(
+    taskTypesRef,
+    (snapshot) => {
+      if (!snapshot.exists()) {
+        return;
+      }
+
+      const data = snapshot.data();
+
+      if (!Array.isArray(data.taskTypes)) {
+        return;
+      }
+
+      const cleanList = Array.from(
+        new Set(
+          data.taskTypes
+            .filter((t) => typeof t === 'string')
+            .map((t) => t.trim())
+            .filter(Boolean)
+        )
+      );
+
+      sharedTaskTypesCache = [...cleanList];
+
+      try {
+        localStorage.setItem(
+          TASK_TYPE_KEY,
+          JSON.stringify(cleanList)
+        );
+      } catch (err) {}
+
+      console.log(
+        'Firebase canlı iş türleri güncellendi:',
+        cleanList
+      );
+
+      const activePage = document.querySelector(
+        '.nav-item.active'
+      );
+
+      // Yetki kaydı sırasında ekranın yeniden çizilmesini önle.
+      if (
+        !window._savingPermissionMatrix &&
+        activePage &&
+        (
+          activePage.textContent.includes('Yıl / Dönem Yönetimi') ||
+          activePage.textContent.includes('Yetkilendirme')
+        )
+      ) {
+        renderDashboard(
+          window._lastPage || 'Yönetim Paneli'
+        );
+      }
+    },
+    (error) => {
+      console.error(
+        'Firebase canlı iş türleri dinleyicisi çalışmadı:',
+        error
+      );
+    }
+  );
+
+  return unsubscribe;
+}
 
 const TASK_PERM_KEY = 'isSurecTaskPermsV1';
 
@@ -1044,52 +1371,57 @@ async function loadPermissionMatrixFromFirebase() {
       !window.firebaseDoc ||
       !window.firebaseGetDoc
     ) {
-      return {};
+      throw new Error(
+        'Firebase bağlantısı veya okuma fonksiyonları hazır değil.'
+      );
     }
 
-    const ref =
-      window.firebaseDoc(
-        window.firebaseDb,
-        PERMISSION_MATRIX_FIREBASE_COLLECTION,
-        PERMISSION_MATRIX_FIREBASE_DOC
-      );
+    const ref = window.firebaseDoc(
+      window.firebaseDb,
+      PERMISSION_MATRIX_FIREBASE_COLLECTION,
+      PERMISSION_MATRIX_FIREBASE_DOC
+    );
 
-    const snapshot =
-      await window.firebaseGetDoc(ref);
+    const snapshot = await window.firebaseGetDoc(ref);
 
     if (!snapshot.exists()) {
+      sharedPermissionMatrixCache = {};
+
+      console.warn('Firebase yetki belgesi bulunamadı.');
+
       return {};
     }
 
-    const data =
-      snapshot.data();
+    const data = snapshot.data();
 
     if (
+      !data ||
       !data.permissions ||
-      typeof data.permissions !== 'object'
+      typeof data.permissions !== 'object' ||
+      Array.isArray(data.permissions)
     ) {
-      return {};
+      throw new Error(
+        'Firebase içindeki yetki verisinin biçimi geçersiz.'
+      );
     }
 
-    sharedPermissionMatrixCache = {
-      ...data.permissions
-    };
+    sharedPermissionMatrixCache = JSON.parse(
+      JSON.stringify(data.permissions)
+    );
 
     console.log(
-      'Yeni yetki matrisi Firebase\'den yüklendi:',
+      'Firebase yetki matrisi başarıyla yüklendi:',
       sharedPermissionMatrixCache
     );
 
     return sharedPermissionMatrixCache;
-
   } catch (err) {
-
     console.error(
-      'Yeni yetki matrisi okunamadı:',
+      'Firebase yetki matrisi okunamadı:',
       err
     );
 
-    return {};
+    throw err;
   }
 }
 
@@ -1100,40 +1432,47 @@ async function savePermissionMatrixToFirebase(matrix) {
       !window.firebaseDoc ||
       !window.firebaseSetDoc
     ) {
-      return false;
+      throw new Error(
+        'Firebase bağlantısı veya kayıt fonksiyonları hazır değil.'
+      );
     }
 
-    const ref =
-      window.firebaseDoc(
-        window.firebaseDb,
-        PERMISSION_MATRIX_FIREBASE_COLLECTION,
-        PERMISSION_MATRIX_FIREBASE_DOC
+    if (
+      !matrix ||
+      typeof matrix !== 'object' ||
+      Array.isArray(matrix)
+    ) {
+      throw new Error(
+        'Kaydedilecek yetki matrisi geçersiz.'
       );
+    }
 
-    await window.firebaseSetDoc(
-      ref,
-      {
-        permissions: matrix,
-        updatedAt:
-          new Date().toISOString()
-      }
+    const permissionsCopy = JSON.parse(
+      JSON.stringify(matrix)
     );
 
-    sharedPermissionMatrixCache = {
-      ...matrix
-    };
+    const ref = window.firebaseDoc(
+      window.firebaseDb,
+      PERMISSION_MATRIX_FIREBASE_COLLECTION,
+      PERMISSION_MATRIX_FIREBASE_DOC
+    );
+
+    await window.firebaseSetDoc(ref, {
+      permissions: permissionsCopy,
+      updatedAt: new Date().toISOString()
+    });
+
+    sharedPermissionMatrixCache = permissionsCopy;
 
     console.log(
-      'Yeni yetki matrisi Firebase\'e kaydedildi:',
+      'Firebase yetki matrisi başarıyla kaydedildi:',
       sharedPermissionMatrixCache
     );
 
     return true;
-
   } catch (err) {
-
     console.error(
-      'Yeni yetki matrisi Firebase\'e kaydedilemedi:',
+      'Firebase yetki matrisi kaydedilemedi:',
       err
     );
 
@@ -1152,16 +1491,10 @@ function loadTaskPerms() {
   }
 
   try {
-    const raw = localStorage.getItem(
-      TASK_PERM_KEY
-    );
-
+    const raw = localStorage.getItem(TASK_PERM_KEY);
     const p = raw ? JSON.parse(raw) : null;
 
-    if (
-      p &&
-      typeof p === 'object'
-    ) {
+    if (p && typeof p === 'object') {
       return p;
     }
   } catch (err) {}
@@ -1173,38 +1506,31 @@ function saveTaskPerms(o) {
   try {
     const cleanPerms = {};
 
-    Object.entries(o || {}).forEach(
-      ([staff, tasks]) => {
-        if (
-          typeof staff !== 'string' ||
-          !staff.trim() ||
-          !Array.isArray(tasks)
-        ) {
-          return;
-        }
-
-        cleanPerms[staff] = Array.from(
-          new Set(
-            tasks
-              .filter(
-                (t) =>
-                  typeof t === 'string'
-              )
-              .map((t) => t.trim())
-              .filter(Boolean)
-          )
-        );
+    Object.entries(o || {}).forEach(([staff, tasks]) => {
+      if (
+        typeof staff !== 'string' ||
+        !staff.trim() ||
+        !Array.isArray(tasks)
+      ) {
+        return;
       }
-    );
+
+      cleanPerms[staff] = Array.from(
+        new Set(
+          tasks
+            .filter((t) => typeof t === 'string')
+            .map((t) => t.trim())
+            .filter(Boolean)
+        )
+      );
+    });
 
     localStorage.setItem(
       TASK_PERM_KEY,
       JSON.stringify(cleanPerms)
     );
 
-    sharedTaskPermsCache = {
-      ...cleanPerms
-    };
+    sharedTaskPermsCache = { ...cleanPerms };
 
     return true;
   } catch (err) {
@@ -1233,9 +1559,7 @@ async function loadSharedTaskPermsFromFirebase() {
       TASK_PERM_FIREBASE_DOC
     );
 
-    const snapshot = await window.firebaseGetDoc(
-      taskPermRef
-    );
+    const snapshot = await window.firebaseGetDoc(taskPermRef);
 
     if (!snapshot.exists()) {
       return false;
@@ -1257,9 +1581,7 @@ async function loadSharedTaskPermsFromFirebase() {
     try {
       localStorage.setItem(
         TASK_PERM_KEY,
-        JSON.stringify(
-          sharedTaskPermsCache
-        )
+        JSON.stringify(sharedTaskPermsCache)
       );
     } catch (err) {}
 
@@ -1291,29 +1613,24 @@ async function saveSharedTaskPermsToFirebase(o) {
 
     const cleanPerms = {};
 
-    Object.entries(o || {}).forEach(
-      ([staff, tasks]) => {
-        if (
-          typeof staff !== 'string' ||
-          !staff.trim() ||
-          !Array.isArray(tasks)
-        ) {
-          return;
-        }
-
-        cleanPerms[staff] = Array.from(
-          new Set(
-            tasks
-              .filter(
-                (t) =>
-                  typeof t === 'string'
-              )
-              .map((t) => t.trim())
-              .filter(Boolean)
-          )
-        );
+    Object.entries(o || {}).forEach(([staff, tasks]) => {
+      if (
+        typeof staff !== 'string' ||
+        !staff.trim() ||
+        !Array.isArray(tasks)
+      ) {
+        return;
       }
-    );
+
+      cleanPerms[staff] = Array.from(
+        new Set(
+          tasks
+            .filter((t) => typeof t === 'string')
+            .map((t) => t.trim())
+            .filter(Boolean)
+        )
+      );
+    });
 
     const taskPermRef = window.firebaseDoc(
       window.firebaseDb,
@@ -1321,17 +1638,12 @@ async function saveSharedTaskPermsToFirebase(o) {
       TASK_PERM_FIREBASE_DOC
     );
 
-    await window.firebaseSetDoc(
-      taskPermRef,
-      {
-        taskPermissions: cleanPerms,
-        updatedAt: new Date().toISOString()
-      }
-    );
+    await window.firebaseSetDoc(taskPermRef, {
+      taskPermissions: cleanPerms,
+      updatedAt: new Date().toISOString()
+    });
 
-    sharedTaskPermsCache = {
-      ...cleanPerms
-    };
+    sharedTaskPermsCache = { ...cleanPerms };
 
     try {
       localStorage.setItem(
@@ -1356,6 +1668,106 @@ async function saveSharedTaskPermsToFirebase(o) {
   }
 }
 
+function listenSharedTaskPermsFromFirebase() {
+  if (
+    !window.firebaseDb ||
+    !window.firebaseDoc ||
+    !window.firebaseOnSnapshot
+  ) {
+    console.error(
+      'Firebase canlı iş türü yetkileri bağlantısı hazır değil.'
+    );
+    return null;
+  }
+
+  const taskPermRef = window.firebaseDoc(
+    window.firebaseDb,
+    TASK_PERM_FIREBASE_COLLECTION,
+    TASK_PERM_FIREBASE_DOC
+  );
+
+  const unsubscribe = window.firebaseOnSnapshot(
+    taskPermRef,
+    (snapshot) => {
+      if (!snapshot.exists()) {
+        return;
+      }
+
+      const data = snapshot.data();
+
+      if (
+        !data.taskPermissions ||
+        typeof data.taskPermissions !== 'object'
+      ) {
+        return;
+      }
+
+      const cleanPerms = {};
+
+      Object.entries(data.taskPermissions).forEach(
+        ([staff, tasks]) => {
+          if (
+            typeof staff !== 'string' ||
+            !staff.trim() ||
+            !Array.isArray(tasks)
+          ) {
+            return;
+          }
+
+          cleanPerms[staff] = Array.from(
+            new Set(
+              tasks
+                .filter((t) => typeof t === 'string')
+                .map((t) => t.trim())
+                .filter(Boolean)
+            )
+          );
+        }
+      );
+
+      sharedTaskPermsCache = { ...cleanPerms };
+
+      try {
+        localStorage.setItem(
+          TASK_PERM_KEY,
+          JSON.stringify(cleanPerms)
+        );
+      } catch (err) {}
+
+      console.log(
+        'Firebase canlı iş türü yetkileri güncellendi:',
+        cleanPerms
+      );
+
+      const activePage = document.querySelector(
+        '.nav-item.active'
+      );
+
+      // Yetki kaydı sırasında ekranın yeniden çizilmesini önle.
+      if (
+        !window._savingPermissionMatrix &&
+        activePage &&
+        (
+          activePage.textContent.includes('Yetkilendirme') ||
+          activePage.textContent.includes('İş Takip')
+        )
+      ) {
+        renderDashboard(
+          window._lastPage || 'Yönetim Paneli'
+        );
+      }
+    },
+    (error) => {
+      console.error(
+        'Firebase canlı iş türü yetkileri dinleyicisi çalışmadı:',
+        error
+      );
+    }
+  );
+
+  return unsubscribe;
+}
+
 function getVisibleTasks(staff) {
   const p = loadTaskPerms();
   const v = p[staff];
@@ -1364,9 +1776,7 @@ function getVisibleTasks(staff) {
     return getTaskTypes();
   }
 
-  return getTaskTypes().filter(
-    (t) => v.includes(t)
-  );
+  return getTaskTypes().filter((t) => v.includes(t));
 }
 
 const dailyTasks = [
@@ -1376,18 +1786,39 @@ const dailyTasks = [
 
 // Tarih bazlı iş takip kayıtları (personel + firma + tarih üçlüsüne özel).
 // localStorage'da saklanır: { "PERSONEL || FİRMA || YYYY-MM-DD": { tasks: [bool], updatedAt: iso } }
-// Böylece 01.01.2026'da kaydedilen işlem 02.01.2026'da görünmez; her tarihe ayrı kayıt tutulur.
+// Böylece farklı tarihlerdeki işlemler birbirinden ayrı tutulur.
 const WORK_STORAGE_KEY = 'isSurecIsTakipV1';
 const DASH_PANEL_KEY = 'isTakipPanelAcik';
 const LAST_WORK_KEY = 'isSurecLastWorkDateV1';
-function rememberLastWorkDate(d) { try { if (d) localStorage.setItem(LAST_WORK_KEY, d); } catch (err) {} }
-function getLastWorkDate(f) { try { const v = localStorage.getItem(LAST_WORK_KEY); if (v && /^\d{4}-\d{2}-\d{2}$/.test(v)) return v; } catch (err) {} return f; }
+
+function rememberLastWorkDate(d) {
+  try {
+    if (d) {
+      localStorage.setItem(LAST_WORK_KEY, d);
+    }
+  } catch (err) {}
+}
+
+function getLastWorkDate(f) {
+  try {
+    const v = localStorage.getItem(LAST_WORK_KEY);
+
+    if (v && /^\d{4}-\d{2}-\d{2}$/.test(v)) {
+      return v;
+    }
+  } catch (err) {}
+
+  return f;
+}
 
 function loadWorkStore() {
   try {
     const raw = localStorage.getItem(WORK_STORAGE_KEY);
     const parsed = raw ? JSON.parse(raw) : {};
-    return parsed && typeof parsed === 'object' ? parsed : {};
+
+    return parsed && typeof parsed === 'object'
+      ? parsed
+      : {};
   } catch (err) {
     return {};
   }
@@ -1395,8 +1826,13 @@ function loadWorkStore() {
 
 function saveWorkStore(store) {
   try {
-    localStorage.setItem(WORK_STORAGE_KEY, JSON.stringify(store));
-  } catch (err) { /* depolama doluysa sessiz geç */ }
+    localStorage.setItem(
+      WORK_STORAGE_KEY,
+      JSON.stringify(store)
+    );
+  } catch (err) {
+    // Depolama doluysa sessiz geç.
+  }
 }
 
 function getWorkKey(staff, company, date) {
@@ -1450,8 +1886,14 @@ async function getWorkRecord(staff, company, date) {
     return null;
   }
 }
-
-async function saveWorkRecord(staff, company, date, tasks, byName) {
+async function saveWorkRecord(
+  staff,
+  company,
+  date,
+  tasks,
+  byName,
+  quantitiesByName
+) {
   try {
     if (
       !window.firebaseDb ||
@@ -1462,7 +1904,11 @@ async function saveWorkRecord(staff, company, date, tasks, byName) {
       return false;
     }
 
-    const recordKey = getWorkKey(staff, company, date);
+    const recordKey = getWorkKey(
+      staff,
+      company,
+      date
+    );
 
     const record = {
       company: company,
@@ -1473,16 +1919,29 @@ async function saveWorkRecord(staff, company, date, tasks, byName) {
       updatedBy: staff
     };
 
+    if (
+      quantitiesByName !== undefined &&
+      quantitiesByName !== null &&
+      typeof quantitiesByName === 'object' &&
+      !Array.isArray(quantitiesByName)
+    ) {
+      record.quantitiesByName = quantitiesByName;
+    }
+
     const workRef = window.firebaseDoc(
       window.firebaseDb,
       window.firebaseWorkRecordCollection || 'workRecords',
       recordKey
     );
 
-    await window.firebaseSetDoc(workRef, record);
+    await window.firebaseSetDoc(
+      workRef,
+      record,
+      { merge: true }
+    );
 
     console.log(
-      'Firebase firma bazlı günlük iş kaydı kaydedildi:',
+      'Firebase günlük iş kaydı kaydedildi:',
       recordKey,
       record
     );
@@ -1516,15 +1975,15 @@ const users = [
   { email: 'zeynep.aras@firma.com', password: '1234', name: 'Zeynep Aras', title: 'Personel' }
 ];
 const USER_NAME_KEY = 'isSurecUserNamesV1';
-function loadUserNames() { try { const raw = localStorage.getItem(USER_NAME_KEY); const p = raw ? JSON.parse(raw) : null; if (p && typeof p === 'object') return p; } catch (err) {} return {}; }
-function saveUserNames(o) { try { localStorage.setItem(USER_NAME_KEY, JSON.stringify(o)); } catch (err) {} }
+function loadUserNames() { try { const raw = localStorage.getItem(USER_NAME_KEY); const p = raw ? JSON.parse(raw) : null; if (p && typeof p === 'object') return p; } catch (err) { } return {}; }
+function saveUserNames(o) { try { localStorage.setItem(USER_NAME_KEY, JSON.stringify(o)); } catch (err) { } }
 function resolveUserName(u) { const m = loadUserNames(); return (m && m[u.email]) || u.name; }
 
 let currentUser = null;
 
 const QUESTION_KEY = 'isSurecQuestionsV1';
-function loadQuestions() { try { const raw = localStorage.getItem(QUESTION_KEY); const p = raw ? JSON.parse(raw) : null; if (Array.isArray(p)) return p; } catch (err) {} return []; }
-function saveQuestions(list) { try { localStorage.setItem(QUESTION_KEY, JSON.stringify(list)); } catch (err) {} }
+function loadQuestions() { try { const raw = localStorage.getItem(QUESTION_KEY); const p = raw ? JSON.parse(raw) : null; if (Array.isArray(p)) return p; } catch (err) { } return []; }
+function saveQuestions(list) { try { localStorage.setItem(QUESTION_KEY, JSON.stringify(list)); } catch (err) { } }
 function getVisibleQuestions() {
   const me = currentUser ? currentUser.name : '';
   const all = loadQuestions();
@@ -1533,7 +1992,7 @@ function getVisibleQuestions() {
 }
 
 const NOTE_KEY = 'isSurecNotesV1';
-function loadNotes() { try { const raw = localStorage.getItem(NOTE_KEY); const p = raw ? JSON.parse(raw) : null; if (Array.isArray(p)) return p; } catch (err) {} return []; }
+function loadNotes() { try { const raw = localStorage.getItem(NOTE_KEY); const p = raw ? JSON.parse(raw) : null; if (Array.isArray(p)) return p; } catch (err) { } return []; }
 function saveNotes(list) { try { localStorage.setItem(NOTE_KEY, JSON.stringify(list)); } catch (err) { window.alert('Not kaydedilemedi (depolama dolu olabilir, daha küçük dosya deneyin).'); } }
 function getMyNotes() { const me = currentUser ? currentUser.name : ''; return loadNotes().filter((n) => n.staff === me); }
 
@@ -1552,7 +2011,7 @@ function avatarKey(email) { return (email || '').toString().trim().toLowerCase()
       if (typeof v !== 'string' || v.indexOf('data:image/') !== 0) { delete data[k]; dirty = true; }
     });
     if (dirty) localStorage.setItem(AVATAR_KEY, JSON.stringify(data));
-  } catch (err) { try { localStorage.removeItem(AVATAR_KEY); } catch (e2) {} }
+  } catch (err) { try { localStorage.removeItem(AVATAR_KEY); } catch (e2) { } }
 })();
 
 function getInitials(name) {
@@ -1747,11 +2206,11 @@ function loadPerms() {
     if (p && typeof p === 'object') {
       return p;
     }
-  } catch (err) {}
+  } catch (err) { }
 
   return {};
 }
-function savePerms(o) { try { localStorage.setItem(PERM_KEY, JSON.stringify(o)); } catch (err) {} }
+function savePerms(o) { try { localStorage.setItem(PERM_KEY, JSON.stringify(o)); } catch (err) { } }
 const PERM_FIREBASE_COLLECTION = 'settings';
 const PERM_FIREBASE_DOC = 'permissions';
 
@@ -1792,7 +2251,7 @@ async function loadSharedPermsFromFirebase() {
         PERM_KEY,
         JSON.stringify(sharedPermsCache)
       );
-    } catch (err) {}
+    } catch (err) { }
 
     console.log(
       'Firebase ortak yetkiler yüklendi:',
@@ -1862,7 +2321,7 @@ async function saveSharedPermsToFirebase(obj) {
         PERM_KEY,
         JSON.stringify(cleanPerms)
       );
-    } catch (err) {}
+    } catch (err) { }
 
     console.log(
       'Firebase ortak yetkiler kaydedildi:',
@@ -1879,6 +2338,102 @@ async function saveSharedPermsToFirebase(obj) {
     return false;
   }
 }
+
+function listenSharedPermsFromFirebase() {
+  if (
+    !window.firebaseDb ||
+    !window.firebaseDoc ||
+    !window.firebaseOnSnapshot
+  ) {
+    console.error(
+      'Firebase canlı yetki bağlantısı hazır değil.'
+    );
+    return null;
+  }
+
+  const permsRef = window.firebaseDoc(
+    window.firebaseDb,
+    PERM_FIREBASE_COLLECTION,
+    PERM_FIREBASE_DOC
+  );
+
+  const unsubscribe = window.firebaseOnSnapshot(
+    permsRef,
+    (snapshot) => {
+      if (!snapshot.exists()) {
+        return;
+      }
+
+      const data = snapshot.data();
+
+      if (
+        !data.permissions ||
+        typeof data.permissions !== 'object'
+      ) {
+        return;
+      }
+
+      const cleanPerms = {};
+
+      Object.entries(data.permissions).forEach(
+        ([key, value]) => {
+          if (
+            typeof key !== 'string' ||
+            !key.trim()
+          ) {
+            return;
+          }
+
+          if (
+            value !== 'islem' &&
+            value !== 'gor' &&
+            value !== 'yok'
+          ) {
+            return;
+          }
+
+          cleanPerms[key] = value;
+        }
+      );
+
+      sharedPermsCache = { ...cleanPerms };
+
+      try {
+        localStorage.setItem(
+          PERM_KEY,
+          JSON.stringify(cleanPerms)
+        );
+      } catch (err) {}
+
+      console.log(
+        'Firebase canlı yetkiler güncellendi:',
+        cleanPerms
+      );
+
+      const activePage = document.querySelector(
+        '.nav-item.active'
+      );
+
+      // Yetki kaydı devam ederken ekranı yeniden oluşturma.
+      if (
+        !window._savingPermissionMatrix &&
+        activePage &&
+        activePage.textContent.includes('Yetkilendirme')
+      ) {
+        renderDashboard('Yetkilendirme');
+      }
+    },
+    (error) => {
+      console.error(
+        'Firebase canlı yetki dinleyicisi çalışmadı:',
+        error
+      );
+    }
+  );
+
+  return unsubscribe;
+}
+
 function getPerm(staff, company) { const p = loadPerms(); const v = p[`${staff} || ${company}`]; return v === 'islem' ? 'islem' : v === 'gor' ? 'gor' : 'yok'; }
 function canView(staff, company) {
   const v = getPermRecord(staff, company);
@@ -1941,8 +2496,8 @@ function renderAccessMatrixContent() {
           Personel
           <select name="staff" id="perm-focus-staff">
             ${people.map((s) =>
-              `<option${s === focusStaff ? ' selected' : ''}>${s}</option>`
-            ).join('')}
+    `<option${s === focusStaff ? ' selected' : ''}>${s}</option>`
+  ).join('')}
           </select>
         </label>
 
@@ -1964,9 +2519,8 @@ function renderAccessMatrixContent() {
       </div>
 
       <div class="task-content">
-        ${
-          firms.length
-            ? firms.map((company) => `
+        ${firms.length
+      ? firms.map((company) => `
               <label class="task-row">
                 <input
                   type="checkbox"
@@ -1980,7 +2534,7 @@ function renderAccessMatrixContent() {
                 </span>
               </label>
             `).join('')
-            : `
+      : `
               <div class="permission-empty">
                 <span class="permission-icon">!</span>
                 <div>
@@ -1989,7 +2543,7 @@ function renderAccessMatrixContent() {
                 </div>
               </div>
             `
-        }
+    }
       </div>
     </section>
 
@@ -2005,9 +2559,8 @@ function renderAccessMatrixContent() {
         </div>
       </div>
 
-      ${
-        firms.length
-          ? firms.map((company) => `
+      ${firms.length
+      ? firms.map((company) => `
             <div
               class="panel"
               style="margin:16px 0 0;border:1px solid var(--border-color,#e5e7eb);"
@@ -2043,9 +2596,8 @@ function renderAccessMatrixContent() {
                   </span>
                 </div>
 
-                ${
-                  getTaskTypes().length
-                    ? getTaskTypes().map((task) => `
+                ${getTaskTypes().length
+          ? getTaskTypes().map((task) => `
                       <div
                         class="task-row"
                         style="cursor:default;"
@@ -2082,17 +2634,17 @@ function renderAccessMatrixContent() {
                         </span>
                       </div>
                     `).join('')
-                    : `
+          : `
                       <div class="permission-empty">
                         Henüz iş türü tanımlanmadı.
                       </div>
                     `
-                }
+        }
               </div>
             </div>
           `).join('')
-          : ''
-      }
+      : ''
+    }
     </section>
 
     <!-- DUYURU YETKİLERİ -->
@@ -2194,8 +2746,7 @@ function renderAccessMatrixContent() {
       </form>
 
       <div class="task-content">
-        ${
-          getTaskTypes().map((task) => `
+        ${getTaskTypes().map((task) => `
             <div
               class="task-row"
               style="cursor:default"
@@ -2221,7 +2772,7 @@ function renderAccessMatrixContent() {
               </button>
             </div>
           `).join('')
-        }
+    }
       </div>
 
       <div class="save-row">
@@ -2233,23 +2784,26 @@ function renderAccessMatrixContent() {
     </section>
 
     <!-- KAYDET -->
-    <section class="panel">
-      <div class="save-row">
-        <span
-          class="save-status"
-          id="permission-matrix-status"
-        ></span>
+<section class="panel">
+  <div class="save-row">
+    <span
+      class="save-status"
+      id="permission-matrix-status"
+      role="status"
+      aria-live="polite"
+      style="display: inline-block; min-width: 220px; white-space: normal;"
+    ></span>
 
-        <button
-          type="button"
-          class="primary-btn work-submit"
-          id="permission-matrix-save"
-        >
-          Yetkileri Kaydet
-        </button>
-      </div>
-    </section>
-  `;
+    <button
+      type="button"
+      class="primary-btn work-submit"
+      id="permission-matrix-save"
+    >
+      Yetkileri Kaydet
+    </button>
+  </div>
+</section>
+`;
 }
 function renderMatrixRows(start, end, people) {
   const dates = getDateRange(start, end);
@@ -2277,13 +2831,13 @@ function setupCompanyManagement() {
         try {
           const recs = loadWork().filter((w) => w.company === c).map((r) => r.date).filter(Boolean).sort();
           if (recs.length) d = recs[0];
-        } catch (err) {}
+        } catch (err) { }
         m0[c] = { createdAt: d };
         changed0 = true;
       }
     });
     if (changed0) saveCompanyMeta(m0);
-  } catch (err) {}
+  } catch (err) { }
   const form = document.querySelector('#company-form');
   if (!form) return;
   form.addEventListener('submit', async (e) => {
@@ -2300,19 +2854,19 @@ function setupCompanyManagement() {
     }
     list.push(v);
 
-saveCompanies(list);
+    saveCompanies(list);
 
-const firebaseCompanySaved = await saveSharedCompaniesToFirebase(list);
+    const firebaseCompanySaved = await saveSharedCompaniesToFirebase(list);
 
-if (!firebaseCompanySaved) {
-  if (st) {
-    st.textContent =
-      "Firma bilgisayardaki listede oluşturuldu ancak Firebase ortak listesine kaydedilemedi.";
-  }
-  return;
-}
+    if (!firebaseCompanySaved) {
+      if (st) {
+        st.textContent =
+          "Firma bilgisayardaki listede oluşturuldu ancak Firebase ortak listesine kaydedilemedi.";
+      }
+      return;
+    }
 
-const mm = loadCompanyMeta();
+    const mm = loadCompanyMeta();
     mm[v] = { createdAt };
     saveCompanyMeta(mm);
     refreshCompanyCache();
@@ -2349,7 +2903,7 @@ const mm = loadCompanyMeta();
     refreshCompanyCache();
     renderDashboard('Firma Yönetimi');
   });
-}function setupAccessMatrix() {
+} function setupAccessMatrix() {
   if (!isAdminUser()) return;
 
   const staffSelect =
@@ -2620,470 +3174,398 @@ const mm = loadCompanyMeta();
   }
 
   /*
-   * ---------------------------------------------------------
-   * TÜM YETKİLERİ KAYDET
-   * ---------------------------------------------------------
-   */
+ * ---------------------------------------------------------
+ * TÜM YETKİLERİ KAYDET
+ * ---------------------------------------------------------
+ */
 
-  saveBtn.addEventListener(
-    'click',
-    async () => {
-      const staff =
-        getSelectedStaff();
+saveBtn.addEventListener(
+  'click',
+  async () => {
+    const staff = getSelectedStaff();
 
-      if (!staff) return;
+    if (!staff) return;
 
-      saveBtn.disabled = true;
+    if (window._permissionMatrixUnlockTimer) {
+      clearTimeout(window._permissionMatrixUnlockTimer);
+      window._permissionMatrixUnlockTimer = null;
+    }
 
-      if (status) {
-        status.className =
-          'save-status';
+    window._savingPermissionMatrix = true;
+    saveBtn.disabled = true;
 
-        status.textContent =
-          'Yetkiler kaydediliyor...';
+    if (status) {
+      status.className = 'save-status';
+      status.textContent = 'Yetkiler kaydediliyor...';
+      status.style.display = 'inline-block';
+    }
+
+    let saveSucceeded = false;
+
+    try {
+      /*
+       * =====================================================
+       * 1. FİRMA YETKİLERİ
+       * =====================================================
+       */
+
+      const companyPerms = loadPerms();
+
+      getCompanies().forEach((company) => {
+        const key = `${staff} || ${company}`;
+
+        const checkbox = document.querySelector(
+          `.company-permission-check[data-company="${CSS.escape(company)}"]`
+        );
+
+        if (!checkbox) return;
+
+        companyPerms[key] = checkbox.checked ? 'gor' : 'yok';
+      });
+
+      const companySaved =
+        await saveSharedPermsToFirebase(companyPerms);
+
+      if (!companySaved) {
+        throw new Error(
+          'Firma yetkileri Firebase\'e kaydedilemedi.'
+        );
       }
+
+      /*
+       * =====================================================
+       * 2. YENİ YETKİ MATRİSİ
+       * =====================================================
+       */
+
+      const permissionMatrix =
+        await loadPermissionMatrixFromFirebase();
+
+      if (
+        !permissionMatrix[staff] ||
+        typeof permissionMatrix[staff] !== 'object'
+      ) {
+        permissionMatrix[staff] = {};
+      }
+
+      if (
+        !permissionMatrix[staff].companies ||
+        typeof permissionMatrix[staff].companies !== 'object'
+      ) {
+        permissionMatrix[staff].companies = {};
+      }
+
+      if (
+        !permissionMatrix[staff].tasks ||
+        typeof permissionMatrix[staff].tasks !== 'object'
+      ) {
+        permissionMatrix[staff].tasks = {};
+      }
+
+      /*
+       * =====================================================
+       * 3. FİRMA YETKİLERİNİ MATRİSE YAZ
+       * =====================================================
+       */
+
+      getCompanies().forEach((company) => {
+        const companyCheckbox = document.querySelector(
+          `.company-permission-check[data-company="${CSS.escape(company)}"]`
+        );
+
+        permissionMatrix[staff].companies[company] =
+          companyCheckbox ? companyCheckbox.checked : false;
+      });
+
+      /*
+       * =====================================================
+       * 4. İŞ TÜRÜ YETKİLERİNİ MATRİSE YAZ
+       * =====================================================
+       */
+
+      getCompanies().forEach((company) => {
+        if (
+          !permissionMatrix[staff].tasks[company] ||
+          typeof permissionMatrix[staff].tasks[company] !== 'object'
+        ) {
+          permissionMatrix[staff].tasks[company] = {};
+        }
+
+        getTaskTypes().forEach((task) => {
+          const viewCheckbox = document.querySelector(
+            `.task-view-check[data-company="${CSS.escape(company)}"][data-task="${CSS.escape(task)}"]`
+          );
+
+          const editCheckbox = document.querySelector(
+            `.task-edit-check[data-company="${CSS.escape(company)}"][data-task="${CSS.escape(task)}"]`
+          );
+
+          let permission = 'yok';
+
+          if (editCheckbox && editCheckbox.checked) {
+            permission = 'islem';
+          } else if (viewCheckbox && viewCheckbox.checked) {
+            permission = 'gor';
+          }
+
+          permissionMatrix[staff].tasks[company][task] =
+            permission;
+        });
+      });
+
+      /*
+       * =====================================================
+       * 5. YENİ MATRİSİ FIREBASE'E KAYDET
+       * =====================================================
+       */
+
+      const matrixSaved =
+        await savePermissionMatrixToFirebase(permissionMatrix);
+
+      if (!matrixSaved) {
+        throw new Error(
+          'Yeni yetki matrisi Firebase\'e kaydedilemedi.'
+        );
+      }
+
+      /*
+       * =====================================================
+       * 6. CACHE
+       * =====================================================
+       */
+
+      sharedPermsCache = { ...companyPerms };
 
       try {
-
-        /*
-         * =====================================================
-         * 1. FİRMA YETKİLERİ
-         * =====================================================
-         */
-
-        const companyPerms =
-          loadPerms();
-
-        getCompanies().forEach(
-          (company) => {
-
-            const key =
-              `${staff} || ${company}`;
-
-            const checkbox =
-              document.querySelector(
-                `.company-permission-check[data-company="${CSS.escape(company)}"]`
-              );
-
-            if (!checkbox) return;
-
-            companyPerms[key] =
-              checkbox.checked
-                ? 'gor'
-                : 'yok';
-          }
+        localStorage.setItem(
+          PERM_KEY,
+          JSON.stringify(companyPerms)
         );
+      } catch (err) {}
 
-        const companySaved =
-          await saveSharedPermsToFirebase(
-            companyPerms
-          );
+      sharedPermissionMatrixCache =
+        JSON.parse(JSON.stringify(permissionMatrix));
 
-        if (!companySaved) {
-          throw new Error(
-            'Firma yetkileri Firebase\'e kaydedilemedi.'
-          );
-        }
+      saveSucceeded = true;
 
-        /*
-         * =====================================================
-         * 2. YENİ YETKİ MATRİSİ
-         * Personel → Firma → İş Türü → Gör / İşlem
-         * =====================================================
-         */
+      /*
+       * =====================================================
+       * 7. BAŞARILI
+       * =====================================================
+       */
 
-        const permissionMatrix =
-          await loadPermissionMatrixFromFirebase();
-
-        if (
-          !permissionMatrix[staff] ||
-          typeof permissionMatrix[staff] !== 'object'
-        ) {
-          permissionMatrix[staff] = {};
-        }
-
-        if (
-          !permissionMatrix[staff].companies ||
-          typeof permissionMatrix[staff].companies !== 'object'
-        ) {
-          permissionMatrix[staff].companies = {};
-        }
-
-        if (
-          !permissionMatrix[staff].tasks ||
-          typeof permissionMatrix[staff].tasks !== 'object'
-        ) {
-          permissionMatrix[staff].tasks = {};
-        }
-
-        /*
-         * =====================================================
-         * 3. FİRMA YETKİLERİNİ MATRİSE YAZ
-         * =====================================================
-         */
-
-        getCompanies().forEach(
-          (company) => {
-
-            const companyCheckbox =
-              document.querySelector(
-                `.company-permission-check[data-company="${CSS.escape(company)}"]`
-              );
-
-            permissionMatrix[staff]
-              .companies[company] =
-              companyCheckbox
-                ? companyCheckbox.checked
-                : false;
-          }
-        );
-
-        /*
-         * =====================================================
-         * 4. İŞ TÜRÜ YETKİLERİNİ MATRİSE YAZ
-         * =====================================================
-         */
-
-        getCompanies().forEach(
-          (company) => {
-
-            if (
-              !permissionMatrix[staff]
-                .tasks[company] ||
-              typeof permissionMatrix[staff]
-                .tasks[company] !== 'object'
-            ) {
-              permissionMatrix[staff]
-                .tasks[company] = {};
-            }
-
-            getTaskTypes().forEach(
-              (task) => {
-
-                const viewCheckbox =
-                  document.querySelector(
-                    `.task-view-check[data-company="${CSS.escape(company)}"][data-task="${CSS.escape(task)}"]`
-                  );
-
-                const editCheckbox =
-                  document.querySelector(
-                    `.task-edit-check[data-company="${CSS.escape(company)}"][data-task="${CSS.escape(task)}"]`
-                  );
-
-                let permission =
-                  'yok';
-
-                if (
-                  editCheckbox &&
-                  editCheckbox.checked
-                ) {
-                  permission =
-                    'islem';
-
-                } else if (
-                  viewCheckbox &&
-                  viewCheckbox.checked
-                ) {
-                  permission =
-                    'gor';
-                }
-
-                permissionMatrix[staff]
-                  .tasks[company][task] =
-                  permission;
-              }
-            );
-          }
-        );
-
-        /*
-         * =====================================================
-         * 5. YENİ MATRİSİ FIREBASE'E KAYDET
-         * =====================================================
-         */
-
-        const matrixSaved =
-          await savePermissionMatrixToFirebase(
-            permissionMatrix
-          );
-
-        if (!matrixSaved) {
-          throw new Error(
-            'Yeni yetki matrisi Firebase\'e kaydedilemedi.'
-          );
-        }
-
-        /*
-         * =====================================================
-         * 6. CACHE
-         * =====================================================
-         */
-
-        sharedPermsCache = {
-          ...companyPerms
-        };
-
-        try {
-          localStorage.setItem(
-            PERM_KEY,
-            JSON.stringify(
-              companyPerms
-            )
-          );
-        } catch (err) {}
-
-        sharedPermissionMatrixCache = {
-          ...permissionMatrix
-        };
-
-        /*
-         * =====================================================
-         * 7. BAŞARILI
-         * =====================================================
-         */
-
-        if (status) {
-          status.className =
-            'save-status is-ok';
-
-          status.textContent =
-            `✓ ${staff} personelinin yetkileri kaydedildi.`;
-        }
-
-      } catch (err) {
-
-        console.error(
-          'Yetki matrisi kaydedilemedi:',
-          err
-        );
-
-        if (status) {
-          status.className =
-            'save-status';
-
-          status.textContent =
-            `Yetkiler kaydedilemedi: ${err.message}`;
-        }
-
-      } finally {
-
-        saveBtn.disabled = false;
+      if (status) {
+        status.className = 'save-status is-ok';
+        status.textContent =
+          `✓ ${staff} personelinin yetkileri kaydedildi.`;
+        status.style.display = 'inline-block';
       }
-    }
-  );
 
-  /*
-   * ---------------------------------------------------------
-   * İLK AÇILIŞ
-   * ---------------------------------------------------------
-   */
-
-  loadCompanyChecks();
-
-  loadTaskChecks();
-
-  /*
-   * ---------------------------------------------------------
-   * İŞ TÜRÜ SİLME
-   * ---------------------------------------------------------
-   */
-
-  document
-    .querySelectorAll('[data-del-task]')
-    .forEach((button) => {
-
-      button.addEventListener(
-        'click',
-        async () => {
-
-          const taskName =
-            button.dataset.delTask;
-
-          if (!taskName) return;
-
-          const list =
-            getTaskTypes().filter(
-              (t) => t !== taskName
-            );
-
-          saveTaskTypes(list);
-
-          const firebaseTaskSaved =
-            await saveSharedTaskTypesToFirebase(
-              list
-            );
-
-          if (!firebaseTaskSaved) {
-
-            if (status) {
-              status.className =
-                'save-status';
-
-              status.textContent =
-                'İş türü Firebase listesinden silinemedi.';
-            }
-
-            return;
-          }
-
-          /*
-           * Silinen iş türünü YENİ yetki
-           * matrisinden temizle.
-           */
-
-          const matrix =
-            await loadPermissionMatrixFromFirebase();
-
-          Object.keys(matrix).forEach(
-            (person) => {
-
-              if (
-                !matrix[person] ||
-                typeof matrix[person] !== 'object'
-              ) {
-                return;
-              }
-
-              const tasks =
-                matrix[person].tasks;
-
-              if (
-                !tasks ||
-                typeof tasks !== 'object'
-              ) {
-                return;
-              }
-
-              Object.keys(tasks).forEach(
-                (company) => {
-
-                  if (
-                    tasks[company] &&
-                    typeof tasks[company] === 'object'
-                  ) {
-                    delete tasks[company][taskName];
-                  }
-                }
-              );
-            }
-          );
-
-          const matrixSaved =
-            await savePermissionMatrixToFirebase(
-              matrix
-            );
-
-          if (!matrixSaved) {
-
-            if (status) {
-              status.className =
-                'save-status';
-
-              status.textContent =
-                'İş türü yetki matrisinden silinemedi.';
-            }
-
-            return;
-          }
-
-          renderDashboard(
-            'Yetkilendirme'
-          );
-        }
+      console.log(
+        'Yetki kaydı tamamlandı:',
+        staff
       );
-    });
 
-  /*
-   * ---------------------------------------------------------
-   * YENİ İŞ TÜRÜ EKLEME
-   * ---------------------------------------------------------
-   */
+    } catch (err) {
+      console.error(
+        'Yetki matrisi kaydedilemedi:',
+        err
+      );
 
-  const taskForm =
-    document.querySelector(
-      '#tasktype-form'
-    );
+      if (status) {
+        status.className = 'save-status';
+        status.textContent =
+          `Yetkiler kaydedilemedi: ${err.message}`;
+        status.style.display = 'inline-block';
+      }
 
-  if (taskForm) {
+    } finally {
+      saveBtn.disabled = false;
 
-    taskForm.addEventListener(
-      'submit',
-      async (e) => {
+      /*
+       * Firebase canlı dinleyicilerinin ekranı hemen
+       * yeniden oluşturmasını engelle. Mesajın okunması
+       * için kayıt sonrasında da kısa bir süre bekle.
+       */
 
-        e.preventDefault();
+      window._permissionMatrixUnlockTimer =
+        setTimeout(() => {
+          window._savingPermissionMatrix = false;
+          window._permissionMatrixUnlockTimer = null;
+        }, 5000);
+    }
+  }
+);
 
-        const value = (
-          new FormData(taskForm)
-            .get('taskName') || ''
-        )
-          .toString()
-          .trim();
+/*
+ * ---------------------------------------------------------
+ * İLK AÇILIŞ
+ * ---------------------------------------------------------
+ */
 
-        if (!value) return;
+loadCompanyChecks();
 
-        const list =
-          getTaskTypes();
+loadTaskChecks();
 
-        /*
-         * Aynı iş türünü tekrar ekleme.
-         */
+/*
+ * ---------------------------------------------------------
+ * İŞ TÜRÜ SİLME
+ * ---------------------------------------------------------
+ */
 
-        if (
-          list.some(
-            (t) =>
-              t.toLocaleLowerCase('tr') ===
-              value.toLocaleLowerCase('tr')
-          )
-        ) {
-          return;
-        }
+document
+  .querySelectorAll('[data-del-task]')
+  .forEach((button) => {
+    button.addEventListener(
+      'click',
+      async () => {
+        const taskName = button.dataset.delTask;
 
-        list.push(value);
+        if (!taskName) return;
+
+        const list = getTaskTypes().filter(
+          (t) => t !== taskName
+        );
 
         saveTaskTypes(list);
 
-        const saved =
-          await saveSharedTaskTypesToFirebase(
-            list
-          );
+        const firebaseTaskSaved =
+          await saveSharedTaskTypesToFirebase(list);
 
-        if (!saved) {
-
+        if (!firebaseTaskSaved) {
           if (status) {
-            status.className =
-              'save-status';
-
+            status.className = 'save-status';
             status.textContent =
-              'İş türü Firebase\'e kaydedilemedi.';
+              'İş türü Firebase listesinden silinemedi.';
           }
 
           return;
         }
 
         /*
-         * Yeni iş türü hiçbir personele otomatik
-         * olarak yetki verilmeden oluşturulur.
+         * Silinen iş türünü yeni yetki matrisinden temizle.
          */
 
-        if (status) {
+        const matrix =
+          await loadPermissionMatrixFromFirebase();
 
-          status.className =
-            'save-status is-ok';
+        Object.keys(matrix).forEach((person) => {
+          if (
+            !matrix[person] ||
+            typeof matrix[person] !== 'object'
+          ) {
+            return;
+          }
 
-          status.textContent =
-            `✓ İş türü eklendi: ${value}`;
+          const tasks = matrix[person].tasks;
+
+          if (
+            !tasks ||
+            typeof tasks !== 'object'
+          ) {
+            return;
+          }
+
+          Object.keys(tasks).forEach((company) => {
+            if (
+              tasks[company] &&
+              typeof tasks[company] === 'object'
+            ) {
+              delete tasks[company][taskName];
+            }
+          });
+        });
+
+        const matrixSaved =
+          await savePermissionMatrixToFirebase(matrix);
+
+        if (!matrixSaved) {
+          if (status) {
+            status.className = 'save-status';
+            status.textContent =
+              'İş türü yetki matrisinden silinemedi.';
+          }
+
+          return;
         }
 
-        setTimeout(
-          () =>
-            renderDashboard(
-              'Yetkilendirme'
-            ),
-          500
-        );
+        renderDashboard('Yetkilendirme');
       }
     );
-  }
+  });
+
+/*
+ * ---------------------------------------------------------
+ * YENİ İŞ TÜRÜ EKLEME
+ * ---------------------------------------------------------
+ */
+
+const taskForm = document.querySelector('#tasktype-form');
+
+if (taskForm) {
+  taskForm.addEventListener(
+    'submit',
+    async (e) => {
+      e.preventDefault();
+
+      const value = (
+        new FormData(taskForm).get('taskName') || ''
+      )
+        .toString()
+        .trim();
+
+      if (!value) return;
+
+      const list = getTaskTypes();
+
+      /*
+       * Aynı iş türünü tekrar ekleme.
+       */
+
+      if (
+        list.some(
+          (t) =>
+            t.toLocaleLowerCase('tr') ===
+            value.toLocaleLowerCase('tr')
+        )
+      ) {
+        return;
+      }
+
+      list.push(value);
+
+      saveTaskTypes(list);
+
+      const saved =
+        await saveSharedTaskTypesToFirebase(list);
+
+      if (!saved) {
+        if (status) {
+          status.className = 'save-status';
+          status.textContent =
+            'İş türü Firebase\'e kaydedilemedi.';
+        }
+
+        return;
+      }
+
+      /*
+       * Yeni iş türü hiçbir personele otomatik yetki
+       * verilmeden oluşturulur.
+       */
+
+      if (status) {
+        status.className = 'save-status is-ok';
+        status.textContent = `✓ İş türü eklendi: ${value}`;
+      }
+
+      setTimeout(
+        () => renderDashboard('Yetkilendirme'),
+        500
+      );
+    }
+  );
+}
 }
 
 function renderStaffContent() {
@@ -3112,8 +3594,8 @@ function renderStaffContent() {
       <div>
         <h1>Personel Yönetimi</h1>
         <p>${admin
-          ? 'Personel ekleyin; adını ve ünvanını düzenleyin. Ünvan, yönetici yetkisi vermez.'
-          : 'Kayıtlı personeller ve ünvanları (sadece görüntüleme).'}
+      ? 'Personel ekleyin; adını ve ünvanını düzenleyin. Ünvan, yönetici yetkisi vermez.'
+      : 'Kayıtlı personeller ve ünvanları (sadece görüntüleme).'}
         </p>
       </div>
       <span class="access-badge">${admin ? 'Yönetici' : 'Personel'}</span>
@@ -3248,78 +3730,78 @@ function setupStaffManagement() {
     }
     try {
       const credential = await window.firebaseCreateUser(
-  window.firebaseAuth,
-  email.toLowerCase(),
-  password
-);
+        window.firebaseAuth,
+        email.toLowerCase(),
+        password
+      );
 
-console.log('FIREBASE KULLANICI OLUŞTURULDU:', credential.user.email);
+      console.log('FIREBASE KULLANICI OLUŞTURULDU:', credential.user.email);
 
-const firebaseUser = credential.user;
+      const firebaseUser = credential.user;
 
-await window.firebaseSetDoc(
-  window.firebaseDoc(window.firebaseDb, 'users', firebaseUser.uid),
-  {
-    email: email.toLowerCase(),
-    name: name,
-    title: title
-  }
-);
-      
+      await window.firebaseSetDoc(
+        window.firebaseDoc(window.firebaseDb, 'users', firebaseUser.uid),
+        {
+          email: email.toLowerCase(),
+          name: name,
+          title: title
+        }
+      );
+
       const newUser = {
-  email: email.toLowerCase(),
-  password: '',
-  name,
-  title
-};
+        email: email.toLowerCase(),
+        password: '',
+        name,
+        title
+      };
 
-users.push(newUser);
+      users.push(newUser);
 
-const meta = loadCommunity(STAFF_META_KEY);
+      const meta = loadCommunity(STAFF_META_KEY);
 
-meta[name] = { title };
+      meta[name] = { title };
 
-if (!saveCommunity(STAFF_META_KEY, meta)) return;
+      if (!saveCommunity(STAFF_META_KEY, meta)) return;
 
-// Personel ünvanını ortak Firebase kaynağına kaydet
-const firebaseMetaSaved = await saveSharedStaffMetaToFirebase(meta);
+      // Personel ünvanını ortak Firebase kaynağına kaydet
+      const firebaseMetaSaved = await saveSharedStaffMetaToFirebase(meta);
 
-if (!firebaseMetaSaved) {
-  document.getElementById('staff-save-status').textContent =
-    "Personel oluşturuldu ancak ünvan bilgisi Firebase'e kaydedilemedi.";
-  document.getElementById('staff-save-status').className = 'save-status';
-  return;
-}
+      if (!firebaseMetaSaved) {
+        document.getElementById('staff-save-status').textContent =
+          "Personel oluşturuldu ancak ünvan bilgisi Firebase'e kaydedilemedi.";
+        document.getElementById('staff-save-status').className = 'save-status';
+        return;
+      }
 
-list.push(name);
+      list.push(name);
 
-saveStaff(list);
+      saveStaff(list);
 
-// Personel listesini ortak Firebase kaynağına kaydet
-const firebaseStaffSaved = await saveSharedStaffToFirebase(list);
+      // Personel listesini ortak Firebase kaynağına kaydet
+      const firebaseStaffSaved = await saveSharedStaffToFirebase(list);
 
-if (!firebaseStaffSaved) {
-  document.getElementById('staff-save-status').textContent =
-    "Personel hesabı oluşturuldu ancak ortak personel listesi Firebase'e kaydedilemedi.";
-  document.getElementById('staff-save-status').className = 'save-status';
-  return;
-}
+      if (!firebaseStaffSaved) {
+        document.getElementById('staff-save-status').textContent =
+          "Personel hesabı oluşturuldu ancak ortak personel listesi Firebase'e kaydedilemedi.";
+        document.getElementById('staff-save-status').className = 'save-status';
+        return;
+      }
 
-const acc = getAccess();
-if (!acc[name]) acc[name] = [];
-saveAccess(acc);
+      const acc = getAccess();
+      if (!acc[name]) acc[name] = [];
+      saveAccess(acc);
 
-const um = loadUserNames();
-um[email.toLowerCase()] = name;
-saveUserNames(um);
+      const um = loadUserNames();
+      um[email.toLowerCase()] = name;
+      saveUserNames(um);
 
-window._staffEdit = '';
+      window._staffEdit = '';
 
-const status = document.getElementById('staff-save-status');
-status.textContent = '✓ Personel ve Firebase hesabı oluşturuldu.';
-status.className = 'save-status is-ok';
+      const status = document.getElementById('staff-save-status');
+      status.textContent = '✓ Personel ve Firebase hesabı oluşturuldu.';
+      status.className = 'save-status is-ok';
 
-renderDashboard('Personel Yönetimi');
+      renderDashboard('Personel Yönetimi');
     } catch (err) {
       document.getElementById('staff-save-status').textContent = 'Hesap oluşturulamadı: ' + (err.message || 'Bilinmeyen hata');
       document.getElementById('staff-save-status').className = 'save-status';
@@ -3330,60 +3812,60 @@ renderDashboard('Personel Yönetimi');
     renderDashboard('Personel Yönetimi');
   }));
   document.querySelectorAll('[data-delete-staff]').forEach((b) =>
-  b.addEventListener('click', async () => {
-    if (!isAdminUser()) return;
+    b.addEventListener('click', async () => {
+      if (!isAdminUser()) return;
 
-    const name = b.dataset.deleteStaff;
+      const name = b.dataset.deleteStaff;
 
-    const confirmed = window.confirm(
-      `"${name}" isimli personeli silmek istediğinize emin misiniz?`
-    );
+      const confirmed = window.confirm(
+        `"${name}" isimli personeli silmek istediğinize emin misiniz?`
+      );
 
-    if (!confirmed) return;
+      if (!confirmed) return;
 
-    // Personel listesinden sil
-const list = getStaff().filter((s) => s !== name);
-saveStaff(list);
+      // Personel listesinden sil
+      const list = getStaff().filter((s) => s !== name);
+      saveStaff(list);
 
-// Personel listesini ortak Firebase kaynağına da kaydet
-const firebaseStaffSaved = await saveSharedStaffToFirebase(list);
+      // Personel listesini ortak Firebase kaynağına da kaydet
+      const firebaseStaffSaved = await saveSharedStaffToFirebase(list);
 
-if (!firebaseStaffSaved) {
-  alert("Personel yerel listeden silindi ancak ortak Firebase listesi güncellenemedi.");
-  return;
-}
-
-// Personel bilgilerini sil
-    const meta = loadCommunity(STAFF_META_KEY);
-    delete meta[name];
-    saveCommunity(STAFF_META_KEY, meta);
-
-    // Yetkilerini sil
-    const acc = getAccess();
-    delete acc[name];
-    saveAccess(acc);
-
-    // Kullanıcı adı eşleşmesini sil
-    const um = loadUserNames();
-
-    Object.keys(um).forEach((email) => {
-      if (um[email] === name) {
-        delete um[email];
+      if (!firebaseStaffSaved) {
+        alert("Personel yerel listeden silindi ancak ortak Firebase listesi güncellenemedi.");
+        return;
       }
-    });
 
-    saveUserNames(um);
+      // Personel bilgilerini sil
+      const meta = loadCommunity(STAFF_META_KEY);
+      delete meta[name];
+      saveCommunity(STAFF_META_KEY, meta);
 
-    // Planlardaki personel kayıtlarını sil
-    const plans = loadPlans().filter((p) => p.staff !== name);
-    savePlans(plans);
+      // Yetkilerini sil
+      const acc = getAccess();
+      delete acc[name];
+      saveAccess(acc);
 
-    window._staffEdit = '';
+      // Kullanıcı adı eşleşmesini sil
+      const um = loadUserNames();
 
-    refreshCompanyCache();
-    renderDashboard('Personel Yönetimi');
-  })
-);
+      Object.keys(um).forEach((email) => {
+        if (um[email] === name) {
+          delete um[email];
+        }
+      });
+
+      saveUserNames(um);
+
+      // Planlardaki personel kayıtlarını sil
+      const plans = loadPlans().filter((p) => p.staff !== name);
+      savePlans(plans);
+
+      window._staffEdit = '';
+
+      refreshCompanyCache();
+      renderDashboard('Personel Yönetimi');
+    })
+  );
   const ef = document.querySelector('#staff-edit-form');
   if (ef) ef.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -3396,14 +3878,14 @@ if (!firebaseStaffSaved) {
     if (getStaff().some((s) => s !== old && normName(s) === normName(nv))) { window.alert('Bu adla başka bir personel var.'); return; }
     if (!updateStaffIdentity(old, nv, title)) return;
     const updatedStaffList = getStaff().map((s) => (s === old ? nv : s));
-saveStaff(updatedStaffList);
+    saveStaff(updatedStaffList);
 
-const firebaseStaffSaved = await saveSharedStaffToFirebase(updatedStaffList);
+    const firebaseStaffSaved = await saveSharedStaffToFirebase(updatedStaffList);
 
-if (!firebaseStaffSaved) {
-  alert("Personel adı bilgisayardaki listede değiştirildi ancak Firebase ortak listesi güncellenemedi.");
-  return;
-}
+    if (!firebaseStaffSaved) {
+      alert("Personel adı bilgisayardaki listede değiştirildi ancak Firebase ortak listesi güncellenemedi.");
+      return;
+    }
     const acc = getAccess();
     if (old !== nv && acc[old]) { acc[nv] = acc[old]; delete acc[old]; saveAccess(acc); }
     const um = loadUserNames();
@@ -3735,7 +4217,7 @@ async function loadReportWorkRecordsFromFirebase() {
 
         tasksByName:
           data.tasksByName &&
-          typeof data.tasksByName === 'object'
+            typeof data.tasksByName === 'object'
             ? data.tasksByName
             : {},
 
@@ -3744,16 +4226,16 @@ async function loadReportWorkRecordsFromFirebase() {
       });
     });
 
-  console.log(
-  'Rapor için Firebase iş kayıtları yüklendi:',
-  records
-);
+    console.log(
+      'Rapor için Firebase iş kayıtları yüklendi:',
+      records
+    );
 
-sharedReportWorkRecordsCache = [...records];
+    sharedReportWorkRecordsCache = [...records];
 
-return records;
+    return records;
 
-} catch (err) {
+  } catch (err) {
 
     console.error(
       'Firebase rapor kayıtları okunamadı:',
@@ -3762,7 +4244,7 @@ return records;
 
     return [];
   }
-}function getReportData(staff, start, end) {
+} function getReportData(staff, start, end) {
   const store =
     Array.isArray(sharedReportWorkRecordsCache)
       ? sharedReportWorkRecordsCache
@@ -3838,8 +4320,8 @@ return records;
   const pct =
     total
       ? Math.round(
-          (done / total) * 100
-        )
+        (done / total) * 100
+      )
       : 0;
 
   const byTask = {};
@@ -3930,15 +4412,2708 @@ function renderReportContent() {
     </section>
     <section class="panel"><div class="panel-header"><div><h2>İş türü bazında rapor · ${target}</h2><p class="panel-subtitle">Yetkili olduğu iş türlerinde hangi işlemde eksik var.</p></div></div>
       <div class="task-content">${Object.keys(data.byTask).map((t) => {
-        const bi = data.byTask[t];
-        const p = bi.total ? Math.round((bi.done / bi.total) * 100) : 0;
-        const missDays = data.rows.filter((r) => r.task === t && !r.done).map((r) => `${formatDate(new Date(`${r.date}T00:00:00`))} (${r.company})`);
-        return `<div class="task-row" style="cursor:default"><span class="task-box" style="border-radius:50%">${p === 100 ? '✓' : bi.done === 0 ? '✕' : '!'}</span><span class="task-name"><strong>${t} · %${p}</strong><small>${bi.done}/${bi.total} tamamlandı${missDays.length ? ` · Eksik günler: ${missDays.join(', ')}` : bi.total ? ' · Eksik yok' : ' · Bu aralıkta kayıt yok'}</small></span><span style="margin-left:auto;min-width:120px;"><span class="progress-bar"><i style="width:${p}%"></i></span></span></div>`;
-      }).join('')}</div>
+    const bi = data.byTask[t];
+    const p = bi.total ? Math.round((bi.done / bi.total) * 100) : 0;
+    const missDays = data.rows.filter((r) => r.task === t && !r.done).map((r) => `${formatDate(new Date(`${r.date}T00:00:00`))} (${r.company})`);
+    return `<div class="task-row" style="cursor:default"><span class="task-box" style="border-radius:50%">${p === 100 ? '✓' : bi.done === 0 ? '✕' : '!'}</span><span class="task-name"><strong>${t} · %${p}</strong><small>${bi.done}/${bi.total} tamamlandı${missDays.length ? ` · Eksik günler: ${missDays.join(', ')}` : bi.total ? ' · Eksik yok' : ' · Bu aralıkta kayıt yok'}</small></span><span style="margin-left:auto;min-width:120px;"><span class="progress-bar"><i style="width:${p}%"></i></span></span></div>`;
+  }).join('')}</div>
     </section>
     <section class="panel"><div class="panel-header"><div><h2>Günlük döküm</h2><p class="panel-subtitle">Hangi tarihte hangi işlem yapıldı / yapılmadı.</p></div></div>
       <div class="task-content">${dayRows}</div>
     </section>`;
+}
+function renderPersonnelLeaveContent() {
+  if (!isAdminUser()) {
+    return '<div class="permission-empty">Bu panel yalnızca yöneticilere açıktır.</div>';
+  }
+
+  const people = getStaff();
+
+  return `
+    <div class="page-heading">
+      <div>
+        <h1>Personel İzin ve Özlük</h1>
+        <p>Personel bilgileri, izin kullanımları ve izin planlamalarını yönetin.</p>
+      </div>
+      <span class="access-badge">Yönetici</span>
+    </div>
+
+    <!-- PERSONEL SEÇİMİ -->
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Personel Seçimi</h2>
+          <p class="panel-subtitle">
+            İşlem yapmak istediğiniz personeli seçin.
+          </p>
+        </div>
+      </div>
+
+      <form id="personnel-leave-form" class="work-form">
+
+        <label class="field">
+          Personel
+          <select name="staff" id="personnel-leave-staff">
+            ${people.length
+      ? people.map((person) =>
+        `<option value="${escapeHtml(person)}">${escapeHtml(person)}</option>`
+      ).join('')
+      : '<option value="">Personel bulunmuyor</option>'
+    }
+          </select>
+        </label>
+
+        <button
+          class="primary-btn work-submit"
+          type="submit"
+        >
+          Görüntüle
+        </button>
+
+      </form>
+    </section>
+
+    <!-- PERSONEL ÖZLÜK BİLGİLERİ -->
+    <section class="panel">
+
+      <div class="panel-header">
+        <div>
+          <h2>Personel Bilgileri</h2>
+          <p class="panel-subtitle">
+            Seçilen personele ait sabit özlük bilgileri.
+          </p>
+        </div>
+      </div>
+
+      <form id="personnel-info-form" class="work-form">
+
+        <label class="field">
+          Ad Soyad
+          <input
+            type="text"
+            id="personnel-info-name"
+            name="name"
+            disabled
+          />
+        </label>
+
+        <label class="field">
+          Doğum Tarihi
+          <input
+            type="date"
+            id="personnel-info-birth"
+            name="birthDate"
+          />
+        </label>
+
+        <label class="field">
+          İşe Giriş Tarihi
+          <input
+            type="date"
+            id="personnel-info-start"
+            name="startDate"
+          />
+        </label>
+
+        <label class="field">
+          Yıllık İzin Hakkı
+          <input
+            type="number"
+            id="personnel-info-annual"
+            name="annualLeave"
+            min="0"
+            step="0.5"
+            placeholder="Örn: 14"
+          />
+        </label>
+
+        <label class="field">
+          Not
+          <input
+            type="text"
+            id="personnel-info-note"
+            name="note"
+            placeholder="Personel hakkında not"
+          />
+        </label>
+
+        <div class="save-row">
+          <span
+            class="save-status"
+            id="personnel-info-status"
+          ></span>
+
+          <button
+            class="primary-btn work-submit"
+            type="submit"
+          >
+            Bilgileri Kaydet
+          </button>
+        </div>
+
+      </form>
+
+    </section>
+
+    <!-- İZİN ÖZETİ -->
+    <section class="panel">
+
+      <div class="panel-header">
+        <div>
+          <h2>İzin Özeti</h2>
+          <p class="panel-subtitle">
+            Seçilen personelin izin kullanım durumu.
+          </p>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+
+        <article class="stat-card">
+          <div class="stat-top">
+            <span>Yıllık İzin Hakkı</span>
+          </div>
+          <div
+            class="stat-number"
+            id="leave-summary-entitlement"
+          >
+            0
+          </div>
+          <small>Gün</small>
+        </article>
+
+        <article class="stat-card">
+          <div class="stat-top">
+            <span>Kullanılan Yıllık İzin</span>
+          </div>
+          <div
+            class="stat-number"
+            id="leave-summary-annual-used"
+          >
+            0
+          </div>
+          <small>Gün</small>
+        </article>
+
+        <article class="stat-card">
+          <div class="stat-top">
+            <span>Kalan Yıllık İzin</span>
+          </div>
+          <div
+            class="stat-number"
+            id="leave-summary-annual-remaining"
+          >
+            0
+          </div>
+          <small>Gün</small>
+        </article>
+
+        <article class="stat-card">
+          <div class="stat-top">
+            <span>Saatlik İzin</span>
+          </div>
+          <div
+            class="stat-number"
+            id="leave-summary-hourly-used"
+          >
+            0
+          </div>
+          <small>Saat</small>
+        </article>
+
+      </div>
+
+    </section>
+
+    <!-- YENİ İZİN KAYDI -->
+    <section class="panel">
+
+      <div class="panel-header">
+        <div>
+          <h2>Yeni İzin Kaydı</h2>
+          <p class="panel-subtitle">
+            Seçilen personelin kullandığı izni kaydedin.
+          </p>
+        </div>
+      </div>
+
+      <form id="leave-record-form" class="work-form">
+
+        <label class="field">
+          İzin Tarihi
+          <input
+            type="date"
+            id="leave-record-date"
+            name="date"
+            required
+          />
+        </label>
+
+        <label class="field">
+          İzin Türü
+          <select
+            id="leave-record-type"
+            name="type"
+            required
+          >
+            <option value="Yıllık İzin">Yıllık İzin</option>
+            <option value="Saatlik İzin">Saatlik İzin</option>
+            <option value="Mazeret İzni">Mazeret İzni</option>
+            <option value="Ücretsiz İzin">Ücretsiz İzin</option>
+            <option value="Rapor">Rapor</option>
+            <option value="Diğer">Diğer</option>
+          </select>
+        </label>
+
+        <label class="field">
+          Başlangıç Saati
+          <input
+            type="time"
+            id="leave-record-start"
+            name="startTime"
+          />
+        </label>
+
+        <label class="field">
+          Bitiş Saati
+          <input
+            type="time"
+            id="leave-record-end"
+            name="endTime"
+          />
+        </label>
+
+        <label class="field">
+          Süre
+          <input
+            type="number"
+            id="leave-record-duration"
+            name="duration"
+            min="0"
+            step="0.5"
+            placeholder="Gün veya saat"
+            required
+          />
+        </label>
+
+        <label class="field">
+          Açıklama
+          <input
+            type="text"
+            id="leave-record-note"
+            name="note"
+            placeholder="İzin açıklaması"
+          />
+        </label>
+
+        <div class="save-row">
+
+          <span
+            class="save-status"
+            id="leave-record-status"
+          ></span>
+
+          <button
+            class="primary-btn work-submit"
+            type="submit"
+          >
+            İzin Kaydet
+          </button>
+
+        </div>
+
+      </form>
+
+    </section>
+
+    <!-- İZİN GEÇMİŞİ -->
+    <section class="panel">
+
+      <div class="panel-header">
+        <div>
+          <h2>İzin Geçmişi</h2>
+          <p class="panel-subtitle">
+            Seçilen personelin kayıtlı izinleri.
+          </p>
+        </div>
+      </div>
+
+      <div id="personnel-leave-history">
+        <div class="permission-empty">
+          Henüz izin kaydı bulunmuyor.
+        </div>
+      </div>
+
+    </section>
+
+
+    <!-- GELECEK YIL İZİN PLANI -->
+    <section class="panel">
+
+      <div class="panel-header">
+        <div>
+          <h2>Gelecek Yıl İzin Planı</h2>
+          <p class="panel-subtitle">
+            Seçilen personelin gelecek yıl için planlanan ve tahmini izinlerini yönetin.
+          </p>
+        </div>
+      </div>
+
+      <form id="leave-plan-form" class="work-form">
+
+        <label class="field">
+          İzin Tarihi
+          <input
+            type="date"
+            id="leave-plan-date"
+            name="date"
+            required
+          />
+        </label>
+
+        <label class="field">
+          Süre
+          <input
+            type="number"
+            id="leave-plan-duration"
+            name="duration"
+            min="0.5"
+            step="0.5"
+            placeholder="Örn: 5"
+            required
+          />
+        </label>
+
+        <label class="field">
+          Durum
+          <select
+            id="leave-plan-status"
+            name="status"
+          >
+            <option value="Tahmini">Tahmini</option>
+            <option value="Planlandı">Planlandı</option>
+          </select>
+        </label>
+
+        <label class="field">
+          Açıklama
+          <input
+            type="text"
+            id="leave-plan-note"
+            name="note"
+            placeholder="Örn: Yaz tatili"
+          />
+        </label>
+
+        <div class="save-row">
+
+          <span
+            class="save-status"
+            id="leave-plan-status-message"
+          ></span>
+
+          <button
+            class="primary-btn work-submit"
+            type="submit"
+          >
+            Planı Kaydet
+          </button>
+
+        </div>
+
+      </form>
+
+      <div
+        id="personnel-leave-plan-history"
+        style="margin-top: 20px;"
+      >
+        <div class="permission-empty">
+          Henüz izin planı bulunmuyor.
+        </div>
+      </div>
+
+    </section>
+
+  `;
+}
+const PERSONNEL_INFO_FIREBASE_COLLECTION = 'settings';
+const PERSONNEL_INFO_FIREBASE_DOC = 'personnelInfo';
+
+let sharedPersonnelInfoCache = {};
+
+async function loadPersonnelInfoFromFirebase() {
+  try {
+    if (
+      !window.firebaseDb ||
+      !window.firebaseDoc ||
+      !window.firebaseGetDoc
+    ) {
+      console.error(
+        'Firebase personel bilgi bağlantısı hazır değil.'
+      );
+
+      return {};
+    }
+
+    const ref =
+      window.firebaseDoc(
+        window.firebaseDb,
+        PERSONNEL_INFO_FIREBASE_COLLECTION,
+        PERSONNEL_INFO_FIREBASE_DOC
+      );
+
+    const snapshot =
+      await window.firebaseGetDoc(ref);
+
+    if (!snapshot.exists()) {
+      sharedPersonnelInfoCache = {};
+      return {};
+    }
+
+    const data =
+      snapshot.data();
+
+    sharedPersonnelInfoCache =
+      data.personnel &&
+        typeof data.personnel === 'object'
+        ? { ...data.personnel }
+        : {};
+
+    console.log(
+      'Personel bilgileri Firebase\'den yüklendi:',
+      sharedPersonnelInfoCache
+    );
+
+    return {
+      ...sharedPersonnelInfoCache
+    };
+
+  } catch (err) {
+
+    console.error(
+      'Personel bilgileri Firebase\'den okunamadı:',
+      err
+    );
+
+    return {};
+  }
+}
+
+async function savePersonnelInfoToFirebase(personnel) {
+  try {
+    if (
+      !window.firebaseDb ||
+      !window.firebaseDoc ||
+      !window.firebaseSetDoc
+    ) {
+      console.error(
+        'Firebase personel bilgi bağlantısı hazır değil.'
+      );
+
+      return false;
+    }
+
+    const ref =
+      window.firebaseDoc(
+        window.firebaseDb,
+        PERSONNEL_INFO_FIREBASE_COLLECTION,
+        PERSONNEL_INFO_FIREBASE_DOC
+      );
+
+    await window.firebaseSetDoc(
+      ref,
+      {
+        personnel:
+          personnel,
+
+        updatedAt:
+          new Date().toISOString()
+      }
+    );
+
+    sharedPersonnelInfoCache =
+      { ...personnel };
+
+    console.log(
+      'Personel bilgileri Firebase\'e kaydedildi:',
+      sharedPersonnelInfoCache
+    );
+
+    return true;
+
+  } catch (err) {
+
+    console.error(
+      'Personel bilgileri Firebase\'e kaydedilemedi:',
+      err
+    );
+
+    return false;
+  }
+}
+const PERSONNEL_LEAVE_FIREBASE_COLLECTION =
+  'personnelLeaves';
+
+let sharedPersonnelLeaveCache = [];
+
+async function loadPersonnelLeaveRecordsFromFirebase() {
+  try {
+    if (
+      !window.firebaseDb ||
+      !window.firebaseCollection ||
+      !window.firebaseGetDocs
+    ) {
+      console.error(
+        'Firebase personel izin bağlantısı hazır değil.'
+      );
+
+      return [];
+    }
+
+    const ref =
+      window.firebaseCollection(
+        window.firebaseDb,
+        PERSONNEL_LEAVE_FIREBASE_COLLECTION
+      );
+
+    const snapshot =
+      await window.firebaseGetDocs(ref);
+
+    const records = [];
+
+    snapshot.forEach((docSnapshot) => {
+      const data =
+        docSnapshot.data();
+
+      if (!data) return;
+
+      records.push({
+        id:
+          data.id ||
+          docSnapshot.id,
+
+        staff:
+          data.staff || '',
+
+        date:
+          data.date || '',
+
+        type:
+          data.type || '',
+
+        startTime:
+          data.startTime || '',
+
+        endTime:
+          data.endTime || '',
+
+        duration:
+          Number(data.duration || 0),
+
+        note:
+          data.note || '',
+
+        createdAt:
+          data.createdAt || '',
+
+        createdBy:
+          data.createdBy || ''
+      });
+    });
+
+    sharedPersonnelLeaveCache =
+      [...records];
+
+    console.log(
+      'Personel izin kayıtları Firebase\'den yüklendi:',
+      sharedPersonnelLeaveCache
+    );
+
+    return [
+      ...sharedPersonnelLeaveCache
+    ];
+
+  } catch (err) {
+
+    console.error(
+      'Personel izin kayıtları Firebase\'den okunamadı:',
+      err
+    );
+
+    return [];
+  }
+}
+
+async function savePersonnelLeaveRecordToFirebase(record) {
+  try {
+    if (
+      !window.firebaseDb ||
+      !window.firebaseDoc ||
+      !window.firebaseSetDoc
+    ) {
+      console.error(
+        'Firebase personel izin bağlantısı hazır değil.'
+      );
+
+      return false;
+    }
+
+    if (!record || !record.id) {
+      return false;
+    }
+
+    const ref =
+      window.firebaseDoc(
+        window.firebaseDb,
+        PERSONNEL_LEAVE_FIREBASE_COLLECTION,
+        record.id
+      );
+
+    await window.firebaseSetDoc(
+      ref,
+      record
+    );
+
+    sharedPersonnelLeaveCache =
+      [
+        ...sharedPersonnelLeaveCache.filter(
+          (item) =>
+            item.id !== record.id
+        ),
+        { ...record }
+      ];
+
+    console.log(
+      'Personel izin kaydı Firebase\'e kaydedildi:',
+      record
+    );
+
+    return true;
+
+  } catch (err) {
+
+    console.error(
+      'Personel izin kaydı Firebase\'e kaydedilemedi:',
+      err
+    );
+
+    return false;
+  }
+}
+const PERSONNEL_LEAVE_PLAN_COLLECTION =
+  'personnelLeavePlans';
+
+let sharedPersonnelLeavePlanCache = [];
+
+async function loadPersonnelLeavePlansFromFirebase() {
+  try {
+    if (
+      !window.firebaseDb ||
+      !window.firebaseCollection ||
+      !window.firebaseGetDocs
+    ) {
+      console.error(
+        'Firebase izin planı bağlantısı hazır değil.'
+      );
+
+      return [];
+    }
+
+    const ref =
+      window.firebaseCollection(
+        window.firebaseDb,
+        PERSONNEL_LEAVE_PLAN_COLLECTION
+      );
+
+    const snapshot =
+      await window.firebaseGetDocs(ref);
+
+    const plans = [];
+
+    snapshot.forEach((docSnapshot) => {
+      const data =
+        docSnapshot.data();
+
+      if (!data) return;
+
+      plans.push({
+        id:
+          data.id ||
+          docSnapshot.id,
+
+        staff:
+          data.staff || '',
+
+        date:
+          data.date || '',
+
+        duration:
+          Number(
+            data.duration || 0
+          ),
+
+        status:
+          data.status || 'Tahmini',
+
+        note:
+          data.note || '',
+
+        createdAt:
+          data.createdAt || '',
+
+        createdBy:
+          data.createdBy || ''
+      });
+    });
+
+    sharedPersonnelLeavePlanCache =
+      [...plans];
+
+    return [
+      ...sharedPersonnelLeavePlanCache
+    ];
+
+  } catch (err) {
+
+    console.error(
+      'Firebase izin planları okunamadı:',
+      err
+    );
+
+    return [];
+  }
+}
+
+async function savePersonnelLeavePlanToFirebase(plan) {
+  try {
+    if (
+      !window.firebaseDb ||
+      !window.firebaseDoc ||
+      !window.firebaseSetDoc
+    ) {
+      console.error(
+        'Firebase izin planı bağlantısı hazır değil.'
+      );
+
+      return false;
+    }
+
+    if (!plan || !plan.id) {
+      return false;
+    }
+
+    const ref =
+      window.firebaseDoc(
+        window.firebaseDb,
+        PERSONNEL_LEAVE_PLAN_COLLECTION,
+        plan.id
+      );
+
+    await window.firebaseSetDoc(
+      ref,
+      plan
+    );
+
+    sharedPersonnelLeavePlanCache =
+      [
+        ...sharedPersonnelLeavePlanCache.filter(
+          (item) =>
+            item.id !== plan.id
+        ),
+        { ...plan }
+      ];
+
+    return true;
+
+  } catch (err) {
+
+    console.error(
+      'Firebase izin planı kaydedilemedi:',
+      err
+    );
+
+    return false;
+  }
+}
+async function setupPersonnelLeave() {
+
+  if (!isAdminUser()) return;
+
+
+  const staffSelect =
+    document.querySelector(
+      '#personnel-leave-staff'
+    );
+
+
+  const infoForm =
+    document.querySelector(
+      '#personnel-info-form'
+    );
+
+
+  const nameInput =
+    document.querySelector(
+      '#personnel-info-name'
+    );
+
+
+  const birthInput =
+    document.querySelector(
+      '#personnel-info-birth'
+    );
+
+
+  const startInput =
+    document.querySelector(
+      '#personnel-info-start'
+    );
+
+
+  const annualInput =
+    document.querySelector(
+      '#personnel-info-annual'
+    );
+
+
+  const noteInput =
+    document.querySelector(
+      '#personnel-info-note'
+    );
+
+
+  const infoStatus =
+    document.querySelector(
+      '#personnel-info-status'
+    );
+
+
+  const leaveForm =
+    document.querySelector(
+      '#leave-record-form'
+    );
+
+
+  const leaveDate =
+    document.querySelector(
+      '#leave-record-date'
+    );
+
+
+  const leaveType =
+    document.querySelector(
+      '#leave-record-type'
+    );
+
+
+  const leaveStart =
+    document.querySelector(
+      '#leave-record-start'
+    );
+
+
+  const leaveEnd =
+    document.querySelector(
+      '#leave-record-end'
+    );
+
+
+  const leaveDuration =
+    document.querySelector(
+      '#leave-record-duration'
+    );
+
+
+  const leaveNote =
+    document.querySelector(
+      '#leave-record-note'
+    );
+
+
+  const leaveStatus =
+    document.querySelector(
+      '#leave-record-status'
+    );
+
+
+  const leaveHistory =
+    document.querySelector(
+      '#personnel-leave-history'
+    );
+
+
+  /*
+   * GÖRÜNTÜLE BUTONU FORM GÖNDERİMİNİ ENGELLE
+   */
+
+  const personnelLeaveForm =
+    document.querySelector(
+      '#personnel-leave-form'
+    );
+
+
+  if (
+    personnelLeaveForm
+  ) {
+
+    personnelLeaveForm.addEventListener(
+      'submit',
+      (e) => {
+
+        e.preventDefault();
+
+        loadSelectedPerson();
+
+      }
+    );
+
+  }
+
+
+  if (
+    !staffSelect ||
+    !infoForm
+  ) {
+
+    return;
+
+  }
+
+  /*
+   * PERSONEL ÖZLÜK BİLGİLERİ
+   */
+
+  const personnel =
+    await loadPersonnelInfoFromFirebase();
+
+  /*
+   * İZİN KAYITLARI
+   */
+
+  let leaveRecords =
+    await loadPersonnelLeaveRecordsFromFirebase();
+
+  function getSelectedStaff() {
+    return staffSelect.value || '';
+  }
+
+  function loadSelectedPerson() {
+    const staff =
+      getSelectedStaff();
+
+    const data =
+      personnel[staff] &&
+        typeof personnel[staff] === 'object'
+        ? personnel[staff]
+        : {};
+
+    if (nameInput) {
+      nameInput.value =
+        staff || '';
+    }
+
+    if (birthInput) {
+      birthInput.value =
+        data.birthDate || '';
+    }
+
+    if (startInput) {
+      startInput.value =
+        data.startDate || '';
+    }
+
+    if (annualInput) {
+      annualInput.value =
+        data.annualLeave ?? '';
+    }
+
+    if (noteInput) {
+      noteInput.value =
+        data.note || '';
+    }
+
+    if (infoStatus) {
+      infoStatus.className =
+        'save-status';
+
+      infoStatus.textContent =
+        '';
+    }
+
+    renderLeaveSummary();
+    renderLeaveHistory();
+  }
+
+  /*
+   * ÖZLÜK BİLGİLERİNİ KAYDET
+   */
+
+  infoForm.addEventListener(
+    'submit',
+    async (e) => {
+      e.preventDefault();
+
+      const staff =
+        getSelectedStaff();
+
+      if (!staff) return;
+
+      personnel[staff] = {
+        birthDate:
+          birthInput
+            ? birthInput.value
+            : '',
+
+        startDate:
+          startInput
+            ? startInput.value
+            : '',
+
+        annualLeave:
+          annualInput &&
+            annualInput.value !== ''
+            ? Number(annualInput.value)
+            : 0,
+
+        note:
+          noteInput
+            ? noteInput.value.trim()
+            : ''
+      };
+
+      if (infoStatus) {
+        infoStatus.className =
+          'save-status';
+
+        infoStatus.textContent =
+          'Bilgiler kaydediliyor...';
+      }
+
+      const saved =
+        await savePersonnelInfoToFirebase(
+          personnel
+        );
+
+      if (!saved) {
+        if (infoStatus) {
+          infoStatus.textContent =
+            'Bilgiler kaydedilemedi.';
+        }
+
+        return;
+      }
+
+      if (infoStatus) {
+        infoStatus.className =
+          'save-status is-ok';
+
+        infoStatus.textContent =
+          `✓ ${staff} personelinin bilgileri kaydedildi.`;
+      }
+
+      renderLeaveSummary();
+    }
+  );
+
+  /*
+   * YENİ İZİN KAYDI
+   */
+
+  if (leaveForm) {
+    leaveForm.addEventListener(
+      'submit',
+      async (e) => {
+        e.preventDefault();
+
+        const staff =
+          getSelectedStaff();
+
+        if (!staff) return;
+
+        const record = {
+          id:
+            `${Date.now()}-${Math.random()
+              .toString(36)
+              .slice(2, 8)}`,
+
+          staff:
+            staff,
+
+          date:
+            leaveDate
+              ? leaveDate.value
+              : '',
+
+          type:
+            leaveType
+              ? leaveType.value
+              : '',
+
+          startTime:
+            leaveStart
+              ? leaveStart.value
+              : '',
+
+          endTime:
+            leaveEnd
+              ? leaveEnd.value
+              : '',
+
+          duration:
+            leaveDuration &&
+              leaveDuration.value !== ''
+              ? Number(leaveDuration.value)
+              : 0,
+
+          note:
+            leaveNote
+              ? leaveNote.value.trim()
+              : '',
+
+          createdAt:
+            new Date().toISOString(),
+
+          createdBy:
+            currentUser
+              ? currentUser.name
+              : ''
+        };
+
+        if (!record.date) {
+          if (leaveStatus) {
+            leaveStatus.textContent =
+              'İzin tarihi seçilmelidir.';
+          }
+
+          return;
+        }
+
+        if (!record.type) {
+          if (leaveStatus) {
+            leaveStatus.textContent =
+              'İzin türü seçilmelidir.';
+          }
+
+          return;
+        }
+
+        if (
+          !Number.isFinite(record.duration) ||
+          record.duration <= 0
+        ) {
+          if (leaveStatus) {
+            leaveStatus.textContent =
+              'Süre 0’dan büyük olmalıdır.';
+          }
+
+          return;
+        }
+
+        if (leaveStatus) {
+          leaveStatus.className =
+            'save-status';
+
+          leaveStatus.textContent =
+            'İzin kaydediliyor...';
+        }
+
+        const saved =
+          await savePersonnelLeaveRecordToFirebase(
+            record
+          );
+
+        if (!saved) {
+          if (leaveStatus) {
+            leaveStatus.textContent =
+              'İzin Firebase\'e kaydedilemedi.';
+          }
+
+          return;
+        }
+
+        leaveRecords.push(record);
+
+        if (leaveStatus) {
+          leaveStatus.className =
+            'save-status is-ok';
+
+          leaveStatus.textContent =
+            '✓ İzin kaydı kaydedildi.';
+        }
+
+        if (leaveDate) {
+          leaveDate.value = '';
+        }
+
+        if (leaveStart) {
+          leaveStart.value = '';
+        }
+
+        if (leaveEnd) {
+          leaveEnd.value = '';
+        }
+
+        if (leaveDuration) {
+          leaveDuration.value = '';
+        }
+
+        if (leaveNote) {
+          leaveNote.value = '';
+        }
+
+        renderLeaveSummary();
+        renderLeaveHistory();
+      }
+    );
+  }
+
+  /*
+   * PERSONEL DEĞİŞTİRME
+   */
+
+  staffSelect.addEventListener(
+    'change',
+    () => {
+      loadSelectedPerson();
+    }
+  );
+
+  /*
+   * ÖZET
+   */
+
+  function renderLeaveSummary() {
+    const staff =
+      getSelectedStaff();
+
+    const records =
+      leaveRecords.filter(
+        (record) =>
+          record &&
+          record.staff === staff
+      );
+
+    const selectedYear =
+      window._personnelLeaveYear ||
+      new Date().getFullYear();
+
+    const yearRecords =
+      records.filter(
+        (record) =>
+          record.date &&
+          record.date.startsWith(
+            String(selectedYear)
+          )
+      );
+
+    const annualUsed =
+      yearRecords
+        .filter(
+          (record) =>
+            record.type === 'Yıllık İzin'
+        )
+        .reduce(
+          (sum, record) =>
+            sum +
+            Number(record.duration || 0),
+          0
+        );
+
+    const hourlyUsed =
+      yearRecords
+        .filter(
+          (record) =>
+            record.type === 'Saatlik İzin'
+        )
+        .reduce(
+          (sum, record) =>
+            sum +
+            Number(record.duration || 0),
+          0
+        );
+
+    const entitlement =
+      personnel[staff] &&
+      Number(
+        personnel[staff].annualLeave || 0
+      );
+
+    const remaining =
+      Math.max(
+        entitlement - annualUsed,
+        0
+      );
+
+    const entitlementEl =
+      document.querySelector(
+        '#leave-summary-entitlement'
+      );
+
+    const annualUsedEl =
+      document.querySelector(
+        '#leave-summary-annual-used'
+      );
+
+    const remainingEl =
+      document.querySelector(
+        '#leave-summary-annual-remaining'
+      );
+
+    const hourlyUsedEl =
+      document.querySelector(
+        '#leave-summary-hourly-used'
+      );
+
+    if (entitlementEl) {
+      entitlementEl.textContent =
+        entitlement;
+    }
+
+    if (annualUsedEl) {
+      annualUsedEl.textContent =
+        annualUsed;
+    }
+
+    if (remainingEl) {
+      remainingEl.textContent =
+        remaining;
+    }
+
+    if (hourlyUsedEl) {
+      hourlyUsedEl.textContent =
+        hourlyUsed;
+    }
+  }
+
+  /*
+   * İZİN GEÇMİŞİ
+   */
+
+  function renderLeaveHistory() {
+    if (!leaveHistory) return;
+
+    const staff =
+      getSelectedStaff();
+
+    const records =
+      leaveRecords
+        .filter(
+          (record) =>
+            record &&
+            record.staff === staff
+        )
+        .sort(
+          (a, b) =>
+            (b.date || '').localeCompare(
+              a.date || ''
+            )
+        );
+
+    if (!records.length) {
+      leaveHistory.innerHTML =
+        '<div class="permission-empty">Henüz izin kaydı bulunmuyor.</div>';
+
+      return;
+    }
+
+    leaveHistory.innerHTML = `
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Tarih</th>
+              <th>İzin Türü</th>
+              <th>Başlangıç</th>
+              <th>Bitiş</th>
+              <th>Süre</th>
+              <th>Açıklama</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            ${records.map(
+      (record) => `
+                  <tr>
+                    <td>
+                      ${escapeHtml(
+        record.date || '-'
+      )}
+                    </td>
+
+                    <td>
+                      ${escapeHtml(
+        record.type || '-'
+      )}
+                    </td>
+
+                    <td>
+                      ${escapeHtml(
+        record.startTime || '-'
+      )}
+                    </td>
+
+                    <td>
+                      ${escapeHtml(
+        record.endTime || '-'
+      )}
+                    </td>
+
+                    <td>
+                      ${escapeHtml(
+        String(
+          record.duration ?? '-'
+        )
+      )}
+                    </td>
+
+                    <td>
+                      ${escapeHtml(
+        record.note || '-'
+      )}
+                    </td>
+                  </tr>
+                `
+    ).join('')
+      }
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  /*
+   * AYLIK İZİN RAPORU
+   */
+
+  const reportYear =
+    document.querySelector(
+      '#personnel-report-year'
+    );
+
+  const reportMonth =
+    document.querySelector(
+      '#personnel-report-month'
+    );
+
+  const reportButton =
+    document.querySelector(
+      '#personnel-report-button'
+    );
+
+  const monthlyReport =
+    document.querySelector(
+      '#personnel-monthly-report'
+    );
+
+  const now =
+    new Date();
+
+  if (reportYear) {
+    reportYear.value =
+      String(
+        now.getFullYear()
+      );
+  }
+
+  if (reportMonth) {
+    reportMonth.value =
+      String(
+        now.getMonth() + 1
+      ).padStart(2, '0');
+  }
+
+  function showMonthlyReport() {
+    const staff =
+      getSelectedStaff();
+
+    const year =
+      reportYear
+        ? reportYear.value
+        : String(
+          now.getFullYear()
+        );
+
+    const month =
+      reportMonth
+        ? reportMonth.value
+        : String(
+          now.getMonth() + 1
+        ).padStart(2, '0');
+
+    window._personnelLeaveYear =
+      Number(year);
+
+    const prefix =
+      `${year}-${month}`;
+
+    const records =
+      leaveRecords
+        .filter(
+          (record) =>
+            record &&
+            record.staff === staff &&
+            record.date &&
+            record.date.startsWith(
+              prefix
+            )
+        )
+        .sort(
+          (a, b) =>
+            (a.date || '').localeCompare(
+              b.date || ''
+            )
+        );
+
+    if (!monthlyReport) {
+      return;
+    }
+
+    if (!records.length) {
+      monthlyReport.innerHTML = `
+        <div class="permission-empty">
+          ${escapeHtml(staff)} için
+          ${escapeHtml(year)}-${escapeHtml(month)}
+          döneminde izin kaydı bulunmuyor.
+        </div>
+      `;
+
+      renderLeaveSummary();
+
+      return;
+    }
+
+    const annualDays =
+      records
+        .filter(
+          (record) =>
+            record.type === 'Yıllık İzin'
+        )
+        .reduce(
+          (sum, record) =>
+            sum +
+            Number(record.duration || 0),
+          0
+        );
+
+    const hourlyHours =
+      records
+        .filter(
+          (record) =>
+            record.type === 'Saatlik İzin'
+        )
+        .reduce(
+          (sum, record) =>
+            sum +
+            Number(record.duration || 0),
+          0
+        );
+
+    monthlyReport.innerHTML = `
+      <div class="stats-grid">
+
+        <article class="stat-card">
+          <div class="stat-top">
+            <span>Yıllık İzin</span>
+          </div>
+
+          <div class="stat-number">
+            ${annualDays}
+          </div>
+
+          <small>Gün</small>
+        </article>
+
+        <article class="stat-card">
+          <div class="stat-top">
+            <span>Saatlik İzin</span>
+          </div>
+
+          <div class="stat-number">
+            ${hourlyHours}
+          </div>
+
+          <small>Saat</small>
+        </article>
+
+        <article class="stat-card">
+          <div class="stat-top">
+            <span>Toplam Kayıt</span>
+          </div>
+
+          <div class="stat-number">
+            ${records.length}
+          </div>
+
+          <small>İzin kaydı</small>
+        </article>
+
+      </div>
+
+      <div class="table-wrap">
+
+        <table class="data-table">
+
+          <thead>
+            <tr>
+              <th>Tarih</th>
+              <th>İzin Türü</th>
+              <th>Başlangıç</th>
+              <th>Bitiş</th>
+              <th>Süre</th>
+              <th>Açıklama</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            ${records.map(
+      (record) => `
+                  <tr>
+
+                    <td>
+                      ${escapeHtml(
+        record.date || '-'
+      )}
+                    </td>
+
+                    <td>
+                      ${escapeHtml(
+        record.type || '-'
+      )}
+                    </td>
+
+                    <td>
+                      ${escapeHtml(
+        record.startTime || '-'
+      )}
+                    </td>
+
+                    <td>
+                      ${escapeHtml(
+        record.endTime || '-'
+      )}
+                    </td>
+
+                    <td>
+                      ${escapeHtml(
+        String(
+          record.duration ?? '-'
+        )
+      )}
+                    </td>
+
+                    <td>
+                      ${escapeHtml(
+        record.note || '-'
+      )}
+                    </td>
+
+                  </tr>
+                `
+    ).join('')
+      }
+          </tbody>
+
+        </table>
+
+      </div>
+    `;
+
+    renderLeaveSummary();
+  }
+
+  if (reportButton) {
+
+    reportButton.addEventListener(
+      'click',
+      showMonthlyReport
+    );
+
+  }
+/*
+   * GELECEK YIL İZİN PLANI
+   */
+
+  const leavePlanForm =
+    document.querySelector(
+      '#leave-plan-form'
+    );
+
+  const leavePlanDate =
+    document.querySelector(
+      '#leave-plan-date'
+    );
+
+  const leavePlanDuration =
+    document.querySelector(
+      '#leave-plan-duration'
+    );
+
+  const leavePlanStatus =
+    document.querySelector(
+      '#leave-plan-status'
+    );
+
+  const leavePlanNote =
+    document.querySelector(
+      '#leave-plan-note'
+    );
+
+  const leavePlanMessage =
+    document.querySelector(
+      '#leave-plan-status-message'
+    );
+
+  const leavePlanHistory =
+    document.querySelector(
+      '#personnel-leave-plan-history'
+    );
+
+  let leavePlans =
+    await loadPersonnelLeavePlansFromFirebase();
+
+  let editingLeavePlanId = null;
+function renderLeavePlans() {
+
+    if (!leavePlanHistory) {
+      return;
+    }
+
+    const staff =
+      getSelectedStaff();
+
+    const plans =
+      leavePlans
+        .filter(
+          (plan) =>
+            plan &&
+            plan.staff === staff
+        )
+        .sort(
+          (a, b) =>
+            (a.date || '').localeCompare(
+              b.date || ''
+            )
+        );
+
+
+    /*
+     * İZİN PLANI ÖZETİ
+     */
+
+    const totalDays =
+      plans.reduce(
+        (total, plan) =>
+          total +
+          Number(
+            plan.duration || 0
+          ),
+        0
+      );
+
+    const estimatedDays =
+      plans
+        .filter(
+          (plan) =>
+            plan.status === 'Tahmini'
+        )
+        .reduce(
+          (total, plan) =>
+            total +
+            Number(
+              plan.duration || 0
+            ),
+          0
+        );
+
+    const plannedDays =
+      plans
+        .filter(
+          (plan) =>
+            plan.status === 'Planlandı'
+        )
+        .reduce(
+          (total, plan) =>
+            total +
+            Number(
+              plan.duration || 0
+            ),
+          0
+        );
+
+
+    /*
+     * KAYIT YOKSA
+     */
+
+    if (!plans.length) {
+
+      leavePlanHistory.innerHTML = `
+
+        <div
+          style="
+            display: grid;
+            grid-template-columns:
+              repeat(3, minmax(0, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+          "
+        >
+
+          <div class="panel">
+
+            <strong>
+              Toplam Planlanan
+            </strong>
+
+            <div
+              style="
+                font-size: 24px;
+                margin-top: 6px;
+              "
+            >
+              0 Gün
+            </div>
+
+          </div>
+
+
+          <div class="panel">
+
+            <strong>
+              Tahmini
+            </strong>
+
+            <div
+              style="
+                font-size: 24px;
+                margin-top: 6px;
+              "
+            >
+              0 Gün
+            </div>
+
+          </div>
+
+
+          <div class="panel">
+
+            <strong>
+              Planlandı
+            </strong>
+
+            <div
+              style="
+                font-size: 24px;
+                margin-top: 6px;
+              "
+            >
+              0 Gün
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div class="permission-empty">
+          Henüz izin planı bulunmuyor.
+        </div>
+
+      `;
+
+      return;
+    }
+
+
+    /*
+     * AYLARA GÖRE GRUPLAMA
+     */
+
+    const monthNames = [
+      'Ocak',
+      'Şubat',
+      'Mart',
+      'Nisan',
+      'Mayıs',
+      'Haziran',
+      'Temmuz',
+      'Ağustos',
+      'Eylül',
+      'Ekim',
+      'Kasım',
+      'Aralık'
+    ];
+
+    const groupedPlans = {};
+
+
+    plans.forEach(
+      (plan) => {
+
+        const monthIndex =
+          plan.date
+            ? Number(
+                plan.date.slice(5, 7)
+              ) - 1
+            : -1;
+
+        const monthName =
+          monthIndex >= 0 &&
+          monthIndex < 12
+            ? monthNames[
+                monthIndex
+              ]
+            : 'Tarihsiz';
+
+
+        if (
+          !groupedPlans[
+            monthName
+          ]
+        ) {
+
+          groupedPlans[
+            monthName
+          ] = [];
+
+        }
+
+
+        groupedPlans[
+          monthName
+        ].push(plan);
+
+      }
+    );
+
+
+    /*
+     * ÖZET
+     */
+
+    let html = `
+
+      <div
+        style="
+          display: grid;
+          grid-template-columns:
+            repeat(3, minmax(0, 1fr));
+          gap: 12px;
+          margin-bottom: 24px;
+        "
+      >
+
+        <div class="panel">
+
+          <strong>
+            Toplam Planlanan
+          </strong>
+
+          <div
+            style="
+              font-size: 24px;
+              margin-top: 6px;
+            "
+          >
+            ${totalDays} Gün
+          </div>
+
+        </div>
+
+
+        <div class="panel">
+
+          <strong>
+            Tahmini
+          </strong>
+
+          <div
+            style="
+              font-size: 24px;
+              margin-top: 6px;
+            "
+          >
+            ${estimatedDays} Gün
+          </div>
+
+        </div>
+
+
+        <div class="panel">
+
+          <strong>
+            Planlandı
+          </strong>
+
+          <div
+            style="
+              font-size: 24px;
+              margin-top: 6px;
+            "
+          >
+            ${plannedDays} Gün
+          </div>
+
+        </div>
+
+      </div>
+
+    `;
+
+
+    /*
+     * AYLARA GÖRE İZİNLER
+     */
+
+    Object.keys(
+      groupedPlans
+    ).forEach(
+      (monthName) => {
+
+        const monthPlans =
+          groupedPlans[
+            monthName
+          ];
+
+        const monthTotal =
+          monthPlans.reduce(
+            (total, plan) =>
+              total +
+              Number(
+                plan.duration || 0
+              ),
+            0
+          );
+
+
+        html += `
+
+          <div
+            class="panel"
+            style="
+              margin-bottom: 16px;
+            "
+          >
+
+            <div
+              class="panel-header"
+            >
+
+              <div>
+
+                <h3>
+                  ${monthName}
+                </h3>
+
+                <p
+                  class="panel-subtitle"
+                >
+                  Toplam:
+                  ${monthTotal}
+                  Gün
+                </p>
+
+              </div>
+
+            </div>
+
+
+            <div class="table-wrap">
+
+              <table class="data-table">
+
+                <thead>
+
+                  <tr>
+
+                    <th>
+                      Tarih
+                    </th>
+
+                    <th>
+                      Süre
+                    </th>
+
+                    <th>
+                      Durum
+                    </th>
+
+                    <th>
+                      Açıklama
+                    </th>
+
+                    <th>
+                      İşlem
+                    </th>
+
+                  </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                  ${
+                    monthPlans
+                      .map(
+                        (plan) => `
+
+                          <tr>
+
+                            <td>
+                              ${escapeHtml(
+                                plan.date ||
+                                '-'
+                              )}
+                            </td>
+
+                            <td>
+                              ${escapeHtml(
+                                String(
+                                  plan.duration ??
+                                  '-'
+                                )
+                              )}
+                              Gün
+                            </td>
+
+                            <td>
+                              ${escapeHtml(
+                                plan.status ||
+                                '-'
+                              )}
+                            </td>
+
+                            <td>
+                              ${escapeHtml(
+                                plan.note ||
+                                '-'
+                              )}
+                            </td>
+
+                            <td>
+
+                              <button
+                                type="button"
+                                class="secondary-btn leave-plan-edit"
+                                data-id="${escapeHtml(
+                                  plan.id
+                                )}"
+                              >
+                                Düzenle
+                              </button>
+
+
+                              <button
+                                type="button"
+                                class="secondary-btn leave-plan-delete"
+                                data-id="${escapeHtml(
+                                  plan.id
+                                )}"
+                                style="
+                                  margin-left: 6px;
+                                "
+                              >
+                                Sil
+                              </button>
+
+                            </td>
+
+                          </tr>
+
+                        `
+                      )
+                      .join('')
+                  }
+
+                </tbody>
+
+              </table>
+
+            </div>
+
+          </div>
+
+        `;
+
+      }
+    );
+
+
+    leavePlanHistory.innerHTML =
+      html;
+
+
+    /*
+     * DÜZENLE BUTONLARI
+     */
+
+    leavePlanHistory
+      .querySelectorAll(
+        '.leave-plan-edit'
+      )
+      .forEach(
+        (button) => {
+
+          button.addEventListener(
+            'click',
+            () => {
+
+              const id =
+                button.dataset.id;
+
+              const plan =
+                leavePlans.find(
+                  (item) =>
+                    item.id === id
+                );
+
+              if (!plan) {
+                return;
+              }
+
+
+              editingLeavePlanId =
+                plan.id;
+
+
+              if (leavePlanDate) {
+
+                leavePlanDate.value =
+                  plan.date || '';
+
+              }
+
+
+              if (leavePlanDuration) {
+
+                leavePlanDuration.value =
+                  plan.duration || '';
+
+              }
+
+
+              if (leavePlanStatus) {
+
+                leavePlanStatus.value =
+                  plan.status ||
+                  'Tahmini';
+
+              }
+
+
+              if (leavePlanNote) {
+
+                leavePlanNote.value =
+                  plan.note || '';
+
+              }
+
+
+              if (leavePlanMessage) {
+
+                leavePlanMessage.className =
+                  'save-status';
+
+                leavePlanMessage.textContent =
+                  'İzin planı düzenleme modunda.';
+
+              }
+
+
+              const submitButton =
+                leavePlanForm
+                  ? leavePlanForm.querySelector(
+                      'button[type="submit"]'
+                    )
+                  : null;
+
+
+              if (submitButton) {
+
+                submitButton.textContent =
+                  'Değişikliği Kaydet';
+
+              }
+
+            }
+          );
+
+        }
+      );
+
+
+    /*
+     * SİL BUTONLARI
+     */
+
+    leavePlanHistory
+      .querySelectorAll(
+        '.leave-plan-delete'
+      )
+      .forEach(
+        (button) => {
+
+          button.addEventListener(
+            'click',
+            async () => {
+
+              const id =
+                button.dataset.id;
+
+              const plan =
+                leavePlans.find(
+                  (item) =>
+                    item.id === id
+                );
+
+              if (!plan) {
+                return;
+              }
+
+
+              const confirmed =
+                confirm(
+                  'Bu izin planını silmek istediğinizden emin misiniz?'
+                );
+
+
+              if (!confirmed) {
+                return;
+              }
+
+
+              if (leavePlanMessage) {
+
+                leavePlanMessage.className =
+                  'save-status';
+
+                leavePlanMessage.textContent =
+                  'İzin planı siliniyor...';
+
+              }
+
+
+              try {
+
+                if (
+                  !window.firebaseDb ||
+                  !window.firebaseDoc ||
+                  !window.firebaseDeleteDoc
+                ) {
+
+                  throw new Error(
+                    'Firebase silme bağlantısı hazır değil.'
+                  );
+
+                }
+
+
+                const ref =
+                  window.firebaseDoc(
+                    window.firebaseDb,
+                    PERSONNEL_LEAVE_PLAN_COLLECTION,
+                    id
+                  );
+
+
+                await window.firebaseDeleteDoc(
+                  ref
+                );
+
+
+                leavePlans =
+                  leavePlans.filter(
+                    (item) =>
+                      item.id !== id
+                  );
+
+
+                if (
+                  editingLeavePlanId === id
+                ) {
+
+                  editingLeavePlanId =
+                    null;
+
+                }
+
+
+                if (leavePlanMessage) {
+
+                  leavePlanMessage.className =
+                    'save-status is-ok';
+
+                  leavePlanMessage.textContent =
+                    '✓ İzin planı silindi.';
+
+                }
+
+
+                renderLeavePlans();
+
+
+              } catch (err) {
+
+                console.error(
+                  'İzin planı silinemedi:',
+                  err
+                );
+
+
+                if (leavePlanMessage) {
+
+                  leavePlanMessage.className =
+                    'save-status';
+
+                  leavePlanMessage.textContent =
+                    'İzin planı silinemedi.';
+
+                }
+
+              }
+
+            }
+          );
+
+        }
+      );
+
+  }
+
+
+  /*
+   * İZİN PLANI KAYDET / GÜNCELLE
+   */
+
+  if (leavePlanForm) {
+
+    leavePlanForm.addEventListener(
+      'submit',
+      async (e) => {
+
+        e.preventDefault();
+
+
+        const staff =
+          getSelectedStaff();
+
+
+        if (!staff) {
+          return;
+        }
+
+
+        const plan = {
+
+          id:
+            editingLeavePlanId ||
+            `${Date.now()}-${Math.random()
+              .toString(36)
+              .slice(2, 8)}`,
+
+          staff:
+            staff,
+
+          date:
+            leavePlanDate
+              ? leavePlanDate.value
+              : '',
+
+          duration:
+            leavePlanDuration &&
+            leavePlanDuration.value !== ''
+              ? Number(
+                  leavePlanDuration.value
+                )
+              : 0,
+
+          status:
+            leavePlanStatus
+              ? leavePlanStatus.value
+              : 'Tahmini',
+
+          note:
+            leavePlanNote
+              ? leavePlanNote.value.trim()
+              : '',
+
+          createdAt:
+            editingLeavePlanId
+              ? (
+                  leavePlans.find(
+                    (item) =>
+                      item.id ===
+                      editingLeavePlanId
+                  )?.createdAt ||
+                  new Date().toISOString()
+                )
+              : new Date().toISOString(),
+
+          createdBy:
+            editingLeavePlanId
+              ? (
+                  leavePlans.find(
+                    (item) =>
+                      item.id ===
+                      editingLeavePlanId
+                  )?.createdBy ||
+                  (
+                    currentUser
+                      ? currentUser.name
+                      : ''
+                  )
+                )
+              : (
+                  currentUser
+                    ? currentUser.name
+                    : ''
+                )
+
+        };
+
+
+        if (!plan.date) {
+
+          if (leavePlanMessage) {
+
+            leavePlanMessage.textContent =
+              'İzin tarihi seçilmelidir.';
+
+          }
+
+          return;
+        }
+
+
+        if (
+          !Number.isFinite(
+            plan.duration
+          ) ||
+          plan.duration <= 0
+        ) {
+
+          if (leavePlanMessage) {
+
+            leavePlanMessage.textContent =
+              'Süre 0’dan büyük olmalıdır.';
+
+          }
+
+          return;
+        }
+
+
+        if (leavePlanMessage) {
+
+          leavePlanMessage.className =
+            'save-status';
+
+          leavePlanMessage.textContent =
+            editingLeavePlanId
+              ? 'Değişiklik kaydediliyor...'
+              : 'İzin planı kaydediliyor...';
+
+        }
+
+
+        const saved =
+          await savePersonnelLeavePlanToFirebase(
+            plan
+          );
+
+
+        if (!saved) {
+
+          if (leavePlanMessage) {
+
+            leavePlanMessage.textContent =
+              'İzin planı Firebase\'e kaydedilemedi.';
+
+          }
+
+          return;
+        }
+
+
+        if (editingLeavePlanId) {
+
+          leavePlans =
+            leavePlans.map(
+              (item) =>
+                item.id === plan.id
+                  ? { ...plan }
+                  : item
+            );
+
+        } else {
+
+          leavePlans.push(
+            plan
+          );
+
+        }
+
+
+        editingLeavePlanId =
+          null;
+
+
+        if (leavePlanMessage) {
+
+          leavePlanMessage.className =
+            'save-status is-ok';
+
+          leavePlanMessage.textContent =
+            '✓ İzin planı kaydedildi.';
+
+        }
+
+
+        if (leavePlanDate) {
+          leavePlanDate.value = '';
+        }
+
+        if (leavePlanDuration) {
+          leavePlanDuration.value = '';
+        }
+
+        if (leavePlanNote) {
+          leavePlanNote.value = '';
+        }
+
+        if (leavePlanStatus) {
+          leavePlanStatus.value =
+            'Tahmini';
+        }
+
+
+        const submitButton =
+          leavePlanForm.querySelector(
+            'button[type="submit"]'
+          );
+
+
+        if (submitButton) {
+
+          submitButton.textContent =
+            'Planı Kaydet';
+
+        }
+
+
+        renderLeavePlans();
+
+      }
+    );
+
+  }
+
+
+  renderLeavePlans();
+
+  loadSelectedPerson();
+
 }
 
 function setupReports() {
@@ -4251,6 +7426,33 @@ function setSaveStatus(statusEl, mode, message) {
     : message;
 }
 async function renderWorkTasks(staff, company, dateFrom, dateTo) {
+    /*
+   * Önceki canlı Firebase dinleyicilerini kapat.
+   */
+  if (
+    Array.isArray(
+      window._workRecordUnsubscribers
+    )
+  ) {
+
+    window._workRecordUnsubscribers.forEach(
+      (unsubscribe) => {
+
+        try {
+          unsubscribe();
+        } catch (err) {
+          console.error(
+            'Önceki iş kaydı dinleyicisi kapatılamadı:',
+            err
+          );
+        }
+
+      }
+    );
+
+  }
+
+  window._workRecordUnsubscribers = [];
   const taskContent =
     document.querySelector('#dash-task-content') ||
     document.querySelector('#task-content');
@@ -4298,7 +7500,7 @@ async function renderWorkTasks(staff, company, dateFrom, dateTo) {
 
   const staffMatrix =
     permissionMatrix[staff] &&
-    typeof permissionMatrix[staff] === 'object'
+      typeof permissionMatrix[staff] === 'object'
       ? permissionMatrix[staff]
       : {};
 
@@ -4307,7 +7509,7 @@ async function renderWorkTasks(staff, company, dateFrom, dateTo) {
    */
   const companyPermissions =
     staffMatrix.companies &&
-    typeof staffMatrix.companies === 'object'
+      typeof staffMatrix.companies === 'object'
       ? staffMatrix.companies
       : {};
 
@@ -4402,8 +7604,8 @@ async function renderWorkTasks(staff, company, dateFrom, dateTo) {
    */
   const taskPermissions =
     staffMatrix.tasks &&
-    staffMatrix.tasks[company] &&
-    typeof staffMatrix.tasks[company] === 'object'
+      staffMatrix.tasks[company] &&
+      typeof staffMatrix.tasks[company] === 'object'
       ? staffMatrix.tasks[company]
       : {};
 
@@ -4486,8 +7688,8 @@ async function renderWorkTasks(staff, company, dateFrom, dateTo) {
     dateFrom && dateTo
       ? `<span class="date-from">${formatDateTr(dateFrom)}</span> — <span class="date-to">${formatDateTr(dateTo)}</span>`
       : formatDateTr(
-          dateFrom || dateTo
-        );
+        dateFrom || dateTo
+      );
 
   let totalTasks = 0;
   let totalCompleted = 0;
@@ -4541,7 +7743,7 @@ async function renderWorkTasks(staff, company, dateFrom, dateTo) {
             (
               !lastRecordDate ||
               record.updatedAt >
-                lastRecordDate
+              lastRecordDate
             )
           ) {
             lastRecordDate =
@@ -4566,45 +7768,59 @@ async function renderWorkTasks(staff, company, dateFrom, dateTo) {
               <div class="task-date-content">
 
                 ${visibleTasks
-                  .map(
-                    (task, idx) => {
-                      const permission =
-                        taskPermissions[task];
+              .map(
+                (task, idx) => {
+                  const permission =
+                    taskPermissions[task];
 
-                      const canEditTask =
-                        permission === 'islem';
+                  const canEditTask =
+                    permission === 'islem';
 
-                      return `
-                        <label
-                          class="task-row${canEditTask ? '' : ' task-readonly'}"
-                        >
-                          <input
-                            type="checkbox"
-                            class="task-check"
-                            data-date="${date}"
-                            data-task="${task}"
-                            ${saved[idx] ? 'checked' : ''}
-                            ${canEditTask ? '' : 'disabled'}
-                          />
+                  return `
+  <div class="task-entry">
+    <label
+      class="task-row${canEditTask ? '' : ' task-readonly'}"
+    >
+      <input
+        type="checkbox"
+        class="task-check"
+        data-date="${date}"
+        data-task="${task}"
+        ${saved[idx] ? 'checked' : ''}
+        ${canEditTask ? '' : 'disabled'}
+      />
 
-                          <span class="task-box"></span>
+      <span class="task-box"></span>
 
-                          <span class="task-name">
-                            <strong>${task}</strong>
-                            <small>
-                              ${dateFormatted} · ${company}
-                              ${
-                                canEditTask
-                                  ? ''
-                                  : ' · Sadece görüntüleme'
-                              }
-                            </small>
-                          </span>
-                        </label>
-                      `;
-                    }
-                  )
-                  .join('')}
+      <span class="task-name">
+        <strong>${task}</strong>
+        <small>
+          ${dateFormatted} · ${company}
+          ${canEditTask ? '' : ' · Sadece görüntüleme'}
+        </small>
+      </span>
+    </label>
+
+    <div class="task-quantity-wrap">
+      <label>Gerçekleşen adet</label>
+      <input
+        type="number"
+        class="task-quantity"
+        data-date="${date}"
+        data-task="${task}"
+        min="0"
+        step="1"
+        inputmode="numeric"
+        placeholder="Adet"
+        value="${record && record.quantitiesByName && record.quantitiesByName[task] !== undefined ? record.quantitiesByName[task] : ''}"
+        ${canEditTask ? '' : 'disabled'}
+      />
+    </div>
+  </div>
+`;
+                }
+              )
+              .join('')}
 
               </div>
             </div>
@@ -4632,7 +7848,228 @@ async function renderWorkTasks(staff, company, dateFrom, dateTo) {
     taskContent.innerHTML =
       dateBlocks;
   }
+/*
+ * FIREBASE GERÇEK ZAMANLI İŞ KAYDI DİNLEME
+ *
+ * Başka bir kullanıcı işaretleme yaptığında
+ * açık ekran otomatik olarak güncellenir.
+ */
 
+if (
+  taskContent &&
+  window.firebaseOnSnapshot &&
+  window.firebaseDoc &&
+  window.firebaseDb
+) {
+
+  dates.forEach(
+    (date) => {
+
+      const recordKey =
+        getWorkKey(
+          staff,
+          company,
+          date
+        );
+
+      const workRef =
+        window.firebaseDoc(
+          window.firebaseDb,
+          window.firebaseWorkRecordCollection ||
+            'workRecords',
+          recordKey
+        );
+
+
+      const unsubscribe =
+        window.firebaseOnSnapshot(
+          workRef,
+          (snapshot) => {
+
+            if (!snapshot.exists()) {
+              return;
+            }
+
+
+            const record =
+              snapshot.data();
+
+
+            const tasksByName =
+              record &&
+              record.tasksByName &&
+              typeof record.tasksByName === 'object'
+                ? record.tasksByName
+                : {};
+
+
+            /*
+             * İlgili tarihteki checkbox'ları
+             * Firebase'deki son duruma getir.
+             */
+
+            const dateBoxes =
+              Array.from(
+                taskContent.querySelectorAll(
+                  '.task-check'
+                )
+              ).filter(
+                (box) =>
+                  box.getAttribute(
+                    'data-date'
+                  ) === date
+              );
+
+
+            dateBoxes.forEach(
+              (box) => {
+
+                const taskName =
+                  box.getAttribute(
+                    'data-task'
+                  );
+
+                if (!taskName) {
+                  return;
+                }
+
+
+                /*
+                 * Kullanıcı o anda elle değişiklik
+                 * yapıyorsa üzerine yazma.
+                 */
+
+                if (
+                  saveStatus &&
+                  saveStatus.dataset.dirty ===
+                    'true'
+                ) {
+                  return;
+                }
+
+
+                box.checked =
+                  !!tasksByName[taskName];
+
+              }
+            );
+
+
+            /*
+             * İlgili günün tamamlanma sayısını güncelle.
+             */
+
+            const dateBlock =
+              Array.from(
+                taskContent.querySelectorAll(
+                  '.task-date-block'
+                )
+              ).find(
+                (block) =>
+                  block.querySelector(
+                    `.task-check[data-date="${date}"]`
+                  )
+              );
+
+
+            if (dateBlock) {
+
+              const checkedCount =
+                dateBlock.querySelectorAll(
+                  '.task-check:checked'
+                ).length;
+
+
+              const totalCount =
+                dateBlock.querySelectorAll(
+                  '.task-check'
+                ).length;
+
+
+              const dateSummary =
+                dateBlock.querySelector(
+                  '.task-date-summary'
+                );
+
+
+              if (dateSummary) {
+
+                dateSummary.textContent =
+                  `${checkedCount} / ${totalCount} tamamlandı`;
+
+              }
+
+            }
+
+
+            /*
+             * Genel toplamı güncelle.
+             */
+
+            const completed =
+              taskContent.querySelectorAll(
+                '.task-check:checked'
+              ).length;
+
+
+            const total =
+              taskContent.querySelectorAll(
+                '.task-check'
+              ).length;
+
+
+            if (taskCounter) {
+
+              taskCounter.textContent =
+                `${completed} / ${total} tamamlandı`;
+
+            }
+
+
+            /*
+             * Kayıt zamanı bilgisini güncelle.
+             */
+
+            if (
+              saveStatus &&
+              saveStatus.dataset.dirty !==
+                'true'
+            ) {
+
+              if (
+                record.updatedAt
+              ) {
+
+                setSaveStatus(
+                  saveStatus,
+                  'ok',
+                  `✓ Canlı güncellendi. Son kayıt: ${formatUpdatedAt(record.updatedAt)}`
+                );
+
+              }
+
+            }
+
+          },
+          (error) => {
+
+            console.error(
+              'Firebase canlı iş kaydı dinlenemedi:',
+              error
+            );
+
+          }
+        );
+
+
+      window._workRecordUnsubscribers.push(
+        unsubscribe
+      );
+
+    }
+  );
+
+}
   if (saveStatus) {
     if (lastRecordDate) {
       setSaveStatus(
@@ -4702,6 +8139,24 @@ async function renderWorkTasks(staff, company, dateFrom, dateTo) {
   /*
    * KAYDET
    */
+  /*
+   * ADET DEĞİŞİKLİĞİ
+   */
+  if (taskContent) {
+    taskContent
+      .querySelectorAll('.task-quantity:not(:disabled)')
+      .forEach((input) => {
+        input.addEventListener('input', () => {
+          if (saveStatus) {
+            setSaveStatus(
+              saveStatus,
+              'dirty',
+              'Kaydedilmemiş değişiklik var — Kaydet’e basın.'
+            );
+          }
+        });
+      });
+  }
   if (saveBtn) {
     saveBtn.onclick =
       async () => {
@@ -4770,11 +8225,11 @@ async function renderWorkTasks(staff, company, dateFrom, dateTo) {
 
           const existingByName =
             existingRecord &&
-            existingRecord.tasksByName &&
-            typeof existingRecord.tasksByName === 'object'
+              existingRecord.tasksByName &&
+              typeof existingRecord.tasksByName === 'object'
               ? {
-                  ...existingRecord.tasksByName
-                }
+                ...existingRecord.tasksByName
+              }
               : {};
 
           /*
@@ -4850,6 +8305,44 @@ async function renderWorkTasks(staff, company, dateFrom, dateTo) {
               }
             );
           }
+const existingQuantities =
+            existingRecord &&
+            existingRecord.quantitiesByName &&
+            typeof existingRecord.quantitiesByName === 'object'
+              ? { ...existingRecord.quantitiesByName }
+              : {};
+
+          const quantityBoxes = Array.from(
+            taskContent.querySelectorAll(
+              `.task-quantity[data-date="${date}"]`
+            )
+          );
+
+          quantityBoxes.forEach((box) => {
+            const taskName =
+              box.getAttribute('data-task');
+
+            if (
+              taskName &&
+              taskPermissions[taskName] === 'islem'
+            ) {
+              const rawValue = box.value.trim();
+
+              if (rawValue === '') {
+                existingQuantities[taskName] = 0;
+                return;
+              }
+
+              const quantity = Number(rawValue);
+
+              if (
+                Number.isSafeInteger(quantity) &&
+                quantity >= 0
+              ) {
+                existingQuantities[taskName] = quantity;
+              }
+            }
+          });
 
           const saved =
             await saveWorkRecord(
@@ -4857,7 +8350,8 @@ async function renderWorkTasks(staff, company, dateFrom, dateTo) {
               company,
               date,
               current,
-              byName
+              byName,
+              existingQuantities
             );
 
           if (!saved) {
@@ -4989,7 +8483,7 @@ function renderDashboardWorkPanel() {
   const staffName = currentUser ? currentUser.name : staffMembers[0];
   const visibleCompanies = getCompanies().filter((company) => canView(staffName, company));
   let open = true;
-  try { open = localStorage.getItem(DASH_PANEL_KEY) !== 'closed'; } catch (err) {}
+  try { open = localStorage.getItem(DASH_PANEL_KEY) !== 'closed'; } catch (err) { }
   return `
     <section class="panel dash-work-panel${open ? '' : ' is-collapsed'}" id="dash-work-panel">
       <div class="panel-header dash-work-head">
@@ -5112,15 +8606,15 @@ function renderLogin() {
 
       const profile = userDoc.data();
 
-console.log('FIREBASE PROFİL TEST:', profile);
+      console.log('FIREBASE PROFİL TEST:', profile);
 
-currentUser = {
-  email: firebaseUser.email,
-  title: profile.title || 'Personel',
-  name: profile.name || firebaseUser.email
-};
+      currentUser = {
+        email: firebaseUser.email,
+        title: profile.title || 'Personel',
+        name: profile.name || firebaseUser.email
+      };
 
-console.log('CURRENT USER TEST:', currentUser);
+      console.log('CURRENT USER TEST:', currentUser);
 
       renderDashboard();
 
@@ -5141,6 +8635,7 @@ console.log('CURRENT USER TEST:', currentUser);
 function renderPageBody(active) {
   try {
     if (active === 'Yetkilendirme') return renderAccessMatrixContent();
+    if (active === 'Personel İzin ve Özlük') return renderPersonnelLeaveContent();
     if (active === 'İş Takip') return renderWorkTrackingContent();
     if (active === 'Firma Yönetimi') return renderCompanyContent();
     if (active === 'Yıl / Dönem Yönetimi') return renderPeriodContent();
@@ -5163,122 +8658,736 @@ function renderPageBody(active) {
 }
 
 function renderDashboard(active = 'Yönetim Paneli') {
+
   try {
-  if (!currentUser) { renderLogin(); return; }
-  // Firebase'deki ortak personel listesini ilk açılışta yükle.
-if (!window._sharedStaffLoaded && !window._sharedStaffLoading) {
 
-  // Firebase henüz hazır değilse biraz bekleyip tekrar dene.
-  if (!window.firebaseDb || !window.firebaseDoc || !window.firebaseGetDoc) {
-    setTimeout(() => {
-      renderDashboard(active);
-    }, 500);
+    if (!currentUser) {
 
-    return;
-  }
-window._sharedStaffLoading = true;
+      renderLogin();
 
-loadSharedStaffFromFirebase()
-  .then((loaded) => {
-    if (loaded) {
-      window._sharedStaffLoaded = true;
-    } else {
-      console.error(
-        'Firebase ortak personel listesi yüklenemedi.'
+      return;
+
+    }
+
+
+    // Firebase'deki ortak personel listesini ilk açılışta yükle.
+    if (
+      !window._sharedStaffLoaded &&
+      !window._sharedStaffLoading
+    ) {
+
+      // Firebase henüz hazır değilse biraz bekleyip tekrar dene.
+      if (
+        !window.firebaseDb ||
+        !window.firebaseDoc ||
+        !window.firebaseGetDoc
+      ) {
+
+        setTimeout(() => {
+
+          renderDashboard(active);
+
+        }, 500);
+
+        return;
+
+      }
+
+
+      window._sharedStaffLoading = true;
+
+
+      loadSharedStaffFromFirebase()
+
+        .then((loaded) => {
+
+          if (loaded) {
+
+            window._sharedStaffLoaded = true;
+
+          } else {
+
+            console.error(
+              'Firebase ortak personel listesi yüklenemedi.'
+            );
+
+            window._sharedStaffLoaded = true;
+
+          }
+
+
+          return loadSharedStaffMetaFromFirebase();
+
+        })
+
+
+        .then(() => {
+
+          /*
+           * Personel listesini gerçek zamanlı dinlemeye başla.
+           */
+          if (
+            !window._sharedStaffUnsubscribe
+          ) {
+
+            window._sharedStaffUnsubscribe =
+              listenSharedStaffFromFirebase();
+
+          }
+
+        })
+
+
+        .then(() => {
+
+          return loadSharedCompaniesFromFirebase();
+
+        })
+
+
+        .then(() => {
+
+          /*
+           * Firma listesini gerçek zamanlı dinlemeye başla.
+           */
+          if (
+            !window._sharedCompaniesUnsubscribe
+          ) {
+
+            window._sharedCompaniesUnsubscribe =
+              listenSharedCompaniesFromFirebase();
+
+          }
+
+        })
+
+
+        .then(() => {
+
+          if (
+            typeof sharedCompaniesCache !== 'undefined' &&
+            Array.isArray(sharedCompaniesCache)
+          ) {
+
+            companies = [
+              ...sharedCompaniesCache
+            ];
+
+          }
+
+
+          return loadSharedPermsFromFirebase();
+
+        })
+
+
+        .then(() => {
+
+          /*
+           * Yetkileri gerçek zamanlı dinlemeye başla.
+           */
+          if (
+            !window._sharedPermsUnsubscribe
+          ) {
+
+            window._sharedPermsUnsubscribe =
+              listenSharedPermsFromFirebase();
+
+          }
+
+        })
+
+
+        .then(() => {
+
+          return loadSharedTaskTypesFromFirebase();
+
+        })
+
+
+        .then(() => {
+
+          /*
+           * İş türlerini gerçek zamanlı dinlemeye başla.
+           */
+          if (
+            !window._sharedTaskTypesUnsubscribe
+          ) {
+
+            window._sharedTaskTypesUnsubscribe =
+              listenSharedTaskTypesFromFirebase();
+
+          }
+
+        })
+
+
+        .then(() => {
+
+          return loadSharedTaskPermsFromFirebase();
+
+        })
+
+
+        .then(() => {
+
+          /*
+           * Personel bazlı iş türü yetkilerini
+           * gerçek zamanlı dinlemeye başla.
+           */
+          if (
+            !window._sharedTaskPermsUnsubscribe
+          ) {
+
+            window._sharedTaskPermsUnsubscribe =
+              listenSharedTaskPermsFromFirebase();
+
+          }
+
+        })
+
+
+        .then(() => {
+
+          /*
+           * Yıl / Dönem Yönetimi kişiye özel olduğu için
+           * burada sadece mevcut planları yükle.
+           * Gerçek zamanlı ortak dinleme yapılmıyor.
+           */
+          return loadSharedPlansFromFirebase();
+
+        })
+
+
+        .then(() => {
+
+          return loadReportWorkRecordsFromFirebase();
+
+        })
+
+
+        .then(() => {
+
+          window._sharedStaffLoading = false;
+
+          renderDashboard(active);
+
+        })
+
+
+        .catch((err) => {
+
+          console.error(
+            'Ortak Firebase verileri yüklenemedi:',
+            err
+          );
+
+
+          window._sharedStaffLoading = false;
+
+          window._sharedStaffLoaded = true;
+
+          renderDashboard(active);
+
+        });
+
+
+      return;
+
+    }
+
+
+    const user = currentUser;
+
+    const requested =
+      active || 'Yönetim Paneli';
+
+
+    const safeActive =
+      (
+        requested === 'Yetkilendirme' ||
+        requested === 'Personel İzin ve Özlük'
+      ) &&
+      !isAdminUser()
+        ? 'Yönetim Paneli'
+        : requested;
+
+
+    window._lastPage =
+      safeActive;
+
+
+    app.innerHTML = `
+
+    <section class="app-shell">
+
+      <aside
+        class="sidebar"
+        id="sidebar"
+      >
+
+        <div class="brand">
+
+          <span class="brand-mark">
+            İŞ
+          </span>
+
+          <span>
+            İş Süreç Yönetimi
+          </span>
+
+        </div>
+
+
+        <p class="nav-label">
+          Çalışma alanı
+        </p>
+
+
+        <nav class="nav">
+
+          ${menuItems
+            .filter(
+              ([, label]) =>
+                label !== 'Yetkilendirme' &&
+                label !== 'Personel İzin ve Özlük' ||
+                isAdminUser()
+            )
+            .map(
+              ([icon, label]) => {
+
+                if (
+                  label === 'Kullanıcı Yönetimi'
+                ) {
+
+                  const parentCls =
+                    safeActive ===
+                    'Kullanıcı Yönetimi'
+                      ? ' active'
+                      : '';
+
+
+                  const childCls =
+                    safeActive === 'İş Takip'
+                      ? ' active'
+                      : '';
+
+
+                  return `
+
+                    <div
+                      class="nav-group is-open"
+                    >
+
+                      <button
+                        type="button"
+                        class="nav-item${parentCls}"
+                        data-page="Kullanıcı Yönetimi"
+                      >
+
+                        <span class="nav-icon">
+                          ${icon}
+                        </span>
+
+                        <span>
+                          ${label}
+                        </span>
+
+                        <span class="nav-caret">
+                          ▾
+                        </span>
+
+                      </button>
+
+
+                      <div
+                        class="nav-submenu"
+                      >
+
+                        <button
+                          type="button"
+                          class="nav-item nav-child${childCls}"
+                          data-page="İş Takip"
+                        >
+
+                          <span class="nav-icon">
+                            ✓
+                          </span>
+
+                          <span>
+                            İş Takip
+                          </span>
+
+                        </button>
+
+                      </div>
+
+                    </div>
+
+                  `;
+
+                }
+
+
+                const cls =
+                  label === safeActive
+                    ? ' active'
+                    : '';
+
+
+                return `
+
+                  <button
+                    type="button"
+                    class="nav-item${cls}"
+                    data-page="${label}"
+                  >
+
+                    <span class="nav-icon">
+                      ${icon}
+                    </span>
+
+                    <span>
+                      ${label}
+                    </span>
+
+                  </button>
+
+                `;
+
+              }
+            )
+            .join('')}
+
+        </nav>
+
+
+        <div class="sidebar-footer">
+
+          <div class="profile">
+
+            <div>
+
+              ${getUserAvatarHtml(
+                user.email,
+                user.name
+              )}
+
+              <div>
+
+                <strong>
+                  ${escapeHtml(user.name)}
+                </strong>
+
+                <small>
+                  ${escapeHtml(
+                    getStaffTitle(user.name)
+                  )}
+                </small>
+
+              </div>
+
+            </div>
+
+
+            <div class="profile-actions">
+
+              ${getProfileActionsHtml(
+                user.email,
+                user.name
+              )}
+
+            </div>
+
+          </div>
+
+
+          <button
+            class="logout"
+            id="logout"
+          >
+            ↪ &nbsp; Güvenli çıkış
+          </button>
+
+        </div>
+
+      </aside>
+
+
+      <div class="content">
+
+        <header class="topbar">
+
+          <button
+            class="mobile-menu"
+            id="menu-toggle"
+            aria-label="Menüyü aç"
+          >
+            ☰
+          </button>
+
+
+          <div class="breadcrumb">
+
+            Ana sayfa&nbsp; / &nbsp;
+
+            <strong>
+              ${safeActive}
+            </strong>
+
+          </div>
+
+
+          <div class="top-actions">
+
+            <button
+              class="notification"
+              aria-label="Bildirimler"
+            >
+              ♧
+            </button>
+
+
+            <span class="date-chip">
+              10 Eylül 2026
+            </span>
+
+          </div>
+
+        </header>
+
+
+        ${renderPageBody(safeActive)}
+
+      </div>
+
+    </section>
+
+    `;
+
+
+    document
+      .querySelector('#logout')
+      .addEventListener(
+        'click',
+        renderLogin
       );
 
-      window._sharedStaffLoaded = true;
-    }
 
-    return loadSharedStaffMetaFromFirebase();
-  })
-  .then(() => {
-    return loadSharedCompaniesFromFirebase();
-  })
-  .then(() => {
+    document
+      .querySelector('#menu-toggle')
+      .addEventListener(
+        'click',
+        () =>
+          document
+            .querySelector('#sidebar')
+            .classList
+            .toggle('open')
+      );
+
+
+    document
+      .querySelectorAll('[data-page]')
+      .forEach(
+        (item) =>
+
+          item.addEventListener(
+            'click',
+            (e) => {
+
+              if (e) {
+
+                e.preventDefault();
+                e.stopPropagation();
+
+              }
+
+
+              const p =
+                item.getAttribute(
+                  'data-page'
+                );
+
+
+              renderDashboard(
+                p || 'Yönetim Paneli'
+              );
+
+            }
+          )
+      );
+
+
+    document
+      .querySelector('.nav')
+      .addEventListener(
+        'click',
+        (e) => {
+
+          const b =
+            e.target.closest(
+              '[data-page]'
+            );
+
+
+          if (!b) {
+
+            return;
+
+          }
+
+
+          e.preventDefault();
+          e.stopPropagation();
+
+
+          renderDashboard(
+            b.getAttribute(
+              'data-page'
+            ) ||
+            'Yönetim Paneli'
+          );
+
+        }
+      );
+
+
     if (
-      typeof sharedCompaniesCache !== 'undefined' &&
-      Array.isArray(sharedCompaniesCache)
+      safeActive === 'Yetkilendirme'
     ) {
-      companies = [...sharedCompaniesCache];
+
+      setupAccessMatrix();
+
+      setupAnnouncementPermissions();
+
     }
 
-    return loadSharedPermsFromFirebase();
-  })
-  .then(() => {
-    return loadSharedTaskTypesFromFirebase();
-  })
-  .then(() => {
-    return loadSharedTaskPermsFromFirebase();
-  })
-  .then(() => {
-    return loadSharedPlansFromFirebase();
-  })
-  .then(() => {
-    return loadReportWorkRecordsFromFirebase();
-  })
-  .then(() => {
-    window._sharedStaffLoading = false;
-    renderDashboard(active);
-  })
-  .catch((err) => {
-    console.error(
-      'Ortak Firebase verileri yüklenemedi:',
-      err
-    );
 
-    window._sharedStaffLoading = false;
-    window._sharedStaffLoaded = true;
+    if (
+      safeActive ===
+      'Personel İzin ve Özlük'
+    ) {
 
-    renderDashboard(active);
-  });
+      setupPersonnelLeave();
 
-return;
-}
-  const user = currentUser;
-  const requested = active || 'Yönetim Paneli';
-  const safeActive = requested === 'Yetkilendirme' && !isAdminUser() ? 'Yönetim Paneli' : requested;
-  window._lastPage = safeActive;
-  app.innerHTML = `
-    <section class="app-shell">
-      <aside class="sidebar" id="sidebar">
-        <div class="brand"><span class="brand-mark">İŞ</span><span>İş Süreç Yönetimi</span></div>
-        <p class="nav-label">Çalışma alanı</p>
-        <nav class="nav">${menuItems.filter(([, label]) => label !== 'Yetkilendirme' || isAdminUser()).map(([icon, label]) => {
-if (label === 'Kullanıcı Yönetimi') {
-const parentCls = safeActive === 'Kullanıcı Yönetimi' ? ' active' : '';
-const childCls = safeActive === 'İş Takip' ? ' active' : '';
-return `<div class="nav-group is-open"><button type="button" class="nav-item${parentCls}" data-page="Kullanıcı Yönetimi"><span class="nav-icon">${icon}</span><span>${label}</span><span class="nav-caret">▾</span></button><div class="nav-submenu"><button type="button" class="nav-item nav-child${childCls}" data-page="İş Takip"><span class="nav-icon">✓</span><span>İş Takip</span></button></div></div>`;
-}
-const cls = label === safeActive ? ' active' : '';
-return `<button type="button" class="nav-item${cls}" data-page="${label}"><span class="nav-icon">${icon}</span><span>${label}</span></button>`;
-}).join('')}</nav>
-        <div class="sidebar-footer"><div class="profile"><div>${getUserAvatarHtml(user.email, user.name)}<div><strong>${escapeHtml(user.name)}</strong><small>${escapeHtml(getStaffTitle(user.name))}</small></div></div><div class="profile-actions">${getProfileActionsHtml(user.email, user.name)}</div></div><button class="logout" id="logout">↪ &nbsp; Güvenli çıkış</button></div>
-      </aside>
-      <div class="content">
-        <header class="topbar"><button class="mobile-menu" id="menu-toggle" aria-label="Menüyü aç">☰</button><div class="breadcrumb">Ana sayfa&nbsp; / &nbsp;<strong>${safeActive}</strong></div><div class="top-actions"><button class="notification" aria-label="Bildirimler">♧</button><span class="date-chip">10 Eylül 2026</span></div></header>
-        ${renderPageBody(safeActive)}
-      </div>
-    </section>`;
-  document.querySelector('#logout').addEventListener('click', renderLogin);
-  document.querySelector('#menu-toggle').addEventListener('click', () => document.querySelector('#sidebar').classList.toggle('open'));
-  document.querySelectorAll('[data-page]').forEach((item) => item.addEventListener('click', (e) => { if (e) { e.preventDefault(); e.stopPropagation(); } const p = item.getAttribute('data-page'); renderDashboard(p || 'Yönetim Paneli'); }));
-  document.querySelector('.nav').addEventListener('click', (e) => { const b = e.target.closest('[data-page]'); if (!b) return; e.preventDefault(); e.stopPropagation(); renderDashboard(b.getAttribute('data-page') || 'Yönetim Paneli'); });
-  if (safeActive === 'Yetkilendirme') { setupAccessMatrix(); setupAnnouncementPermissions(); }
-  if (safeActive === 'Yönetim Paneli') setupPasswordPanel();
-  if (safeActive === 'Duyurular') setupAnnouncements();
-  if (safeActive === 'Ayın Elemanı') setupEmployeeSelection();
-  if (safeActive === 'Firma Yönetimi') setupCompanyManagement();
-  if (safeActive === 'Yıl / Dönem Yönetimi') setupPeriodPlans();
-  if (safeActive === 'Personel Yönetimi') setupStaffManagement();
-  if (safeActive === 'Raporlar') setupReports();
-  if (safeActive === 'Personel Soruları') setupQuestions();
-  if (safeActive === 'Notlar') setupNotes();
-  if (safeActive === 'İş Takip') setupWorkTracking();
-  setupProfileActions();
+    }
+
+
+    if (
+      safeActive === 'Yönetim Paneli'
+    ) {
+
+      setupPasswordPanel();
+
+    }
+
+
+    if (
+      safeActive === 'Duyurular'
+    ) {
+
+      setupAnnouncements();
+
+    }
+
+
+    if (
+      safeActive === 'Ayın Elemanı'
+    ) {
+
+      setupEmployeeSelection();
+
+    }
+
+
+    if (
+      safeActive === 'Firma Yönetimi'
+    ) {
+
+      setupCompanyManagement();
+
+    }
+
+
+    if (
+      safeActive ===
+      'Yıl / Dönem Yönetimi'
+    ) {
+
+      setupPeriodPlans();
+
+    }
+
+
+    if (
+      safeActive ===
+      'Personel Yönetimi'
+    ) {
+
+      setupStaffManagement();
+
+    }
+
+
+    if (
+      safeActive === 'Raporlar'
+    ) {
+
+      setupReports();
+
+    }
+
+
+    if (
+      safeActive ===
+      'Personel Soruları'
+    ) {
+
+      setupQuestions();
+
+    }
+
+
+    if (
+      safeActive === 'Notlar'
+    ) {
+
+      setupNotes();
+
+    }
+
+
+    if (
+      safeActive === 'İş Takip'
+    ) {
+
+      setupWorkTracking();
+
+    }
+
+
+    setupProfileActions();
+
+
   } catch (err) {
-    app.innerHTML = '<div class="permission-empty" style="margin:40px;"><span class="permission-icon">!</span><div><strong>Sayfa açılamadı.</strong><p>' + ((err && err.message) || err) + '</p><button class="primary-btn" onclick="location.reload()">Yenile</button></div></div>';
+
+    app.innerHTML =
+      '<div class="permission-empty" style="margin:40px;">' +
+      '<span class="permission-icon">!</span>' +
+      '<div>' +
+      '<strong>Sayfa açılamadı.</strong>' +
+      '<p>' +
+      ((err && err.message) || err) +
+      '</p>' +
+      '<button class="primary-btn" onclick="location.reload()">' +
+      'Yenile' +
+      '</button>' +
+      '</div>' +
+      '</div>';
+
   }
+
 }
+
 
 renderLogin();
