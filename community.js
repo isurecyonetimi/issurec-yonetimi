@@ -93,30 +93,294 @@ function deleteAnnouncement(id) {
   return saveCommunity(ANNOUNCEMENT_KEY, filtered);
 }
 function renderAnnouncementsContent(compact = false) {
-  const list = loadCommunity(ANNOUNCEMENT_KEY, []).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const list = loadCommunity(ANNOUNCEMENT_KEY, [])
+    .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+
   const editId = window._announcementEdit?.id;
-  const editItem = editId ? list.find(a => a.id === editId) : null;
-  return `${compact ? '' : '<div class="page-heading"><div><h1>Duyurular</h1><p>Ekibin ortak duyuru alanı.</p></div></div>'}
-    ${!compact && canPublishAnnouncement() ? `<section class="panel"><div class="panel-header"><h2>Duyuru yayınla</h2></div><form id="announcement-form" class="work-form community-form">
-      <label class="field">Başlık<input name="title" maxlength="160" required /></label>
-      <label class="field note-text-field">Duyuru<textarea name="body" maxlength="5000" required></textarea></label><button class="primary-btn work-submit" type="submit">Yayınla</button></form></section>` : ''}
-    ${editItem && canPublishAnnouncement() ? `<section class="panel"><div class="panel-header"><h2>Duyuru düzenle</h2></div><form id="announcement-edit-form" class="work-form community-form">
-      <label class="field">Başlık<input name="title" maxlength="160" value="${escapeHtml(editItem.title)}" required /></label>
-      <label class="field note-text-field">Duyuru<textarea name="body" maxlength="5000" required>${escapeHtml(editItem.body)}</textarea></label>
-      <button class="primary-btn work-submit" type="submit">Kaydet</button>
-      <button class="primary-btn" type="button" data-announcement-edit-cancel style="background:var(--muted);">İptal</button></form></section>` : ''}
-    <section class="panel"><div class="panel-header"><div><h2>${compact ? 'Son duyurular' : 'Yayınlanan duyurular'}</h2><p class="panel-subtitle">${list.length} duyuru · Tüm personel görebilir.</p></div>${compact ? '<button class="primary-btn work-submit" data-page="Duyurular">Tümünü gör</button>' : ''}</div>
-      <div class="task-content">${(compact ? list.slice(0, 3) : list).map((item) => `<article class="announcement-card" data-announcement-id="${escapeHtml(item.id)}">
-        <h3>${escapeHtml(item.title)}</h3>
-        <p class="note-body">${escapeHtml(item.body)}</p>
-        <div class="announcement-footer">
-          <div>${staffIdentity(item.author)}<small>${escapeHtml(item.updatedAt ? `Güncellenme: ${formatUpdatedAt(item.updatedAt)}` : formatUpdatedAt(item.createdAt))}</small></div>
-          <div class="announcement-actions">
-            ${canPublishAnnouncement() ? `<button class="primary-btn work-submit" type="button" data-announcement-edit="${escapeHtml(item.id)}" style="min-width:90px;">Düzenle</button>` : ''}
-            ${canPublishAnnouncement() ? `<button class="primary-btn" type="button" data-announcement-delete="${escapeHtml(item.id)}" style="min-width:90px;background:#b5443c;">Sil</button>` : ''}
+  const editItem = editId ? list.find((a) => a.id === editId) : null;
+  const canPublish = canPublishAnnouncement();
+
+  const esc = (value) => escapeHtml(value);
+
+  const announcementCards = (compact ? list.slice(0, 3) : list)
+    .map((item, index) => `
+      <article class="announcement-premium-card"
+        data-announcement-id="${esc(item.id)}">
+
+        <div class="announcement-card-accent"></div>
+
+        <div class="announcement-premium-inner">
+          <div class="announcement-card-heading">
+            <div class="announcement-card-symbol">
+              ${index === 0 ? '✦' : '▤'}
+            </div>
+
+            <div class="announcement-card-meta">
+              <span class="announcement-card-category">
+                KURUMSAL DUYURU
+              </span>
+              <span class="announcement-card-date">
+                ${esc(formatUpdatedAt(item.updatedAt || item.createdAt))}
+              </span>
+            </div>
+
+            ${item.updatedAt
+              ? '<span class="announcement-edited-label">Güncellendi</span>'
+              : ''}
+          </div>
+
+          <h3 class="announcement-premium-title">
+            ${esc(item.title)}
+          </h3>
+
+          <div class="announcement-premium-body">
+            ${esc(item.body)}
+          </div>
+
+          <div class="announcement-premium-footer">
+            <div class="announcement-author">
+              <div class="announcement-author-avatar">
+                ${esc((item.author || '?').trim().charAt(0).toLocaleUpperCase('tr-TR'))}
+              </div>
+
+              <div class="announcement-author-info">
+                <span>Yayımlayan</span>
+                ${staffIdentity(item.author || 'Belirtilmedi')}
+              </div>
+            </div>
+
+            ${canPublish ? `
+              <div class="announcement-premium-actions">
+                <button
+                  class="announcement-action-btn announcement-edit-btn"
+                  type="button"
+                  data-announcement-edit="${esc(item.id)}">
+                  <span>✎</span> Düzenle
+                </button>
+
+                <button
+                  class="announcement-action-btn announcement-delete-btn"
+                  type="button"
+                  data-announcement-delete="${esc(item.id)}">
+                  <span>×</span> Sil
+                </button>
+              </div>
+            ` : ''}
           </div>
         </div>
-      </article>`).join('') || '<div class="permission-empty">Henüz duyuru yayınlanmadı.</div>'}</div></section>`;
+      </article>
+    `).join('');
+
+  const composer = !compact && canPublish ? `
+    <section class="announcement-composer">
+      <div class="announcement-section-heading">
+        <div class="announcement-section-icon">✎</div>
+        <div>
+          <span class="announcement-eyebrow">İÇ İLETİŞİM</span>
+          <h2>Yeni duyuru oluştur</h2>
+          <p>Ekibinle paylaşmak istediğin bilgilendirmeyi hazırla.</p>
+        </div>
+      </div>
+
+      <form id="announcement-form" class="announcement-compose-form">
+        <label class="announcement-field">
+          <span>Duyuru başlığı</span>
+          <input
+            name="title"
+            type="text"
+            maxlength="160"
+            placeholder="Duyurunun başlığını yazın"
+            required>
+          <small>En fazla 160 karakter.</small>
+        </label>
+
+        <label class="announcement-field">
+          <span>Duyuru içeriği</span>
+          <textarea
+            name="body"
+            maxlength="5000"
+            rows="5"
+            placeholder="Duyurunun ayrıntılarını buraya yazın..."
+            required></textarea>
+          <small>En fazla 5.000 karakter.</small>
+        </label>
+
+        <div class="announcement-compose-footer">
+          <span>✦ Ekibinle paylaşmaya hazır olduğunda yayımla.</span>
+          <button class="announcement-publish-btn" type="submit">
+            <span>↗</span> Duyuruyu yayımla
+          </button>
+        </div>
+      </form>
+    </section>
+  ` : '';
+
+  const editPanel = editItem && canPublish ? `
+    <section class="announcement-composer announcement-edit-panel">
+      <div class="announcement-section-heading">
+        <div class="announcement-section-icon">✎</div>
+        <div>
+          <span class="announcement-eyebrow">DÜZENLEME MODU</span>
+          <h2>Duyuruyu düzenle</h2>
+          <p>Değişikliklerini tamamladıktan sonra kaydedebilirsin.</p>
+        </div>
+      </div>
+
+      <form id="announcement-edit-form" class="announcement-compose-form">
+        <label class="announcement-field">
+          <span>Duyuru başlığı</span>
+          <input
+            name="title"
+            type="text"
+            maxlength="160"
+            value="${esc(editItem.title)}"
+            required>
+        </label>
+
+        <label class="announcement-field">
+          <span>Duyuru içeriği</span>
+          <textarea
+            name="body"
+            maxlength="5000"
+            rows="5"
+            required>${esc(editItem.body)}</textarea>
+        </label>
+
+        <div class="announcement-compose-footer">
+          <button
+            class="announcement-action-btn announcement-cancel-btn"
+            type="button"
+            data-announcement-edit-cancel>
+            Vazgeç
+          </button>
+
+          <button class="announcement-publish-btn" type="submit">
+            <span>✓</span> Değişiklikleri kaydet
+          </button>
+        </div>
+      </form>
+    </section>
+  ` : '';
+
+  return `
+    <div class="announcement-page">
+
+      ${compact ? '' : `
+        <section class="announcement-hero">
+          <div class="announcement-hero-content">
+            <span class="announcement-hero-kicker">
+              <span></span> KURUMSAL İLETİŞİM PLATFORMU
+            </span>
+
+            <h1>Duyurular</h1>
+
+            <p>
+              Ekibimizle aynı bilgiyi paylaşalım.
+              Önemli bilgilendirmeler, güncellemeler ve şirket içi
+              haberler burada bir arada.
+            </p>
+
+            <div class="announcement-hero-pills">
+              <span>✦ Ortak bilgilendirme alanı</span>
+              <span>▤ ${list.length} yayımlanmış duyuru</span>
+            </div>
+          </div>
+
+          <div class="announcement-hero-art" aria-hidden="true">
+            <div class="announcement-hero-orbit announcement-orbit-one"></div>
+            <div class="announcement-hero-orbit announcement-orbit-two"></div>
+            <div class="announcement-hero-document">
+              <div class="announcement-document-top">✦</div>
+              <div class="announcement-document-line announcement-line-long"></div>
+              <div class="announcement-document-line"></div>
+              <div class="announcement-document-line announcement-line-short"></div>
+              <div class="announcement-document-check">✓</div>
+            </div>
+            <span class="announcement-art-spark announcement-spark-one">✦</span>
+            <span class="announcement-art-spark announcement-spark-two">✧</span>
+          </div>
+        </section>
+
+        <section class="announcement-summary">
+          <div class="announcement-summary-card">
+            <div class="announcement-summary-icon">▤</div>
+            <div>
+              <span>Toplam duyuru</span>
+              <strong>${list.length}</strong>
+              <small>Yayımlanmış kayıt</small>
+            </div>
+          </div>
+
+          <div class="announcement-summary-card">
+            <div class="announcement-summary-icon announcement-summary-icon-green">✓</div>
+            <div>
+              <span>İletişim alanı</span>
+              <strong>Aktif</strong>
+              <small>Yayınlanan duyurular</small>
+            </div>
+          </div>
+
+          <div class="announcement-summary-card">
+            <div class="announcement-summary-icon announcement-summary-icon-purple">◎</div>
+            <div>
+              <span>Görünürlük</span>
+              <strong>Personel</strong>
+              <small>Mevcut ekran yetkilerine göre</small>
+            </div>
+          </div>
+        </section>
+      `}
+
+      ${composer}
+      ${editPanel}
+
+      <section class="announcement-feed">
+        <div class="announcement-feed-heading">
+          <div>
+            <span class="announcement-eyebrow">
+              ${compact ? 'GÜNCEL BİLGİLER' : 'DUYURU AKIŞI'}
+            </span>
+            <h2>${compact ? 'Son duyurular' : 'Yayımlanan duyurular'}</h2>
+            <p>
+              ${compact
+                ? 'Ekibinle paylaşılan son bilgilendirmeler.'
+                : 'Paylaşılan duyuruları tarihleri ve yayımlayan kişileriyle görüntüle.'}
+            </p>
+          </div>
+
+          <span class="announcement-feed-count">${list.length} kayıt</span>
+        </div>
+
+        <div class="announcement-feed-list">
+          ${announcementCards || `
+            <div class="announcement-empty">
+              <div class="announcement-empty-icon">▤</div>
+              <h3>Henüz duyuru yayımlanmamış</h3>
+              <p>
+                ${canPublish
+                  ? 'Ekibinle paylaşmak istediğin ilk duyuruyu yukarıdaki alandan oluşturabilirsin.'
+                  : 'Yeni duyurular yayımlandığında burada görüntülenecek.'}
+              </p>
+            </div>
+          `}
+        </div>
+
+        ${compact && list.length > 3 ? `
+          <div class="announcement-view-all">
+            <button class="announcement-view-all-btn" type="button" data-page="Duyurular">
+              Tüm duyuruları görüntüle <span>→</span>
+            </button>
+          </div>
+        ` : ''}
+      </section>
+
+      <footer class="announcement-bottom-note">
+        <span>✦</span>
+        <p>Doğru bilgi, güçlü iletişim ve birlikte daha düzenli iş süreçleri.</p>
+      </footer>
+
+    </div>
+  `;
 }
 function setupAnnouncements() {
   const form = document.querySelector('#announcement-form');
@@ -223,3 +487,862 @@ function renderEmployeeSpotlight(month = currentMonth()) {
     </div><button type="button" class="employee-link" data-page="Ayın Elemanı">${isAdminUser() ? 'Değerlendirme paneli' : 'Aylara göre görüntüle'} →</button></section>`;
 }
 
+/* =========================================================
+   AYIN ELEMANI - PUANLAMA SİSTEMİ
+   Mevcut kodların altına eklenir.
+   ========================================================= */
+
+window.employeeScoringState = window.employeeScoringState || {
+  rules: null,
+  months: {},
+  workRecords: null,
+  loading: false,
+  loadedMonths: {}
+};
+
+async function employeeScoringRead(collectionName, documentId) {
+  if (!window.firebaseDb || !window.firebaseDoc || !window.firebaseGetDoc) {
+    throw new Error('Firebase bağlantısı hazır değil.');
+  }
+
+  const ref = window.firebaseDoc(
+    window.firebaseDb,
+    collectionName,
+    documentId
+  );
+
+  const snapshot = await window.firebaseGetDoc(ref);
+  return snapshot.exists() ? snapshot.data() : null;
+}
+
+async function employeeScoringWrite(collectionName, documentId, data) {
+  if (!window.firebaseDb || !window.firebaseDoc || !window.firebaseSetDoc) {
+    throw new Error('Firebase kayıt bağlantısı hazır değil.');
+  }
+
+  const ref = window.firebaseDoc(
+    window.firebaseDb,
+    collectionName,
+    documentId
+  );
+
+  await window.firebaseSetDoc(ref, data, { merge: true });
+}
+
+function employeeScoringTaskNames() {
+  const tasks = typeof getTaskTypes === 'function' ? getTaskTypes() : [];
+
+  return tasks.map((task) => {
+    if (typeof task === 'string') return task;
+    return task.name || task.title || task.label || '';
+  }).filter(Boolean);
+}
+
+function employeeScoringDefaultRules() {
+  const taskPoints = {};
+
+  employeeScoringTaskNames().forEach((name) => {
+    taskPoints[name] = 1;
+  });
+
+  return {
+    taskPoints,
+    errorTypes: []
+  };
+}
+
+async function employeeScoringLoadRules() {
+  const state = window.employeeScoringState;
+
+  // Mevcut hata türlerini ayrı ayar belgesinden yükle.
+  const savedRules =
+    await employeeScoringRead(
+      'settings',
+      'employeeScoringRules'
+    ) || {};
+
+  // İş türlerini ve puanlarını asıl kaynağından yükle.
+  const sharedTaskSettings =
+    await employeeScoringRead(
+      'settings',
+      'taskTypes'
+    ) || {};
+
+  const taskNames = employeeScoringTaskNames();
+
+  const sharedPoints =
+    sharedTaskSettings.taskPoints &&
+    typeof sharedTaskSettings.taskPoints === 'object' &&
+    !Array.isArray(sharedTaskSettings.taskPoints)
+      ? sharedTaskSettings.taskPoints
+      : {};
+
+  const oldPoints =
+    savedRules.taskPoints &&
+    typeof savedRules.taskPoints === 'object' &&
+    !Array.isArray(savedRules.taskPoints)
+      ? savedRules.taskPoints
+      : {};
+
+  const taskPoints = {};
+
+  taskNames.forEach((taskName) => {
+    // Öncelik, iş türü tanımlanırken kaydedilen puandadır.
+    const hasSharedPoint =
+      Object.prototype.hasOwnProperty.call(
+        sharedPoints,
+        taskName
+      );
+
+    const rawPoint = hasSharedPoint
+      ? sharedPoints[taskName]
+      : Object.prototype.hasOwnProperty.call(
+          oldPoints,
+          taskName
+        )
+        ? oldPoints[taskName]
+        : 1;
+
+    const point = Number(rawPoint);
+
+    taskPoints[taskName] =
+      Number.isFinite(point) && point >= 0
+        ? point
+        : 1;
+  });
+
+  const defaultRules = employeeScoringDefaultRules();
+
+  const errorTypes = Array.isArray(savedRules.errorTypes)
+    ? savedRules.errorTypes
+    : defaultRules.errorTypes;
+
+  state.rules = {
+    taskPoints,
+    errorTypes
+  };
+
+  console.log(
+    'Ayın Elemanı görev puanları yüklendi:',
+    taskPoints
+  );
+
+  return state.rules;
+}
+
+async function employeeScoringLoadMonth(month) {
+  const state = window.employeeScoringState;
+
+  if (state.loadedMonths[month]) {
+    return state.months[month];
+  }
+
+  const saved = await employeeScoringRead('employeeMonths', month);
+
+  state.months[month] = saved || {
+    errorsByStaff: {},
+    award: null
+  };
+
+  state.loadedMonths[month] = true;
+  return state.months[month];
+}
+
+async function employeeScoringLoadWorkRecords() {
+  const state = window.employeeScoringState;
+  if (Array.isArray(state.workRecords)) return state.workRecords;
+
+  if (typeof loadReportWorkRecordsFromFirebase !== 'function') {
+    throw new Error('Firebase iş kayıtlarını yükleyen fonksiyon bulunamadı.');
+  }
+
+  state.workRecords = await loadReportWorkRecordsFromFirebase();
+
+  if (!Array.isArray(state.workRecords)) {
+    state.workRecords = [];
+  }
+
+  return state.workRecords;
+}
+
+function employeeScoringErrorsFor(month, staff) {
+  const data = window.employeeScoringState.months[month] || {};
+  const errors = data.errorsByStaff || {};
+  return Array.isArray(errors[staff]) ? errors[staff] : [];
+}
+
+function employeeScoringCalculate(month) {
+  const state = window.employeeScoringState;
+  const rules = state.rules || employeeScoringDefaultRules();
+  const records = Array.isArray(state.workRecords)
+    ? state.workRecords
+    : [];
+
+  const staffList = typeof getStaff === 'function' ? getStaff() : [];
+  const taskNames = employeeScoringTaskNames();
+
+  const normalizeName = (value) =>
+    String(value ?? '').trim().toLocaleLowerCase('tr-TR');
+
+  const rows = staffList.map((staff) => {
+    let earnedPoints = 0;
+    let completedUnits = 0;
+
+    records.forEach((record) => {
+      if (!record || !record.date) return;
+
+      const recordMonth = String(record.date).slice(0, 7);
+      const recordStaff = normalizeName(
+        record.staff ??
+        record.staffName ??
+        record.personel ??
+        record.employee ??
+        ''
+      );
+
+      if (
+        recordMonth !== month ||
+        recordStaff !== normalizeName(staff)
+      ) {
+        return;
+      }
+
+      const named = record.tasksByName || {};
+      const quantities = record.quantitiesByName || {};
+      const tasks = Array.isArray(record.tasks) ? record.tasks : [];
+
+      taskNames.forEach((taskName, index) => {
+        let units = 0;
+
+        if (
+          Object.prototype.hasOwnProperty.call(quantities, taskName)
+        ) {
+          const quantity = Number(quantities[taskName]);
+
+          if (Number.isFinite(quantity) && quantity > 0) {
+            units = quantity;
+          }
+        } else if (
+          Object.prototype.hasOwnProperty.call(named, taskName)
+        ) {
+          const value = named[taskName];
+
+          if (value === true) {
+            units = 1;
+          } else if (typeof value === 'number' || (
+            typeof value === 'string' && value.trim() !== ''
+          )) {
+            const quantity = Number(value);
+            if (Number.isFinite(quantity) && quantity > 0) {
+              units = quantity;
+            }
+          }
+        } else if (tasks[index] === true) {
+          units = 1;
+        } else if (
+          typeof tasks[index] === 'number' ||
+          typeof tasks[index] === 'string'
+        ) {
+          const quantity = Number(tasks[index]);
+          if (Number.isFinite(quantity) && quantity > 0) {
+            units = quantity;
+          }
+        }
+
+        const points = Number(rules.taskPoints?.[taskName] ?? 1);
+
+        if (Number.isFinite(points) && points >= 0) {
+          completedUnits += units;
+          earnedPoints += units * points;
+        }
+      });
+    });
+
+    const errors = employeeScoringErrorsFor(month, staff);
+
+    const penaltyPoints = errors.reduce((sum, error) => {
+      const penalty = Number(error.penalty);
+      return sum + (
+        Number.isFinite(penalty) && penalty >= 0
+          ? penalty
+          : 0
+      );
+    }, 0);
+
+    return {
+      staff,
+      completedUnits,
+      earnedPoints,
+      penaltyPoints,
+      score: earnedPoints - penaltyPoints,
+      errorCount: errors.length
+    };
+  });
+
+  console.log(
+    'Ayın Elemanı hesaplama sonucu:',
+    month,
+    rows
+  );
+
+  return rows.sort((a, b) =>
+    b.score - a.score ||
+    b.earnedPoints - a.earnedPoints ||
+    a.staff.localeCompare(b.staff, 'tr')
+  );
+}
+
+function employeeScoringIsAdmin() {
+  return typeof isAdminUser === 'function' && isAdminUser();
+}
+
+function employeeScoringFormat(value) {
+  return Number(value).toLocaleString('tr-TR', {
+    maximumFractionDigits: 2
+  });
+}
+
+async function employeeScoringSaveRules(form) {
+  const taskPoints = {};
+  const errorTypes = (
+    window.employeeScoringState.rules || employeeScoringDefaultRules()
+  ).errorTypes;
+
+  form.querySelectorAll('[data-scoring-task-point]').forEach((input) => {
+    const name = input.dataset.scoringTaskPoint;
+    const points = Number(input.value);
+
+    if (!name || !Number.isFinite(points) || points < 0) {
+      throw new Error('Görev puanları sıfır veya daha büyük bir sayı olmalıdır.');
+    }
+
+    taskPoints[name] = points;
+  });
+
+  const rules = { taskPoints, errorTypes };
+
+  await employeeScoringWrite(
+    'settings',
+    'employeeScoringRules',
+    rules
+  );
+
+  window.employeeScoringState.rules = rules;
+}
+
+async function employeeScoringAddErrorType(form) {
+  const data = new FormData(form);
+  const name = String(data.get('error-name') || '').trim();
+  const penalty = Number(data.get('error-penalty'));
+
+  if (!name) throw new Error('Hata türünün adını yazmalısın.');
+  if (!Number.isFinite(penalty) || penalty < 0) {
+    throw new Error('Hata puanı sıfır veya daha büyük olmalıdır.');
+  }
+
+  const rules = await employeeScoringLoadRules();
+
+  if (rules.errorTypes.some((item) =>
+    item.name.toLocaleLowerCase('tr') === name.toLocaleLowerCase('tr')
+  )) {
+    throw new Error('Bu hata türü zaten kayıtlı.');
+  }
+
+  rules.errorTypes.push({
+    id: 'error_' + Date.now(),
+    name,
+    penalty
+  });
+
+  await employeeScoringWrite('settings', 'employeeScoringRules', rules);
+  window.employeeScoringState.rules = rules;
+}
+
+async function employeeScoringAddEmployeeError(form) {
+  const data = new FormData(form);
+  const month = String(data.get('month') || '');
+  const staff = String(data.get('staff') || '');
+  const errorTypeId = String(data.get('error-type') || '');
+  const rules = await employeeScoringLoadRules();
+  const errorType = rules.errorTypes.find((item) => item.id === errorTypeId);
+
+  if (!validMonth(month) || !staff || !errorType) {
+    throw new Error('Ay, personel ve hata türünü kontrol et.');
+  }
+
+  await employeeScoringLoadMonth(month);
+
+  const state = window.employeeScoringState;
+  const monthData = state.months[month];
+  const errorsByStaff = { ...(monthData.errorsByStaff || {}) };
+  const staffErrors = [...(errorsByStaff[staff] || [])];
+
+  staffErrors.push({
+    id: 'entry_' + Date.now(),
+    type: errorType.name,
+    penalty: Number(errorType.penalty),
+    createdBy: currentUser?.name || '',
+    createdAt: new Date().toISOString()
+  });
+
+  errorsByStaff[staff] = staffErrors;
+
+  const updated = { ...monthData, errorsByStaff };
+
+  await employeeScoringWrite('employeeMonths', month, updated);
+  state.months[month] = updated;
+
+  // Önceden onaylanmış sonuç varsa yeni hata sonrası yeniden değerlendirilmelidir.
+  state.months[month].award = null;
+
+  await employeeScoringWrite('employeeMonths', month, {
+    errorsByStaff,
+    award: null
+  });
+}
+
+async function employeeScoringRemoveError(month, staff, errorId) {
+  if (!employeeScoringIsAdmin()) {
+    throw new Error('Bu işlem için yönetici yetkisi gerekir.');
+  }
+
+  await employeeScoringLoadMonth(month);
+
+  const state = window.employeeScoringState;
+  const monthData = state.months[month];
+  const errorsByStaff = { ...(monthData.errorsByStaff || {}) };
+
+  errorsByStaff[staff] = (errorsByStaff[staff] || [])
+    .filter((item) => item.id !== errorId);
+
+  const updated = { ...monthData, errorsByStaff, award: null };
+
+  await employeeScoringWrite('employeeMonths', month, updated);
+  state.months[month] = updated;
+}
+
+async function employeeScoringApprove(month) {
+  if (!employeeScoringIsAdmin()) {
+    throw new Error('Kazananı yalnızca yönetici onaylayabilir.');
+  }
+
+  if (!validMonth(month) || month > currentMonth()) {
+    throw new Error('Henüz tamamlanmamış bir ay onaylanamaz.');
+  }
+
+  await employeeScoringLoadMonth(month);
+  await employeeScoringLoadRules();
+  await employeeScoringLoadWorkRecords();
+
+  const ranking = employeeScoringCalculate(month);
+  const winner = ranking[0];
+
+  if (!winner || winner.completedUnits === 0) {
+    throw new Error('Bu ay tamamlanmış görev kaydı bulunmuyor.');
+  }
+
+  const award = {
+    month,
+    staff: winner.staff,
+    completedUnits: winner.completedUnits,
+    earnedPoints: winner.earnedPoints,
+    penaltyPoints: winner.penaltyPoints,
+    score: winner.score,
+    approvedBy: currentUser?.name || '',
+    approvedAt: new Date().toISOString(),
+    rulesSnapshot: JSON.parse(JSON.stringify(
+      window.employeeScoringState.rules
+    )),
+    rankingSnapshot: ranking.map((row) => ({ ...row }))
+  };
+
+  const state = window.employeeScoringState;
+  const updated = {
+    ...state.months[month],
+    award
+  };
+
+  await employeeScoringWrite('employeeMonths', month, updated);
+  state.months[month] = updated;
+}
+
+function renderEmployeeScoringContent() {
+  const state = window.employeeScoringState;
+  const month = state.selectedMonth || currentMonth();
+  const admin = employeeScoringIsAdmin();
+
+  if (state.loading) {
+    return '<section class="permission-empty"><p>Puanlama verileri yükleniyor...</p></section>';
+  }
+
+  if (!state.rules || !state.loadedMonths[month] || !Array.isArray(state.workRecords)) {
+    state.loading = true;
+
+    Promise.all([
+      employeeScoringLoadRules(),
+      employeeScoringLoadMonth(month),
+      employeeScoringLoadWorkRecords()
+    ]).then(() => {
+      state.loading = false;
+      renderDashboard('Ayın Elemanı');
+    }).catch((error) => {
+      state.loading = false;
+      console.error('Ayın Elemanı yüklenemedi:', error);
+      window.alert('Puanlama verileri yüklenemedi: ' + error.message);
+      renderDashboard('Ayın Elemanı');
+    });
+
+    return '<section class="permission-empty"><p>Puanlama verileri yükleniyor...</p></section>';
+  }
+
+  const rules = state.rules;
+  const ranking = employeeScoringCalculate(month);
+  const monthData = state.months[month] || {};
+  const award = monthData.award;
+  const staffList = typeof getStaff === 'function' ? getStaff() : [];
+  const taskNames = employeeScoringTaskNames();
+
+  const medals = ['🥇', '🥈', '🥉'];
+  const positions = ['Birinci', 'İkinci', 'Üçüncü'];
+
+  const podiumRows = ranking.slice(0, 3).map((row, index) => `
+    <article class="scoring-podium-card scoring-rank-${index + 1}">
+      <div class="scoring-medal">${medals[index]}</div>
+      <div class="scoring-rank-label">${positions[index]} sıra</div>
+      <div class="scoring-person-name">${escapeHtml(row.staff)}</div>
+      <div class="scoring-score">${employeeScoringFormat(row.score)}
+        <small>puan</small>
+      </div>
+      <div class="scoring-person-stats">
+        <span>✓ ${row.completedUnits} işlem</span>
+        <span>− ${employeeScoringFormat(row.penaltyPoints)} kesinti</span>
+      </div>
+      ${award && award.staff === row.staff
+        ? '<div class="scoring-approved-label">★ Ayın Elemanı</div>'
+        : ''}
+    </article>
+  `).join('');
+
+  const taskRows = taskNames.map((name) => `
+    <label class="scoring-form-row">
+      <span>${escapeHtml(name)}</span>
+      <input type="number" min="0" step="0.5" required
+        data-scoring-task-point="${escapeHtml(name)}"
+        value="${Number(rules.taskPoints[name] ?? 1)}">
+    </label>
+  `).join('');
+
+  const errorTypeRows = rules.errorTypes.length
+    ? rules.errorTypes.map((item) => `
+      <li>${escapeHtml(item.name)}
+        <span class="scoring-penalty">−${employeeScoringFormat(item.penalty)} puan</span>
+      </li>
+    `).join('')
+    : '<li>Henüz hata türü tanımlanmadı.</li>';
+
+  const errorOptions = rules.errorTypes.map((item) => `
+    <option value="${escapeHtml(item.id)}">
+      ${escapeHtml(item.name)} (-${employeeScoringFormat(item.penalty)})
+    </option>
+  `).join('');
+
+  const rankingRows = ranking.map((row, index) => `
+    <tr class="${index < 3 ? 'scoring-table-top' : ''}">
+      <td><span class="scoring-table-medal">${medals[index] || (index + 1)}</span></td>
+      <td><strong>${escapeHtml(row.staff)}</strong></td>
+      <td>${employeeScoringFormat(row.earnedPoints)}</td>
+      <td class="scoring-penalty">−${employeeScoringFormat(row.penaltyPoints)}</td>
+      <td><strong class="scoring-net-score">${employeeScoringFormat(row.score)}</strong></td>
+      <td>${row.completedUnits}</td>
+    </tr>
+  `).join('');
+
+  const errorRows = admin ? staffList.map((staff) => {
+    const errors = employeeScoringErrorsFor(month, staff);
+    if (!errors.length) return '';
+
+    return `<section class="scoring-error-person">
+      <strong>${escapeHtml(staff)}</strong>
+      <ul>${errors.map((item) => `
+        <li>
+          ${escapeHtml(item.type)}
+          <span class="scoring-penalty">−${employeeScoringFormat(item.penalty)}</span>
+          <button class="scoring-delete-btn" type="button"
+            data-scoring-remove-error="${escapeHtml(item.id)}"
+            data-scoring-staff="${escapeHtml(staff)}"
+            data-scoring-month="${escapeHtml(month)}">
+            Kaydı sil
+          </button>
+        </li>
+      `).join('')}</ul>
+    </section>`;
+  }).join('') : '';
+
+  return `
+    <div class="scoring-page">
+
+      <header class="scoring-hero">
+        <div class="scoring-hero-decoration scoring-star-one">✦</div>
+        <div class="scoring-hero-decoration scoring-star-two">✧</div>
+        <div class="scoring-trophy">🏆</div>
+        <div class="scoring-hero-kicker">BAŞARI • EMEK • TAKDİR</div>
+        <h1>Ayın Elemanı</h1>
+        <p>Başarı fark yaratır, emek değer kazanır.</p>
+        <div class="scoring-hero-bottom">
+          <span>⭐ Performans değerlendirmesi</span>
+          <span>📅 ${escapeHtml(month)}</span>
+        </div>
+      </header>
+
+      <section class="scoring-month-panel">
+        <div class="scoring-section-icon">📆</div>
+        <div class="scoring-month-copy">
+          <strong>Değerlendirme dönemi</strong>
+          <span>İncelemek istediğin ayı seç.</span>
+        </div>
+        <input id="employee-scoring-month" type="month"
+          value="${escapeHtml(month)}" max="${escapeHtml(currentMonth())}">
+      </section>
+
+      ${award ? `
+        <section class="scoring-winner-banner">
+          <div class="scoring-winner-icon">🌟</div>
+          <div>
+            <span class="scoring-winner-kicker">YÖNETİCİ ONAYIYLA</span>
+            <h2>Ayın Elemanı</h2>
+            <div class="scoring-winner-name">${escapeHtml(award.staff)}</div>
+            <p>Onaylanan puan: <strong>${employeeScoringFormat(award.score)}</strong></p>
+            <p>Onaylayan: ${escapeHtml(award.approvedBy || 'Belirtilmedi')}</p>
+            <small>Onay anındaki sonuç kaydı korunur.</small>
+          </div>
+          <div class="scoring-winner-star">★</div>
+        </section>
+      ` : ''}
+
+      <section class="scoring-podium-section">
+        <div class="scoring-section-heading">
+          <div>
+            <span class="scoring-eyebrow">AYLIK PERFORMANS</span>
+            <h2>Başarı Kürsüsü</h2>
+            <p>En yüksek net puana sahip ilk üç personel.</p>
+          </div>
+          <span class="scoring-heading-star">✦</span>
+        </div>
+
+        <div class="scoring-podium">
+          ${podiumRows || '<div class="permission-empty">Henüz sıralanacak personel bulunmuyor.</div>'}
+        </div>
+      </section>
+
+      ${admin ? `
+        <section class="scoring-admin-section">
+          <div class="scoring-section-heading">
+            <div>
+              <span class="scoring-eyebrow">YÖNETİCİ ALANI</span>
+              <h2>⚙️ Puanlama ayarları</h2>
+              <p>Görev puanlarını ve hata kesintilerini yönet.</p>
+            </div>
+          </div>
+
+          <div class="scoring-admin-grid">
+            <section class="scoring-admin-card">
+              <div class="scoring-admin-card-title">
+                <span>🎯</span>
+                <h3>Görev puanları</h3>
+              </div>
+              <form id="employee-scoring-rules-form">
+                ${taskRows || '<p>Tanımlı görev türü bulunamadı.</p>'}
+                <button class="scoring-action-btn scoring-action-primary" type="submit">
+                  ✓ Görev puanlarını kaydet
+                </button>
+              </form>
+            </section>
+
+            <section class="scoring-admin-card">
+              <div class="scoring-admin-card-title">
+                <span>📝</span>
+                <h3>Hata türleri</h3>
+              </div>
+              <form id="employee-scoring-error-type-form" class="scoring-form-stack">
+                <label>Hata türü
+                  <input name="error-name" required maxlength="100"
+                    placeholder="Örn. Evrak eksikliği">
+                </label>
+                <label>Kesilecek puan
+                  <input name="error-penalty" type="number" min="0"
+                    step="0.5" required value="1">
+                </label>
+                <button class="scoring-action-btn scoring-action-secondary" type="submit">
+                  + Hata türünü kaydet
+                </button>
+              </form>
+              <ul class="scoring-error-types">${errorTypeRows}</ul>
+            </section>
+
+            <section class="scoring-admin-card scoring-admin-card-wide">
+              <div class="scoring-admin-card-title">
+                <span>📋</span>
+                <h3>Personele hata kaydı ekle</h3>
+              </div>
+              <form id="employee-scoring-add-error-form" class="scoring-error-entry">
+                <input type="hidden" name="month" value="${escapeHtml(month)}">
+                <label>Personel
+                  <select name="staff" required>
+                    ${staffList.map((staff) =>
+                      `<option value="${escapeHtml(staff)}">${escapeHtml(staff)}</option>`
+                    ).join('')}
+                  </select>
+                </label>
+                <label>Hata türü
+                  <select name="error-type" required>${errorOptions}</select>
+                </label>
+                <button class="scoring-action-btn scoring-action-danger" type="submit"
+                  ${rules.errorTypes.length ? '' : 'disabled'}>
+                  + Hata kaydını ekle
+                </button>
+              </form>
+              ${errorRows || '<p class="scoring-muted">Bu ay için kayıtlı hata bulunmuyor.</p>'}
+            </section>
+          </div>
+        </section>
+      ` : ''}
+
+      <section class="scoring-table-section">
+        <div class="scoring-section-heading">
+          <div>
+            <span class="scoring-eyebrow">AYRINTILI RAPOR</span>
+            <h2>📊 Aylık sıralama</h2>
+            <p>Net puan = kazanılan puan − hata kesintileri.</p>
+          </div>
+        </div>
+
+        <div class="scoring-table-wrap">
+          <table class="scoring-table">
+            <thead>
+              <tr>
+                <th>Sıra</th>
+                <th>Personel</th>
+                <th>Kazanılan</th>
+                <th>Kesinti</th>
+                <th>Net puan</th>
+                <th>İşlem</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rankingRows || '<tr><td colspan="6">Personel kaydı bulunamadı.</td></tr>'}
+            </tbody>
+          </table>
+        </div>
+
+        ${admin ? `
+          <div class="scoring-approval-area">
+            <span>🏅 Sonuçları kontrol ettikten sonra onaylayabilirsin.</span>
+            <button type="button" id="employee-scoring-approve"
+              class="scoring-action-btn scoring-action-gold">
+              ★ ${award ? 'Sonucu yeniden onayla' : 'Birinci sıradaki personeli onayla'}
+            </button>
+          </div>
+        ` : ''}
+      </section>
+
+      <footer class="scoring-footer">
+        <span>✦</span> Her başarı takdiri hak eder.
+      </footer>
+
+    </div>
+  `;
+}
+
+/* Ekrandaki formların ve butonların olayları */
+if (!window.employeeScoringEventsInstalled) {
+  window.employeeScoringEventsInstalled = true;
+
+  document.addEventListener('change', (event) => {
+    if (event.target?.id !== 'employee-scoring-month') return;
+
+    const month = event.target.value;
+    if (!validMonth(month)) return;
+
+    window.employeeScoringState.selectedMonth = month;
+
+    if (typeof renderDashboard === 'function') {
+      renderDashboard('Ayın Elemanı');
+    }
+  });
+
+  document.addEventListener('submit', async (event) => {
+    const form = event.target;
+
+    if (!form || ![
+      'employee-scoring-rules-form',
+      'employee-scoring-error-type-form',
+      'employee-scoring-add-error-form'
+    ].includes(form.id)) return;
+
+    event.preventDefault();
+
+    try {
+      if (!employeeScoringIsAdmin()) {
+        throw new Error('Bu işlem için yönetici yetkisi gerekir.');
+      }
+
+      if (form.id === 'employee-scoring-rules-form') {
+        await employeeScoringSaveRules(form);
+      } else if (form.id === 'employee-scoring-error-type-form') {
+        await employeeScoringAddErrorType(form);
+      } else {
+        await employeeScoringAddEmployeeError(form);
+      }
+
+      window.alert('Kayıt başarıyla tamamlandı.');
+
+      if (typeof renderDashboard === 'function') {
+        renderDashboard('Ayın Elemanı');
+      }
+    } catch (error) {
+      console.error('Puanlama işlemi başarısız:', error);
+      window.alert('İşlem yapılamadı: ' + error.message);
+    }
+  });
+
+  document.addEventListener('click', async (event) => {
+    const removeButton = event.target.closest('[data-scoring-remove-error]');
+
+    if (removeButton) {
+      try {
+        const month = removeButton.dataset.scoringMonth;
+        const staff = removeButton.dataset.scoringStaff;
+        const errorId = removeButton.dataset.scoringRemoveError;
+
+        if (!window.confirm('Bu hata kaydını silmek istiyor musun?')) return;
+
+        await employeeScoringRemoveError(month, staff, errorId);
+        window.alert('Hata kaydı silindi.');
+
+        if (typeof renderDashboard === 'function') {
+          renderDashboard('Ayın Elemanı');
+        }
+      } catch (error) {
+        window.alert('Hata kaydı silinemedi: ' + error.message);
+      }
+      return;
+    }
+
+    if (event.target.closest('#employee-scoring-approve')) {
+      try {
+        const month = window.employeeScoringState.selectedMonth || currentMonth();
+
+        if (!window.confirm('Bu ayın birinci sıradaki personelini onaylamak istiyor musun?')) return;
+
+        await employeeScoringApprove(month);
+        window.alert('Ayın Elemanı sonucu Firebase’e kaydedildi.');
+
+        if (typeof renderDashboard === 'function') {
+          renderDashboard('Ayın Elemanı');
+        }
+      } catch (error) {
+        window.alert('Onay işlemi yapılamadı: ' + error.message);
+      }
+    }
+  });
+}
