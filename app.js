@@ -863,28 +863,277 @@ function getMyDashboardStats() {
     return { me, visibleCompanies, allowedTasks, perCompany, totalExpected, totalDone, totalMissing, pct, earliest };
   } catch (err) { return { me: (currentUser && currentUser.name) || '', visibleCompanies: [], allowedTasks: [], perCompany: [], totalExpected: 0, totalDone: 0, totalMissing: 0, pct: 0, earliest: '' }; }
 }
+function renderDailyWelcome() {
+  const thoughts = window.dailyQuotes || [];
+
+  const today = new Date();
+  const startOfYear = new Date(today.getFullYear(), 0, 1);
+  const dayOfYear = Math.floor(
+    (new Date(today.getFullYear(), today.getMonth(), today.getDate())
+      - startOfYear) / 86400000
+  );
+
+  const thought = thoughts.length
+    ? thoughts[dayOfYear % thoughts.length]
+    : {
+        quote: 'Küçük adımlar, büyük değişimlerin başlangıcıdır.',
+        note: 'Bugün kendin için küçük ama anlamlı bir adım at.',
+        theme: 'Yeni başlangıçlar'
+      };
+
+  return `
+    <section class="daily-welcome-card">
+      <div class="daily-welcome-top">
+        <div>
+          <span class="daily-welcome-eyebrow">KENDİNE KÜÇÜK BİR MOLA</span>
+          <h2>Bugün nasıl hissediyorsun?</h2>
+          <p class="daily-welcome-description">
+            Kendine bir an ayır. Her gün aynı olmak zorunda değil.
+          </p>
+        </div>
+        <span class="daily-welcome-symbol" aria-hidden="true">✦</span>
+      </div>
+
+      <div class="daily-mood-options">
+        <button type="button" class="daily-mood-button"
+          aria-pressed="false"
+          onclick="selectDailyMood('Harika', this)">
+          <span>☀</span> Harika
+        </button>
+        <button type="button" class="daily-mood-button"
+          aria-pressed="false"
+          onclick="selectDailyMood('İyi', this)">
+          <span>☺</span> İyi
+        </button>
+        <button type="button" class="daily-mood-button"
+          aria-pressed="false"
+          onclick="selectDailyMood('Yorgun', this)">
+          <span>☁</span> Yorgun
+        </button>
+        <button type="button" class="daily-mood-button"
+          aria-pressed="false"
+          onclick="selectDailyMood('Düşünceli', this)">
+          <span>☾</span> Düşünceli
+        </button>
+      </div>
+
+      <p class="daily-mood-message" id="daily-mood-message"
+        aria-live="polite">
+        Bugün kendine nasıl davranmak istediğini seçebilirsin.
+      </p>
+
+      <div class="daily-thought">
+        <span class="daily-thought-label">GÜNÜN SÖZÜ</span>
+        <blockquote>“${thought.quote}”</blockquote>
+        <p class="daily-welcome-description">${thought.note}</p>
+        <span class="daily-thought-author">${thought.theme}</span>
+      </div>
+    </section>
+  `;
+}
+
+function selectDailyMood(mood, button) {
+  const container = button.closest('.daily-welcome-card');
+  if (!container) return;
+
+  container.querySelectorAll('.daily-mood-button').forEach(function (item) {
+    item.classList.remove('selected');
+    item.setAttribute('aria-pressed', 'false');
+  });
+
+  button.classList.add('selected');
+  button.setAttribute('aria-pressed', 'true');
+
+  const messages = {
+    'Harika': 'Bu güzel enerjini koru; bugün kendin için de güzel bir şey yap.',
+    'İyi': 'Güzel. Küçük adımlar da seni ileriye taşır.',
+    'Yorgun': 'Kendine yüklenme. Bazen yavaşlamak da ilerlemenin bir parçasıdır.',
+    'Düşünceli': 'Her şeyi hemen çözmek zorunda değilsin. Kendine zaman tanı.'
+  };
+
+  const message = container.querySelector('#daily-mood-message');
+  if (message) message.textContent = messages[mood] || '';
+}
 function renderMyDashboardStats() {
   try {
     const s = getMyDashboardStats();
+
     const cards = [
-      ['▣', 'Görebildiğim cari', `${s.visibleCompanies.length}`, s.earliest ? `${formatDateTr(s.earliest)} itibarıyla` : 'tanımlı cari'],
-      ['◷', 'Yapmam gereken iş', `${s.totalExpected}`, `${s.visibleCompanies.length} cari × ${s.allowedTasks.length} iş türü`],
-      ['✓', 'Tamamladığım', `${s.totalDone}`, `%${s.pct} tamamlanma`],
-      ['!', 'Eksik / bekleyen', `${s.totalMissing}`, 'carinin tanımlandığı tarihten itibaren']
-    ].map(([icon, title, value, change]) => `<article class="stat-card"><div class="stat-top"><span>${title}</span><span class="stat-icon">${icon}</span></div><div class="stat-number">${value}</div><span class="stat-change">${change}</span></article>`).join('');
-    const rows = s.perCompany.length ? s.perCompany.map((r) => `
-    <div class="task-row" style="cursor:default">
-      <span class="task-box" style="${r.missing === 0 ? 'border-color:var(--teal);background:var(--teal);color:white;' : ''}">${r.missing === 0 ? '✓' : '▣'}</span>
-      <div class="task-name"><strong>${r.company}</strong><small>Tanımlanma: ${formatDateTr(r.createdAt)} · Gereken: ${r.expected} · Yapılan: ${r.done} · Kalan: ${r.missing}</small></div>
-      <span class="task-counter">${r.missing === 0 ? 'Tamam' : r.missing + ' eksik'}</span>
-    </div>`).join('') : '<div class="permission-empty"><span class="permission-icon">▣</span><div><strong>Henüz görebildiğiniz cari yok.</strong><p>Yöneticinizden firma erişim yetkisi isteyin.</p></div></div>';
+      {
+        icon: '▣',
+        title: 'Görebildiğim cari',
+        value: s.visibleCompanies.length,
+        detail: s.earliest
+          ? formatDateTr(s.earliest) + ' itibarıyla'
+          : 'Tanımlı cari',
+        color: 'blue'
+      },
+      {
+        icon: '◷',
+        title: 'Yapmam gereken iş',
+        value: s.totalExpected,
+        detail: s.visibleCompanies.length + ' cari · ' +
+          s.allowedTasks.length + ' iş türü',
+        color: 'purple'
+      },
+      {
+        icon: '✓',
+        title: 'Tamamladığım',
+        value: s.totalDone,
+        detail: '%' + s.pct + ' tamamlanma',
+        color: 'green'
+      },
+      {
+        icon: '!',
+        title: 'Eksik / bekleyen',
+        value: s.totalMissing,
+        detail: 'Tamamlanması gereken işler',
+        color: 'orange'
+      }
+    ].map(function (item) {
+      return `
+        <article class="dash-metric dash-${item.color}">
+          <div class="dash-metric-top">
+            <span class="dash-metric-title">${item.title}</span>
+            <span class="dash-metric-icon">${item.icon}</span>
+          </div>
+          <div class="dash-metric-value">${item.value}</div>
+          <div class="dash-metric-detail">${item.detail}</div>
+        </article>
+      `;
+    }).join('');
+
+    const rows = s.perCompany.length
+      ? s.perCompany.map(function (r) {
+          const percent = r.expected > 0
+            ? Math.max(0, Math.min(100, Math.round(r.done / r.expected * 100)))
+            : 0;
+
+          return `
+            <div class="dash-company-row">
+              <div class="dash-company-icon ${
+                r.missing === 0 ? 'is-complete' : ''
+              }">${r.missing === 0 ? '✓' : '▣'}</div>
+
+              <div class="dash-company-info">
+                <div class="dash-company-heading">
+                  <strong>${r.company}</strong>
+                  <span class="dash-company-status ${
+                    r.missing === 0 ? 'is-complete' : 'is-pending'
+                  }">${r.missing === 0 ? 'Tamamlandı' : r.missing + ' eksik'}</span>
+                </div>
+
+                <div class="dash-company-meta">
+                  Tanımlanma: ${formatDateTr(r.createdAt)}
+                  <span>•</span> Gereken: ${r.expected}
+                  <span>•</span> Yapılan: ${r.done}
+                  <span>•</span> Kalan: ${r.missing}
+                </div>
+
+                <div class="dash-progress-track">
+                  <div class="dash-progress-fill ${
+                    r.missing === 0 ? 'is-complete' : ''
+                  }" style="width:${percent}%"></div>
+                </div>
+                <div class="dash-progress-label">%${percent} tamamlandı</div>
+              </div>
+            </div>
+          `;
+        }).join('')
+      : `
+        <div class="permission-empty">
+          <span class="permission-icon">▣</span>
+          <div>
+            <strong>Henüz görebildiğiniz cari yok.</strong>
+            <p>Yöneticinizden firma erişim yetkisi isteyin.</p>
+          </div>
+        </div>
+      `;
+
+    const overallPercent = Math.max(
+      0,
+      Math.min(100, Number(s.pct) || 0)
+    );
+
     return `
-    <div class="page-heading"><div><h1>Yönetim Paneli</h1><p>Hoş geldin ${s.me} — bu sayfadaki tüm sayılar yalnızca sana ait. Carilerin ve tanımlanma tarihlerinden itibaren yapman gereken işler.</p></div><span class="access-badge">${s.me}</span></div>
-    <section class="stats-grid">${cards}</section>
-    <section class="panel"><div class="panel-header"><div><h2>Carilerime göre durum</h2><p class="panel-subtitle">Her cari, tanımlandığı tarihten sonraki kayıtlarına göre değerlendirilir.</p></div><span class="task-counter">${s.totalDone}/${s.totalExpected} tamamlandı</span></div>
-      <div class="task-content">${rows}</div>
-    </section>`;
-  } catch (err) { return '<div class="permission-empty"><span class="permission-icon">!</span><div><strong>Panel yüklenemedi.</strong></div></div>'; }
+      <section class="dash-overview">
+        <div class="dash-welcome">
+          <div class="dash-welcome-content">
+            <span class="dash-eyebrow">İŞ SÜREÇ YÖNETİMİ</span>
+            <h1>Hoş geldin, ${s.me} 👋</h1>
+            <p>İş durumunu takip et, tamamlanan işleri gör ve
+            bekleyen görevlerini kolayca kontrol et.</p>
+          </div>
+          <div class="dash-welcome-decoration" aria-hidden="true">
+            <div class="dash-decoration-circle"></div>
+            <div class="dash-decoration-icon">▦</div>
+          </div>
+        </div>
+
+        ${renderDailyWelcome()}
+
+        <div class="dash-section-heading">
+          <div>
+            <h2>Genel durum</h2>
+            <p>Sana tanımlanan işlerin güncel özeti</p>
+          </div>
+          <span class="dash-live-label">
+            <span class="dash-live-dot"></span> Kişisel özetin
+          </span>
+        </div>
+
+        <section class="dash-metrics">
+          ${cards}
+        </section>
+
+        <section class="dash-completion">
+          <div class="dash-completion-info">
+            <div>
+              <span class="dash-completion-label">Genel tamamlanma</span>
+              <strong>İş ilerleme durumun</strong>
+            </div>
+            <div class="dash-completion-number">%${overallPercent}</div>
+          </div>
+          <div class="dash-completion-track">
+            <div class="dash-completion-fill"
+                 style="width:${overallPercent}%"></div>
+          </div>
+          <div class="dash-completion-footer">
+            <span>${s.totalDone} iş tamamlandı</span>
+            <span>${s.totalMissing} iş bekliyor</span>
+          </div>
+        </section>
+
+        <section class="panel dash-company-panel">
+          <div class="panel-header dash-company-panel-header">
+            <div>
+              <h2>Carilerime göre durum</h2>
+              <p class="panel-subtitle">
+                Her carinin tanımlanma tarihinden itibaren iş ilerlemesi
+              </p>
+            </div>
+            <span class="task-counter">
+              ${s.totalDone} / ${s.totalExpected} tamamlandı
+            </span>
+          </div>
+          <div class="task-content dash-company-list">
+            ${rows}
+          </div>
+        </section>
+      </section>
+    `;
+  } catch (err) {
+    console.error('Yönetim paneli yükleme hatası:', err);
+    return `
+      <div class="permission-empty">
+        <span class="permission-icon">!</span>
+        <div>
+          <strong>Panel yüklenemedi.</strong>
+          <p>Lütfen sayfayı yenileyip tekrar deneyin.</p>
+        </div>
+      </div>
+    `;
+  }
 }
 function getCompanies() {
   let result = [];
@@ -1103,6 +1352,7 @@ const TASK_TYPE_FIREBASE_COLLECTION = 'settings';
 const TASK_TYPE_FIREBASE_DOC = 'taskTypes';
 
 let sharedTaskTypesCache = null;
+let sharedTaskPointsCache = null;
 
 function loadTaskTypes() {
   if (
@@ -1175,29 +1425,38 @@ async function loadSharedTaskTypesFromFirebase() {
     const snapshot = await window.firebaseGetDoc(taskTypesRef);
 
     if (!snapshot.exists()) {
+      sharedTaskTypesCache = null;
+      sharedTaskPointsCache = {};
       return false;
     }
 
-    const data = snapshot.data();
+    const data = snapshot.data() || {};
 
-    if (!Array.isArray(data.taskTypes)) {
-      return false;
-    }
-
-    const cleanList = Array.from(
-      new Set(
-        data.taskTypes
-          .filter((t) => typeof t === 'string')
-          .map((t) => t.trim())
+    const cleanList = Array.isArray(data.taskTypes)
+      ? data.taskTypes
+          .filter((name) => typeof name === 'string')
+          .map((name) => name.trim())
           .filter(Boolean)
-      )
-    );
+      : [];
 
-    if (!cleanList.length) {
-      return false;
-    }
+    const savedPoints =
+      data.taskPoints &&
+      typeof data.taskPoints === 'object' &&
+      !Array.isArray(data.taskPoints)
+        ? data.taskPoints
+        : {};
 
-    sharedTaskTypesCache = [...cleanList];
+    const cleanPoints = {};
+
+    cleanList.forEach((name) => {
+      const value = Number(savedPoints[name] ?? 1);
+
+      cleanPoints[name] =
+        Number.isFinite(value) && value >= 0 ? value : 1;
+    });
+
+    sharedTaskTypesCache = cleanList;
+    sharedTaskPointsCache = cleanPoints;
 
     try {
       localStorage.setItem(
@@ -1206,19 +1465,22 @@ async function loadSharedTaskTypesFromFirebase() {
       );
     } catch (err) {}
 
-    console.log(
-      'Firebase ortak iş türleri yüklendi:',
-      cleanList
-    );
+    console.log('Firebase iş türleri ve puanları yüklendi:', {
+      taskTypes: cleanList,
+      taskPoints: cleanPoints
+    });
 
     return true;
   } catch (err) {
-    console.error('Firebase iş türleri okunamadı:', err);
+    console.error(
+      'Firebase iş türleri ve puanları yüklenemedi:',
+      err
+    );
     return false;
   }
 }
 
-async function saveSharedTaskTypesToFirebase(list) {
+async function saveSharedTaskTypesToFirebase(list, taskPoints) {
   try {
     if (
       !window.firebaseDb ||
@@ -1237,6 +1499,23 @@ async function saveSharedTaskTypesToFirebase(list) {
       )
     );
 
+    const currentPoints =
+      taskPoints && typeof taskPoints === 'object'
+        ? taskPoints
+        : (sharedTaskPointsCache || {});
+
+    const cleanPoints = {};
+
+    cleanList.forEach((name) => {
+      const value = Number(currentPoints[name] ?? 1);
+
+      if (!Number.isFinite(value) || value < 0) {
+        throw new Error(`"${name}" için geçerli bir puan girin.`);
+      }
+
+      cleanPoints[name] = value;
+    });
+
     const taskTypesRef = window.firebaseDoc(
       window.firebaseDb,
       TASK_TYPE_FIREBASE_COLLECTION,
@@ -1245,10 +1524,12 @@ async function saveSharedTaskTypesToFirebase(list) {
 
     await window.firebaseSetDoc(taskTypesRef, {
       taskTypes: cleanList,
+      taskPoints: cleanPoints,
       updatedAt: new Date().toISOString()
-    });
+    }, { merge: true });
 
     sharedTaskTypesCache = [...cleanList];
+    sharedTaskPointsCache = { ...cleanPoints };
 
     try {
       localStorage.setItem(
@@ -1258,18 +1539,32 @@ async function saveSharedTaskTypesToFirebase(list) {
     } catch (err) {}
 
     console.log(
-      'Firebase ortak iş türleri kaydedildi:',
-      cleanList
+      'Firebase ortak iş türleri ve puanları kaydedildi:',
+      cleanList,
+      cleanPoints
     );
 
     return true;
   } catch (err) {
     console.error(
-      'Firebase iş türleri kaydedilemedi:',
+      'Firebase iş türleri ve puanları kaydedilemedi:',
       err
     );
     return false;
   }
+}
+
+function getTaskPoints() {
+  const points = sharedTaskPointsCache || {};
+
+  return Object.fromEntries(
+    getTaskTypes().map((name) => [
+      name,
+      Number.isFinite(Number(points[name]))
+        ? Number(points[name])
+        : 1
+    ])
+  );
 }
 
 function listenSharedTaskTypesFromFirebase() {
@@ -1836,9 +2131,13 @@ function saveWorkStore(store) {
 }
 
 function getWorkKey(staff, company, date) {
-  return `${company} || ${date}`;
+  return `${staff} || ${company} || ${date}`;
 }
 
+// Eski kayıtların anahtarını bulmak için korunur.
+function getLegacyWorkKey(company, date) {
+  return `${company} || ${date}`;
+}
 async function getWorkRecord(staff, company, date) {
   try {
     if (
@@ -1850,6 +2149,7 @@ async function getWorkRecord(staff, company, date) {
       return null;
     }
 
+    // Önce yeni personel + firma + tarih anahtarını kontrol et.
     const recordKey = getWorkKey(staff, company, date);
 
     const workRef = window.firebaseDoc(
@@ -1860,29 +2160,62 @@ async function getWorkRecord(staff, company, date) {
 
     const snapshot = await window.firebaseGetDoc(workRef);
 
-    if (!snapshot.exists()) {
-      return null;
+    if (snapshot.exists()) {
+      const record = snapshot.data();
+
+      if (!Array.isArray(record.tasks)) {
+        return null;
+      }
+
+      // Yeni kaydın personele ait olduğunu doğrula.
+      if (
+        record.staff &&
+        record.staff !== staff
+      ) {
+        console.error('İş kaydındaki personel eşleşmiyor:', recordKey);
+        return null;
+      }
+
+      return record;
     }
 
-    const record = snapshot.data();
+    // Eski anahtarla bulunan kayıtları otomatik olarak
+    // başka bir personele atamayız.
+    const legacyKey = getLegacyWorkKey(company, date);
 
-    if (!Array.isArray(record.tasks)) {
-      return null;
-    }
-
-    console.log(
-      'Firebase firma bazlı günlük iş kaydı yüklendi:',
-      recordKey,
-      record
+    const legacyRef = window.firebaseDoc(
+      window.firebaseDb,
+      window.firebaseWorkRecordCollection || 'workRecords',
+      legacyKey
     );
 
-    return record;
+    const legacySnapshot = await window.firebaseGetDoc(legacyRef);
+
+    if (!legacySnapshot.exists()) {
+      return null;
+    }
+
+    const legacyRecord = legacySnapshot.data();
+
+    if (!Array.isArray(legacyRecord.tasks)) {
+      return null;
+    }
+
+    const recordedStaff =
+      legacyRecord.staff || legacyRecord.updatedBy || '';
+
+    if (recordedStaff !== staff) {
+      console.warn(
+        'Eski kayıt personele kesin olarak eşleştirilemedi; otomatik kullanılmadı.',
+        legacyKey
+      );
+
+      return null;
+    }
+
+    return legacyRecord;
   } catch (err) {
-    console.error(
-      'Firebase günlük iş kaydı okunamadı:',
-      err
-    );
-
+    console.error('Firebase günlük iş kaydı okunamadı:', err);
     return null;
   }
 }
@@ -1911,6 +2244,7 @@ async function saveWorkRecord(
     );
 
     const record = {
+      staff: staff,
       company: company,
       date: date,
       tasks: tasks.slice(0, getTaskTypes().length),
@@ -1994,7 +2328,41 @@ function getVisibleQuestions() {
 const NOTE_KEY = 'isSurecNotesV1';
 function loadNotes() { try { const raw = localStorage.getItem(NOTE_KEY); const p = raw ? JSON.parse(raw) : null; if (Array.isArray(p)) return p; } catch (err) { } return []; }
 function saveNotes(list) { try { localStorage.setItem(NOTE_KEY, JSON.stringify(list)); } catch (err) { window.alert('Not kaydedilemedi (depolama dolu olabilir, daha küçük dosya deneyin).'); } }
-function getMyNotes() { const me = currentUser ? currentUser.name : ''; return loadNotes().filter((n) => n.staff === me); }
+function getMyNotes() {
+  const me = currentUser ? currentUser.name : '';
+  const uid = window.firebaseAuth?.currentUser?.uid || '';
+
+  // Mevcut tarayıcıdaki notları koru.
+  const localNotes = loadNotes().filter(
+    (note) => note.staff === me
+  );
+
+  // Firebase'den yüklenen kişisel notlar.
+  const remoteNotes = Array.isArray(window._personalNotesCache)
+    ? window._personalNotesCache.filter(
+        (note) => note.ownerUid === uid && uid
+      )
+    : [];
+
+  // Aynı not iki kez görünmesin.
+  const notesById = new Map();
+
+  localNotes.forEach((note) => {
+    notesById.set(note.id, note);
+  });
+
+  remoteNotes.forEach((note) => {
+    notesById.set(note.id, {
+      ...notesById.get(note.id),
+      ...note
+    });
+  });
+
+  return Array.from(notesById.values()).sort(
+    (a, b) =>
+      (a.createdAt < b.createdAt ? 1 : -1)
+  );
+}
 
 const AVATAR_KEY = 'isSurecAvatarsV1';
 const AVATAR_MAX_SIZE = 512 * 1024;
@@ -2150,25 +2518,63 @@ function handleAvatarUpload(email, file) {
   });
 }
 function getUserAvatarHtml(email, name) {
-  const avatar = loadUserAvatar(email);
-  if (avatar && avatar.indexOf('data:image/') === 0) {
-    return '<img src="' + avatar + '" alt="Profil resmi" class="profile-avatar-img" />';
+  const selectedAvatar =
+    typeof currentUser !== 'undefined' &&
+    currentUser &&
+    avatarKey(currentUser.email) === avatarKey(email)
+      ? currentUser.avatar
+      : null;
+
+  if (selectedAvatar) {
+    return `
+      <span class="system-profile-avatar">
+        ${getSystemAvatarHtml(selectedAvatar)}
+      </span>
+    `;
   }
-  return '<span class="avatar">' + escapeHtml(getInitials(name || '?')) + '</span>';
+
+  const avatar = loadUserAvatar(email);
+
+  if (avatar && avatar.indexOf('data:image/') === 0) {
+    return '<img src="' + avatar +
+      '" alt="Profil resmi" class="profile-avatar-img" />';
+  }
+
+  return '<span class="avatar">' +
+    escapeHtml(getInitials(name || '?')) +
+    '</span>';
 }
 function getProfileActionsHtml(email, name) {
   const avatar = loadUserAvatar(email);
-  if (avatar) {
-    return `
-      <button class="profile-upload-btn" type="button" data-change-avatar="${escapeHtml(email)}" style="margin-right:6px;">Değiştir</button>
-      <button class="profile-remove-btn" type="button" data-remove-avatar="${escapeHtml(email)}">Kaldır</button>
-    `;
-  }
+
   return `
-    <label class="profile-upload-btn" style="cursor:pointer;margin-right:6px;">
-      <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none" data-upload-avatar="${escapeHtml(email)}" />
-      Resim ekle
-    </label>
+    <button
+      class="profile-upload-btn"
+      type="button"
+      data-open-avatar-picker="${escapeHtml(email)}"
+      style="margin-right:6px;"
+    >
+      Avatar seç
+    </button>
+
+    <button
+      class="profile-upload-btn"
+      type="button"
+      data-change-avatar="${escapeHtml(email)}"
+      style="margin-right:6px;"
+    >
+      Fotoğraf yükle
+    </button>
+
+    ${avatar ? `
+      <button
+        class="profile-remove-btn"
+        type="button"
+        data-remove-avatar="${escapeHtml(email)}"
+      >
+        Fotoğrafı kaldır
+      </button>
+    ` : ''}
   `;
 }
 
@@ -2446,364 +2852,381 @@ function canView(staff, company) {
   );
 
   return v === 'islem' || v === 'gor';
+}function canEdit(staff, company) {
+  return getPermRecord(staff, company) === 'islem';
 }
-function canEdit(staff, company) { return getPermRecord(staff, company) === 'islem'; }
+
 function renderAccessMatrixContent() {
   if (!isAdminUser()) {
     return '<div class="permission-empty">Bu panel yalnızca yöneticilere açıktır.</div>';
   }
 
   const firms = getCompanies();
+  const people = Array.from(new Set([
+    ...getStaff(),
+    ...(currentUser && currentUser.name ? [currentUser.name] : [])
+  ]));
 
-  const people = Array.from(
-    new Set([
-      ...getStaff(),
-      ...(currentUser && currentUser.name
-        ? [currentUser.name]
-        : [])
-    ])
-  );
-
-  const focusStaff =
-    window._permFocus ||
-    people[0] ||
-    '';
+  const focusStaff = window._permFocus || people[0] || '';
+  const taskPoints = getTaskPoints();
+  const taskTypes = getTaskTypes();
 
   return `
-    <div class="page-heading">
-      <div>
-        <h1>Yetkilendirme</h1>
-        <p>Personel seçin, firma ve görev yetkilerini tek ekrandan yönetin.</p>
-      </div>
-      <span class="access-badge">Yönetici</span>
-    </div>
+    <div class="access-page">
 
-    ${renderAnnouncementPermissions()}
+      <section class="access-hero">
+        <div class="access-hero-content">
+          <span class="access-eyebrow">
+            <span class="access-eyebrow-dot"></span>
+            YÖNETİM VE GÜVENLİK
+          </span>
+          <h1>Yetkilendirme Merkezi</h1>
+          <p>Personel erişimlerini, firma izinlerini ve görev yetkilerini tek bir merkezden yönetin.</p>
 
-    <!-- PERSONEL SEÇİMİ -->
-    <section class="panel">
-      <div class="panel-header">
-        <div>
-          <h2>Personel Yetkileri</h2>
-          <p class="panel-subtitle">
-            Yetkilerini düzenlemek istediğiniz personeli seçin.
-          </p>
+          <div class="access-hero-tags">
+            <span><span class="access-tag-icon">✓</span> Firma erişimleri</span>
+            <span><span class="access-tag-icon">✓</span> İşlem izinleri</span>
+            <span><span class="access-tag-icon">✓</span> Puan yönetimi</span>
+          </div>
         </div>
-      </div>
 
-      <form id="perm-focus-form" class="work-form" style="grid-template-columns:1fr auto">
-        <label class="field">
-          Personel
-          <select name="staff" id="perm-focus-staff">
-            ${people.map((s) =>
-    `<option${s === focusStaff ? ' selected' : ''}>${s}</option>`
-  ).join('')}
-          </select>
-        </label>
-
-        <button class="primary-btn work-submit" type="submit">
-          Göster
-        </button>
-      </form>
-    </section>
-
-    <!-- FİRMA YETKİLERİ -->
-    <section class="panel">
-      <div class="panel-header">
-        <div>
-          <h2>Firma Yetkileri</h2>
-          <p class="panel-subtitle">
-            Personelin görebileceği firmaları seçin.
-          </p>
+        <div class="access-hero-art" aria-hidden="true">
+          <div class="access-shield"><span>✓</span></div>
+          <span class="access-orbit access-orbit-one"></span>
+          <span class="access-orbit access-orbit-two"></span>
         </div>
-      </div>
+      </section>
 
-      <div class="task-content">
-        ${firms.length
-      ? firms.map((company) => `
-              <label class="task-row">
-                <input
-                  type="checkbox"
-                  class="company-permission-check"
-                  data-company="${company}"
-                />
-                <span class="task-box"></span>
-                <span class="task-name">
-                  <strong>${company}</strong>
-                  <small>Firmayı görmesine izin ver</small>
-                </span>
-              </label>
-            `).join('')
-      : `
-              <div class="permission-empty">
-                <span class="permission-icon">!</span>
-                <div>
-                  <strong>Henüz firma bulunmuyor.</strong>
-                  <p>Önce Firma Yönetimi bölümünden firma ekleyin.</p>
-                </div>
-              </div>
-            `
-    }
-      </div>
-    </section>
+      <section class="access-summary">
+        <article class="access-summary-card">
+          <span class="access-summary-icon access-icon-blue">♙</span>
+          <div>
+            <span class="access-summary-label">Personel</span>
+            <strong>${people.length}</strong>
+            <small>Yetki yönetimi kapsamındaki kişiler</small>
+          </div>
+        </article>
 
-    <!-- İŞ TÜRÜ YETKİLERİ -->
-    <section class="panel">
-      <div class="panel-header">
-        <div>
-          <h2>İş Türü Yetkileri</h2>
-          <p class="panel-subtitle">
-            Her firma için personelin hangi görevleri görebileceğini ve
-            hangi görevlerde işlem yapabileceğini belirleyin.
-          </p>
+        <article class="access-summary-card">
+          <span class="access-summary-icon access-icon-teal">▦</span>
+          <div>
+            <span class="access-summary-label">Firma</span>
+            <strong>${firms.length}</strong>
+            <small>Erişim izni tanımlanabilecek firmalar</small>
+          </div>
+        </article>
+
+        <article class="access-summary-card">
+          <span class="access-summary-icon access-icon-purple">✓</span>
+          <div>
+            <span class="access-summary-label">İş türü</span>
+            <strong>${taskTypes.length}</strong>
+            <small>Yetkilendirilebilecek görev türleri</small>
+          </div>
+        </article>
+      </section>
+
+      <!-- PERSONEL SEÇİMİ -->
+      <section class="access-panel">
+        <div class="access-section-heading">
+          <div class="access-section-icon">♙</div>
+          <div>
+            <h2>Personel seçimi</h2>
+            <p>Yetkilerini görüntülemek ve düzenlemek istediğiniz kişiyi seçin.</p>
+          </div>
         </div>
-      </div>
 
-      ${firms.length
-      ? firms.map((company) => `
-            <div
-              class="panel"
-              style="margin:16px 0 0;border:1px solid var(--border-color,#e5e7eb);"
+        ${people.length ? `
+          <form id="perm-focus-form" class="access-person-form">
+            <label class="access-field">
+              <span>Yetkileri düzenlenecek personel</span>
+              <select name="staff" id="perm-focus-staff">
+                ${people.map(s => `
+                  <option value="${escapeHtml(s)}"${s === focusStaff ? ' selected' : ''}>${escapeHtml(s)}</option>
+                `).join('')}
+              </select>
+            </label>
+
+            <button class="access-primary-btn" type="submit">
+              Personeli görüntüle <span>→</span>
+            </button>
+          </form>
+        ` : `
+          <div class="access-empty">
+            <span>♙</span>
+            <strong>Henüz personel bulunmuyor.</strong>
+            <p>Önce Personel Yönetimi bölümünden personel ekleyin.</p>
+          </div>
+        `}
+      </section>
+
+      <!-- FİRMA YETKİLERİ -->
+      <section class="access-panel">
+        <div class="access-section-heading">
+          <div class="access-section-icon access-section-teal">▦</div>
+          <div>
+            <h2>Firma yetkileri</h2>
+            <p>Seçili personelin hangi firmaları görüntüleyebileceğini belirleyin.</p>
+          </div>
+          <span class="access-section-count">${firms.length} firma</span>
+        </div>
+
+        <div class="access-search-wrap">
+          <span class="access-search-icon">⌕</span>
+          <input
+            type="search"
+            id="access-company-search"
+            class="access-search-input"
+            placeholder="Firma adıyla ara..."
+            aria-label="Firma yetkilerinde firma ara"
+          />
+        </div>
+
+        <div class="access-company-grid">
+          ${firms.length ? firms.map(company => `
+            <label
+              class="access-company-card"
+              data-access-company-card="${escapeHtml(company)}"
             >
-              <div class="panel-header">
-                <div>
-                  <h3>${company}</h3>
-                </div>
-              </div>
+              <span class="access-company-symbol">▦</span>
 
-              <div class="task-content">
-                <div
-                  class="task-row"
-                  style="cursor:default;font-weight:600;"
-                >
-                  <span
-                    class="task-name"
-                    style="flex:1;"
-                  >
-                    İş türü
-                  </span>
+              <span class="access-company-text">
+                <strong>${escapeHtml(company)}</strong>
+                <small>Firma görüntüleme izni</small>
+              </span>
 
-                  <span
-                    style="width:70px;text-align:center;"
-                  >
-                    Gör
-                  </span>
+              <input
+                type="checkbox"
+                class="company-permission-check"
+                data-company="${escapeHtml(company)}"
+              />
 
-                  <span
-                    style="width:70px;text-align:center;"
-                  >
-                    İşlem
-                  </span>
-                </div>
-
-                ${getTaskTypes().length
-          ? getTaskTypes().map((task) => `
-                      <div
-                        class="task-row"
-                        style="cursor:default;"
-                      >
-                        <span
-                          class="task-name"
-                          style="flex:1;"
-                        >
-                          <strong>${task}</strong>
-                        </span>
-
-                        <span
-                          style="width:70px;text-align:center;"
-                        >
-                          <input
-                            type="checkbox"
-                            class="task-view-check"
-                            data-company="${company}"
-                            data-task="${task}"
-                            title="Görevi görsün"
-                          />
-                        </span>
-
-                        <span
-                          style="width:70px;text-align:center;"
-                        >
-                          <input
-                            type="checkbox"
-                            class="task-edit-check"
-                            data-company="${company}"
-                            data-task="${task}"
-                            title="Görev üzerinde işlem yapabilsin"
-                          />
-                        </span>
-                      </div>
-                    `).join('')
-          : `
-                      <div class="permission-empty">
-                        Henüz iş türü tanımlanmadı.
-                      </div>
-                    `
-        }
-              </div>
+              <span class="access-custom-check"></span>
+            </label>
+          `).join('') : `
+            <div class="access-empty">
+              <span>▦</span>
+              <strong>Henüz firma bulunmuyor.</strong>
+              <p>Önce Firma Yönetimi bölümünden firma ekleyin.</p>
             </div>
-          `).join('')
-      : ''
-    }
-    </section>
-
-    <!-- DUYURU YETKİLERİ -->
-    <section class="panel">
-      <div class="panel-header">
-        <div>
-          <h2>Duyuru Yetkileri</h2>
-          <p class="panel-subtitle">
-            Personelin duyurularla ilgili yetkilerini belirleyin.
-          </p>
+          `}
         </div>
-      </div>
+      </section>
 
-      <div class="task-content">
-
-        <label class="task-row">
-          <input
-            type="checkbox"
-            class="announcement-permission-check"
-            data-permission="view"
-          />
-          <span class="task-box"></span>
-          <span class="task-name">
-            <strong>Duyuruları görsün</strong>
-          </span>
-        </label>
-
-        <label class="task-row">
-          <input
-            type="checkbox"
-            class="announcement-permission-check"
-            data-permission="create"
-          />
-          <span class="task-box"></span>
-          <span class="task-name">
-            <strong>Duyuru oluştursun</strong>
-          </span>
-        </label>
-
-        <label class="task-row">
-          <input
-            type="checkbox"
-            class="announcement-permission-check"
-            data-permission="edit"
-          />
-          <span class="task-box"></span>
-          <span class="task-name">
-            <strong>Duyuru düzenlesin</strong>
-          </span>
-        </label>
-
-        <label class="task-row">
-          <input
-            type="checkbox"
-            class="announcement-permission-check"
-            data-permission="delete"
-          />
-          <span class="task-box"></span>
-          <span class="task-name">
-            <strong>Duyuru silsin</strong>
-          </span>
-        </label>
-
-      </div>
-    </section>
-
-    <!-- İŞ TÜRÜ YÖNETİMİ -->
-    <section class="panel">
-      <div class="panel-header">
-        <div>
-          <h2>İş Türleri</h2>
-          <p class="panel-subtitle">
-            Sistemde kullanılacak yeni iş türlerini buradan ekleyin veya silin.
-          </p>
+      <!-- İŞ TÜRÜ YETKİLERİ -->
+      <section class="access-panel">
+        <div class="access-section-heading">
+          <div class="access-section-icon access-section-purple">☷</div>
+          <div>
+            <h2>İş türü yetkileri</h2>
+            <p>Firmaları arayın, açıp kapatın ve görüntüleme veya işlem izinlerini yönetin.</p>
+          </div>
         </div>
-      </div>
 
-      <form
-        id="tasktype-form"
-        class="work-form"
-        style="grid-template-columns:1fr auto"
-      >
-        <label class="field">
-          İş türü
+        <div class="access-search-wrap">
+          <span class="access-search-icon">⌕</span>
           <input
-            type="text"
-            name="taskName"
-            placeholder="Örn: Fatura kesildi"
-            required
+            type="search"
+            id="access-task-company-search"
+            class="access-search-input"
+            placeholder="İş türü yetkilerinde firma ara..."
+            aria-label="İş türü yetkilerinde firma ara"
           />
-        </label>
+        </div>
 
-        <button
-          class="primary-btn work-submit"
-          type="submit"
-        >
-          Ekle
-        </button>
-      </form>
+        ${firms.length ? firms.map(company => `
+          <details
+            class="access-accordion-company"
+            data-access-task-company="${escapeHtml(company)}"
+          >
+            <summary class="access-task-company-heading">
+              <span class="access-company-symbol">▦</span>
+              <div>
+                <h3>${escapeHtml(company)}</h3>
+                <p>Bu firmaya ait görev erişimleri</p>
+              </div>
+            </summary>
 
-      <div class="task-content">
-        ${getTaskTypes().map((task) => `
-            <div
-              class="task-row"
-              style="cursor:default"
-            >
-              <span
-                class="task-box"
-                style="border-radius:50%"
-              >
-                ✓
+            <div class="access-permission-table">
+              <div class="access-permission-head">
+                <span>İş türü</span>
+                <span>Görüntüleme</span>
+                <span>İşlem yapma</span>
+              </div>
+
+              ${taskTypes.length ? taskTypes.map(task => `
+                <div class="access-permission-row">
+                  <span class="access-permission-task">
+                    <strong>${escapeHtml(task)}</strong>
+                  </span>
+
+                  <label class="access-permission-toggle" title="Görevi görsün">
+                    <input
+                      type="checkbox"
+                      class="task-view-check"
+                      data-company="${escapeHtml(company)}"
+                      data-task="${escapeHtml(task)}"
+                    />
+                    <span class="access-toggle-ui"></span>
+                  </label>
+
+                  <label class="access-permission-toggle" title="Görev üzerinde işlem yapabilsin">
+                    <input
+                      type="checkbox"
+                      class="task-edit-check"
+                      data-company="${escapeHtml(company)}"
+                      data-task="${escapeHtml(task)}"
+                    />
+                    <span class="access-toggle-ui"></span>
+                  </label>
+                </div>
+              `).join('') : `
+                <div class="access-empty access-empty-compact">
+                  Henüz iş türü tanımlanmadı.
+                </div>
+              `}
+            </div>
+          </details>
+        `).join('') : `
+          <div class="access-empty">
+            Firma eklediğinizde iş türü izinlerini burada yönetebilirsiniz.
+          </div>
+        `}
+      </section>
+
+      <!-- DUYURU YETKİLERİ -->
+      <section class="access-panel">
+        <div class="access-section-heading">
+          <div class="access-section-icon access-section-orange">▤</div>
+          <div>
+            <h2>Duyuru yetkileri</h2>
+            <p>Personelin duyuruları görüntüleme ve yönetme izinlerini belirleyin.</p>
+          </div>
+        </div>
+
+        <div class="access-announcement-grid">
+          ${[
+            { permission: 'view', icon: '◉', title: 'Duyuruları görsün', desc: 'Yayımlanan duyuruları görüntüleyebilir.' },
+            { permission: 'create', icon: '+', title: 'Duyuru oluştursun', desc: 'Yeni duyuru oluşturabilir.' },
+            { permission: 'edit', icon: '✎', title: 'Duyuru düzenlesin', desc: 'Duyuru içeriklerini düzenleyebilir.' },
+            { permission: 'delete', icon: '×', title: 'Duyuru silsin', desc: 'Duyuruları silebilir.' }
+          ].map(item => `
+            <label class="access-announcement-card">
+              <span class="access-announcement-icon">${item.icon}</span>
+              <span class="access-announcement-text">
+                <strong>${item.title}</strong>
+                <small>${item.desc}</small>
               </span>
+              <input
+                type="checkbox"
+                class="announcement-permission-check"
+                data-permission="${item.permission}"
+              />
+              <span class="access-custom-check"></span>
+            </label>
+          `).join('')}
+        </div>
+      </section>
 
-              <span class="task-name">
-                <strong>${task}</strong>
+      <!-- İŞ TÜRÜ VE PUAN YÖNETİMİ -->
+      <section class="access-panel">
+        <div class="access-section-heading">
+          <div class="access-section-icon access-section-blue">✦</div>
+          <div>
+            <h2>İş türü ve puan yönetimi</h2>
+            <p>İş türleri oluşturun ve Ayın Elemanı hesaplamasında kullanılacak puanları belirleyin.</p>
+          </div>
+        </div>
+
+        <form id="tasktype-form" class="access-tasktype-form">
+          <label class="access-field">
+            <span>İş türü adı</span>
+            <input
+              type="text"
+              name="taskName"
+              placeholder="Örn. Fatura kesildi"
+              maxlength="150"
+              required
+            />
+          </label>
+
+          <label class="access-field access-points-field">
+            <span>İş puanı</span>
+            <input
+              type="number"
+              name="taskPoints"
+              min="0"
+              step="0.5"
+              value="1"
+              required
+            />
+          </label>
+
+          <button class="access-primary-btn" type="submit">
+            <span>+</span> İş türü ekle
+          </button>
+        </form>
+
+        <div class="access-tasktype-list">
+          ${taskTypes.length ? taskTypes.map(task => `
+            <div class="access-tasktype-item">
+              <span class="access-tasktype-symbol">✓</span>
+              <span class="access-tasktype-name">
+                <strong>${escapeHtml(task)}</strong>
+                <small>Görev puanı</small>
               </span>
-
+              <span class="access-points-pill">${Number(taskPoints[task] ?? 1)} puan</span>
               <button
                 type="button"
-                class="primary-btn work-submit"
-                data-del-task="${task}"
-                style="margin-left:auto;min-width:80px;background:#b5443c;"
-              >
-                Sil
-              </button>
+                class="access-delete-btn"
+                data-del-task="${escapeHtml(task)}"
+                aria-label="${escapeHtml(task)} iş türünü sil"
+                title="İş türünü sil"
+              >Sil</button>
             </div>
-          `).join('')
-    }
-      </div>
+          `).join('') : `
+            <div class="access-empty access-empty-compact">
+              Henüz iş türü eklenmedi.
+            </div>
+          `}
+        </div>
 
-      <div class="save-row">
-        <span
-          class="save-status"
-          id="perm-save-status"
-        ></span>
-      </div>
-    </section>
+        <div class="access-inline-status">
+          <span class="save-status" id="perm-save-status"></span>
+        </div>
+      </section>
 
-    <!-- KAYDET -->
-<section class="panel">
-  <div class="save-row">
-    <span
-      class="save-status"
-      id="permission-matrix-status"
-      role="status"
-      aria-live="polite"
-      style="display: inline-block; min-width: 220px; white-space: normal;"
-    ></span>
+      <!-- YETKİLERİ KAYDET -->
+      <section class="access-save-panel">
+        <div class="access-save-copy">
+          <span class="access-save-icon">✓</span>
+          <div>
+            <strong>Yetki değişikliklerini kaydet</strong>
+            <p>Seçili personel için yaptığınız değişiklikleri kaydetmeden önce kontrol edin.</p>
+          </div>
+        </div>
 
-    <button
-      type="button"
-      class="primary-btn work-submit"
-      id="permission-matrix-save"
-    >
-      Yetkileri Kaydet
-    </button>
-  </div>
-</section>
-`;
+        <div class="access-save-actions">
+          <span
+            class="save-status"
+            id="permission-matrix-status"
+            role="status"
+            aria-live="polite"
+          ></span>
+          <button
+            type="button"
+            class="access-primary-btn access-save-btn"
+            id="permission-matrix-save"
+          >
+            Yetkileri Kaydet <span>→</span>
+          </button>
+        </div>
+      </section>
+
+      ${renderAnnouncementPermissions()}
+
+    </div>
+  `;
 }
 function renderMatrixRows(start, end, people) {
   const dates = getDateRange(start, end);
@@ -2906,284 +3329,180 @@ function setupCompanyManagement() {
 } function setupAccessMatrix() {
   if (!isAdminUser()) return;
 
-  const staffSelect =
-    document.querySelector('#perm-focus-staff');
-
-  const saveBtn =
-    document.querySelector('#permission-matrix-save');
-
-  const status =
-    document.querySelector('#permission-matrix-status');
+  const staffSelect = document.querySelector('#perm-focus-staff');
+  const saveBtn = document.querySelector('#permission-matrix-save');
+  const status = document.querySelector('#permission-matrix-status');
 
   if (!staffSelect || !saveBtn) return;
+  // Firma yetkileri arama
+const companySearch = document.querySelector('#access-company-search');
+
+if (companySearch) {
+  companySearch.addEventListener('input', () => {
+    const query = companySearch.value.trim().toLocaleLowerCase('tr-TR');
+
+    document.querySelectorAll('[data-access-company-card]').forEach((card) => {
+      const companyName = (
+        card.dataset.accessCompanyCard || ''
+      ).toLocaleLowerCase('tr-TR');
+
+      card.hidden = query !== '' && !companyName.includes(query);
+    });
+  });
+}
+
+// İş türü yetkileri arama
+const taskCompanySearch = document.querySelector('#access-task-company-search');
+
+if (taskCompanySearch) {
+  taskCompanySearch.addEventListener('input', () => {
+    const query = taskCompanySearch.value.trim().toLocaleLowerCase('tr-TR');
+
+    document.querySelectorAll('[data-access-task-company]').forEach((item) => {
+      const companyName = (
+        item.dataset.accessTaskCompany || ''
+      ).toLocaleLowerCase('tr-TR');
+
+      const matches = companyName.includes(query);
+      item.hidden = !matches;
+
+      if (query && matches) {
+        item.open = true;
+      }
+    });
+  });
+}
 
   function getSelectedStaff() {
     return staffSelect.value;
   }
 
-  /*
-   * ---------------------------------------------------------
-   * FİRMA YETKİLERİNİ YÜKLE
-   * ---------------------------------------------------------
-   */
+  function showStatus(message, success = false) {
+    if (!status) return;
+
+    status.className = success
+      ? 'save-status is-ok'
+      : 'save-status';
+
+    status.textContent = message;
+    status.style.display = 'inline-block';
+  }
 
   function loadCompanyChecks() {
     const staff = getSelectedStaff();
     const perms = loadPerms();
 
-    document
-      .querySelectorAll('.company-permission-check')
+    document.querySelectorAll('.company-permission-check')
       .forEach((checkbox) => {
-        const company =
-          checkbox.dataset.company;
+        const company = checkbox.dataset.company;
+        const key = `${staff} || ${company}`;
+        const value = perms[key];
 
-        const key =
-          `${staff} || ${company}`;
-
-        const value =
-          perms[key];
-
-        checkbox.checked =
-          value === 'islem' ||
-          value === 'gor';
+        checkbox.checked = value === 'islem' || value === 'gor';
       });
   }
-
-  /*
-   * ---------------------------------------------------------
-   * YENİ YETKİ MATRİSİNİ FIREBASE'DEN OKU
-   *
-   * Yapı:
-   *
-   * permissionMatrix
-   *   Semih Aydın
-   *     companies
-   *       Artemis Teknoloji A.Ş. : true
-   *
-   *     tasks
-   *       Artemis Teknoloji A.Ş.
-   *         Sevk tanımlandı : "gor"
-   *         Fatura Kesildi  : "islem"
-   *         Mutabakat       : "yok"
-   * ---------------------------------------------------------
-   */
 
   async function loadTaskMatrix() {
     try {
       return await loadPermissionMatrixFromFirebase();
     } catch (err) {
-      console.error(
-        'Yeni iş türü yetki matrisi okunamadı:',
-        err
-      );
-
+      console.error('Yeni iş türü yetki matrisi okunamadı:', err);
       return {};
     }
   }
 
-  /*
-   * ---------------------------------------------------------
-   * İŞ TÜRÜ CHECKBOX'LARINI DOLDUR
-   * ---------------------------------------------------------
-   */
-
   async function loadTaskChecks() {
-    const staff =
-      getSelectedStaff();
+    const staff = getSelectedStaff();
+    const matrix = await loadTaskMatrix();
+    const staffMatrix = matrix[staff] || {};
+    const taskMatrix = staffMatrix.tasks || {};
 
-    const matrix =
-      await loadTaskMatrix();
-
-    const staffMatrix =
-      matrix[staff] || {};
-
-    const taskMatrix =
-      staffMatrix.tasks || {};
-
-    document
-      .querySelectorAll('.task-view-check')
+    document.querySelectorAll('.task-view-check')
       .forEach((checkbox) => {
-        const company =
-          checkbox.dataset.company;
+        const company = checkbox.dataset.company;
+        const task = checkbox.dataset.task;
+        const value = taskMatrix?.[company]?.[task];
 
-        const task =
-          checkbox.dataset.task;
-
-        const value =
-          taskMatrix?.[company]?.[task];
-
-        checkbox.checked =
-          value === 'gor' ||
-          value === 'islem';
+        checkbox.checked = value === 'gor' || value === 'islem';
       });
 
-    document
-      .querySelectorAll('.task-edit-check')
+    document.querySelectorAll('.task-edit-check')
       .forEach((checkbox) => {
-        const company =
-          checkbox.dataset.company;
+        const company = checkbox.dataset.company;
+        const task = checkbox.dataset.task;
+        const value = taskMatrix?.[company]?.[task];
 
-        const task =
-          checkbox.dataset.task;
-
-        const value =
-          taskMatrix?.[company]?.[task];
-
-        checkbox.checked =
-          value === 'islem';
+        checkbox.checked = value === 'islem';
       });
 
-    /*
-     * İşlem seçiliyse Gör de seçili olmalı.
-     */
-
-    document
-      .querySelectorAll('.task-edit-check')
+    document.querySelectorAll('.task-edit-check')
       .forEach((editCheckbox) => {
-        const company =
-          editCheckbox.dataset.company;
+        const company = editCheckbox.dataset.company;
+        const task = editCheckbox.dataset.task;
 
-        const task =
-          editCheckbox.dataset.task;
+        const viewCheckbox = document.querySelector(
+          `.task-view-check[data-company="${CSS.escape(company)}"][data-task="${CSS.escape(task)}"]`
+        );
 
-        const viewCheckbox =
-          document.querySelector(
-            `.task-view-check[data-company="${CSS.escape(company)}"][data-task="${CSS.escape(task)}"]`
-          );
-
-        if (
-          editCheckbox.checked &&
-          viewCheckbox
-        ) {
+        if (editCheckbox.checked && viewCheckbox) {
           viewCheckbox.checked = true;
         }
       });
   }
 
-  /*
-   * ---------------------------------------------------------
-   * GÖR / İŞLEM İLİŞKİSİ
-   * ---------------------------------------------------------
-   */
-
-  document
-    .querySelectorAll('.task-edit-check')
+  document.querySelectorAll('.task-edit-check')
     .forEach((checkbox) => {
-      checkbox.addEventListener(
-        'change',
-        () => {
-          const company =
-            checkbox.dataset.company;
+      checkbox.addEventListener('change', () => {
+        const company = checkbox.dataset.company;
+        const task = checkbox.dataset.task;
 
-          const task =
-            checkbox.dataset.task;
+        const viewCheckbox = document.querySelector(
+          `.task-view-check[data-company="${CSS.escape(company)}"][data-task="${CSS.escape(task)}"]`
+        );
 
-          const viewCheckbox =
-            document.querySelector(
-              `.task-view-check[data-company="${CSS.escape(company)}"][data-task="${CSS.escape(task)}"]`
-            );
-
-          if (!viewCheckbox) return;
-
-          /*
-           * İşlem seçilirse Gör otomatik seçilir.
-           */
-
-          if (checkbox.checked) {
-            viewCheckbox.checked = true;
-          }
+        if (checkbox.checked && viewCheckbox) {
+          viewCheckbox.checked = true;
         }
-      );
+      });
     });
 
-  /*
-   * ---------------------------------------------------------
-   * GÖR KALDIRILIRSA İŞLEM DE KALDIRILSIN
-   * ---------------------------------------------------------
-   */
-
-  document
-    .querySelectorAll('.task-view-check')
+  document.querySelectorAll('.task-view-check')
     .forEach((checkbox) => {
-      checkbox.addEventListener(
-        'change',
-        () => {
-          if (checkbox.checked) return;
+      checkbox.addEventListener('change', () => {
+        if (checkbox.checked) return;
 
-          const company =
-            checkbox.dataset.company;
+        const company = checkbox.dataset.company;
+        const task = checkbox.dataset.task;
 
-          const task =
-            checkbox.dataset.task;
+        const editCheckbox = document.querySelector(
+          `.task-edit-check[data-company="${CSS.escape(company)}"][data-task="${CSS.escape(task)}"]`
+        );
 
-          const editCheckbox =
-            document.querySelector(
-              `.task-edit-check[data-company="${CSS.escape(company)}"][data-task="${CSS.escape(task)}"]`
-            );
-
-          if (editCheckbox) {
-            editCheckbox.checked = false;
-          }
+        if (editCheckbox) {
+          editCheckbox.checked = false;
         }
-      );
+      });
     });
 
-  /*
-   * ---------------------------------------------------------
-   * PERSONEL DEĞİŞTİRME
-   * ---------------------------------------------------------
-   */
+  staffSelect.addEventListener('change', async () => {
+    window._permFocus = getSelectedStaff();
+    loadCompanyChecks();
+    await loadTaskChecks();
+  });
 
-  staffSelect.addEventListener(
-    'change',
-    async () => {
-      window._permFocus =
-        getSelectedStaff();
-
-      loadCompanyChecks();
-
-      await loadTaskChecks();
-    }
-  );
-
-  /*
-   * ---------------------------------------------------------
-   * GÖSTER BUTONU
-   * ---------------------------------------------------------
-   */
-
-  const focusForm =
-    document.querySelector(
-      '#perm-focus-form'
-    );
+  const focusForm = document.querySelector('#perm-focus-form');
 
   if (focusForm) {
-    focusForm.addEventListener(
-      'submit',
-      async (e) => {
-        e.preventDefault();
-
-        window._permFocus =
-          getSelectedStaff();
-
-        loadCompanyChecks();
-
-        await loadTaskChecks();
-      }
-    );
+    focusForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      window._permFocus = getSelectedStaff();
+      loadCompanyChecks();
+      await loadTaskChecks();
+    });
   }
 
-  /*
- * ---------------------------------------------------------
- * TÜM YETKİLERİ KAYDET
- * ---------------------------------------------------------
- */
-
-saveBtn.addEventListener(
-  'click',
-  async () => {
+  saveBtn.addEventListener('click', async () => {
     const staff = getSelectedStaff();
-
     if (!staff) return;
 
     if (window._permissionMatrixUnlockTimer) {
@@ -3193,22 +3512,9 @@ saveBtn.addEventListener(
 
     window._savingPermissionMatrix = true;
     saveBtn.disabled = true;
-
-    if (status) {
-      status.className = 'save-status';
-      status.textContent = 'Yetkiler kaydediliyor...';
-      status.style.display = 'inline-block';
-    }
-
-    let saveSucceeded = false;
+    showStatus('Yetkiler kaydediliyor...');
 
     try {
-      /*
-       * =====================================================
-       * 1. FİRMA YETKİLERİ
-       * =====================================================
-       */
-
       const companyPerms = loadPerms();
 
       getCompanies().forEach((company) => {
@@ -3219,69 +3525,37 @@ saveBtn.addEventListener(
         );
 
         if (!checkbox) return;
-
         companyPerms[key] = checkbox.checked ? 'gor' : 'yok';
       });
 
-      const companySaved =
-        await saveSharedPermsToFirebase(companyPerms);
+      const companySaved = await saveSharedPermsToFirebase(companyPerms);
 
       if (!companySaved) {
-        throw new Error(
-          'Firma yetkileri Firebase\'e kaydedilemedi.'
-        );
+        throw new Error('Firma yetkileri Firebase’e kaydedilemedi.');
       }
 
-      /*
-       * =====================================================
-       * 2. YENİ YETKİ MATRİSİ
-       * =====================================================
-       */
+      const permissionMatrix = await loadPermissionMatrixFromFirebase();
 
-      const permissionMatrix =
-        await loadPermissionMatrixFromFirebase();
-
-      if (
-        !permissionMatrix[staff] ||
-        typeof permissionMatrix[staff] !== 'object'
-      ) {
+      if (!permissionMatrix[staff] || typeof permissionMatrix[staff] !== 'object') {
         permissionMatrix[staff] = {};
       }
 
-      if (
-        !permissionMatrix[staff].companies ||
-        typeof permissionMatrix[staff].companies !== 'object'
-      ) {
+      if (!permissionMatrix[staff].companies || typeof permissionMatrix[staff].companies !== 'object') {
         permissionMatrix[staff].companies = {};
       }
 
-      if (
-        !permissionMatrix[staff].tasks ||
-        typeof permissionMatrix[staff].tasks !== 'object'
-      ) {
+      if (!permissionMatrix[staff].tasks || typeof permissionMatrix[staff].tasks !== 'object') {
         permissionMatrix[staff].tasks = {};
       }
 
-      /*
-       * =====================================================
-       * 3. FİRMA YETKİLERİNİ MATRİSE YAZ
-       * =====================================================
-       */
-
       getCompanies().forEach((company) => {
-        const companyCheckbox = document.querySelector(
+        const checkbox = document.querySelector(
           `.company-permission-check[data-company="${CSS.escape(company)}"]`
         );
 
         permissionMatrix[staff].companies[company] =
-          companyCheckbox ? companyCheckbox.checked : false;
+          checkbox ? checkbox.checked : false;
       });
-
-      /*
-       * =====================================================
-       * 4. İŞ TÜRÜ YETKİLERİNİ MATRİSE YAZ
-       * =====================================================
-       */
 
       getCompanies().forEach((company) => {
         if (
@@ -3308,387 +3582,423 @@ saveBtn.addEventListener(
             permission = 'gor';
           }
 
-          permissionMatrix[staff].tasks[company][task] =
-            permission;
+          permissionMatrix[staff].tasks[company][task] = permission;
         });
       });
 
-      /*
-       * =====================================================
-       * 5. YENİ MATRİSİ FIREBASE'E KAYDET
-       * =====================================================
-       */
-
-      const matrixSaved =
-        await savePermissionMatrixToFirebase(permissionMatrix);
+      const matrixSaved = await savePermissionMatrixToFirebase(permissionMatrix);
 
       if (!matrixSaved) {
-        throw new Error(
-          'Yeni yetki matrisi Firebase\'e kaydedilemedi.'
-        );
+        throw new Error('Yeni yetki matrisi Firebase’e kaydedilemedi.');
       }
-
-      /*
-       * =====================================================
-       * 6. CACHE
-       * =====================================================
-       */
 
       sharedPermsCache = { ...companyPerms };
 
       try {
-        localStorage.setItem(
-          PERM_KEY,
-          JSON.stringify(companyPerms)
-        );
+        localStorage.setItem(PERM_KEY, JSON.stringify(companyPerms));
       } catch (err) {}
 
       sharedPermissionMatrixCache =
         JSON.parse(JSON.stringify(permissionMatrix));
 
-      saveSucceeded = true;
-
-      /*
-       * =====================================================
-       * 7. BAŞARILI
-       * =====================================================
-       */
-
-      if (status) {
-        status.className = 'save-status is-ok';
-        status.textContent =
-          `✓ ${staff} personelinin yetkileri kaydedildi.`;
-        status.style.display = 'inline-block';
-      }
-
-      console.log(
-        'Yetki kaydı tamamlandı:',
-        staff
-      );
+      showStatus(`✓ ${staff} personelinin yetkileri kaydedildi.`, true);
+      console.log('Yetki kaydı tamamlandı:', staff);
 
     } catch (err) {
-      console.error(
-        'Yetki matrisi kaydedilemedi:',
-        err
-      );
-
-      if (status) {
-        status.className = 'save-status';
-        status.textContent =
-          `Yetkiler kaydedilemedi: ${err.message}`;
-        status.style.display = 'inline-block';
-      }
+      console.error('Yetki matrisi kaydedilemedi:', err);
+      showStatus(`Yetkiler kaydedilemedi: ${err.message}`);
 
     } finally {
       saveBtn.disabled = false;
 
-      /*
-       * Firebase canlı dinleyicilerinin ekranı hemen
-       * yeniden oluşturmasını engelle. Mesajın okunması
-       * için kayıt sonrasında da kısa bir süre bekle.
-       */
-
-      window._permissionMatrixUnlockTimer =
-        setTimeout(() => {
-          window._savingPermissionMatrix = false;
-          window._permissionMatrixUnlockTimer = null;
-        }, 5000);
+      window._permissionMatrixUnlockTimer = setTimeout(() => {
+        window._savingPermissionMatrix = false;
+        window._permissionMatrixUnlockTimer = null;
+      }, 5000);
     }
-  }
-);
-
-/*
- * ---------------------------------------------------------
- * İLK AÇILIŞ
- * ---------------------------------------------------------
- */
-
-loadCompanyChecks();
-
-loadTaskChecks();
-
-/*
- * ---------------------------------------------------------
- * İŞ TÜRÜ SİLME
- * ---------------------------------------------------------
- */
-
-document
-  .querySelectorAll('[data-del-task]')
-  .forEach((button) => {
-    button.addEventListener(
-      'click',
-      async () => {
-        const taskName = button.dataset.delTask;
-
-        if (!taskName) return;
-
-        const list = getTaskTypes().filter(
-          (t) => t !== taskName
-        );
-
-        saveTaskTypes(list);
-
-        const firebaseTaskSaved =
-          await saveSharedTaskTypesToFirebase(list);
-
-        if (!firebaseTaskSaved) {
-          if (status) {
-            status.className = 'save-status';
-            status.textContent =
-              'İş türü Firebase listesinden silinemedi.';
-          }
-
-          return;
-        }
-
-        /*
-         * Silinen iş türünü yeni yetki matrisinden temizle.
-         */
-
-        const matrix =
-          await loadPermissionMatrixFromFirebase();
-
-        Object.keys(matrix).forEach((person) => {
-          if (
-            !matrix[person] ||
-            typeof matrix[person] !== 'object'
-          ) {
-            return;
-          }
-
-          const tasks = matrix[person].tasks;
-
-          if (
-            !tasks ||
-            typeof tasks !== 'object'
-          ) {
-            return;
-          }
-
-          Object.keys(tasks).forEach((company) => {
-            if (
-              tasks[company] &&
-              typeof tasks[company] === 'object'
-            ) {
-              delete tasks[company][taskName];
-            }
-          });
-        });
-
-        const matrixSaved =
-          await savePermissionMatrixToFirebase(matrix);
-
-        if (!matrixSaved) {
-          if (status) {
-            status.className = 'save-status';
-            status.textContent =
-              'İş türü yetki matrisinden silinemedi.';
-          }
-
-          return;
-        }
-
-        renderDashboard('Yetkilendirme');
-      }
-    );
   });
 
-/*
- * ---------------------------------------------------------
- * YENİ İŞ TÜRÜ EKLEME
- * ---------------------------------------------------------
- */
+  loadCompanyChecks();
+  loadTaskChecks();
 
-const taskForm = document.querySelector('#tasktype-form');
+  /*
+   * İŞ TÜRÜ SİLME
+   */
 
-if (taskForm) {
-  taskForm.addEventListener(
-    'submit',
-    async (e) => {
+  document.querySelectorAll('[data-del-task]')
+    .forEach((button) => {
+      button.addEventListener('click', async () => {
+        const taskName = button.dataset.delTask;
+        if (!taskName) return;
+
+        const list = getTaskTypes().filter((task) => task !== taskName);
+        const points = { ...getTaskPoints() };
+
+        delete points[taskName];
+
+        try {
+          const firebaseTaskSaved =
+            await saveSharedTaskTypesToFirebase(list, points);
+
+          if (!firebaseTaskSaved) {
+            throw new Error('İş türü ve puan bilgileri Firebase’e kaydedilemedi.');
+          }
+
+          saveTaskTypes(list);
+
+          const matrix = await loadPermissionMatrixFromFirebase();
+
+          Object.keys(matrix).forEach((person) => {
+            if (!matrix[person] || typeof matrix[person] !== 'object') {
+              return;
+            }
+
+            const tasks = matrix[person].tasks;
+
+            if (!tasks || typeof tasks !== 'object') {
+              return;
+            }
+
+            Object.keys(tasks).forEach((company) => {
+              if (tasks[company] && typeof tasks[company] === 'object') {
+                delete tasks[company][taskName];
+              }
+            });
+          });
+
+          const matrixSaved = await savePermissionMatrixToFirebase(matrix);
+
+          if (!matrixSaved) {
+            throw new Error('İş türü silindi ancak yetki matrisi güncellenemedi.');
+          }
+
+          renderDashboard('Yetkilendirme');
+
+        } catch (err) {
+          console.error('İş türü silinemedi:', err);
+          showStatus(err.message);
+        }
+      });
+    });
+
+  /*
+   * YENİ İŞ TÜRÜ EKLEME
+   */
+
+  const taskForm = document.querySelector('#tasktype-form');
+
+  if (taskForm) {
+    taskForm.addEventListener('submit', async (e) => {
       e.preventDefault();
 
-      const value = (
-        new FormData(taskForm).get('taskName') || ''
-      )
-        .toString()
-        .trim();
+      const formData = new FormData(taskForm);
 
-      if (!value) return;
+      const value = (formData.get('taskName') || '').toString().trim();
+
+      const rawPoints = (formData.get('taskPoints') ?? '')
+        .toString()
+        .trim()
+        .replace(',', '.');
+
+      if (!value) {
+        showStatus('Lütfen iş türünün adını girin.');
+        return;
+      }
+
+      if (rawPoints === '') {
+        showStatus('Lütfen iş türü puanını girin.');
+        return;
+      }
+
+      const enteredPoints = Number(rawPoints);
+
+      if (!Number.isFinite(enteredPoints) || enteredPoints < 0) {
+        showStatus('Puan sıfır veya daha büyük geçerli bir sayı olmalıdır.');
+        return;
+      }
 
       const list = getTaskTypes();
 
-      /*
-       * Aynı iş türünü tekrar ekleme.
-       */
-
       if (
         list.some(
-          (t) =>
-            t.toLocaleLowerCase('tr') ===
+          (task) =>
+            task.toLocaleLowerCase('tr') ===
             value.toLocaleLowerCase('tr')
         )
       ) {
+        showStatus('Bu iş türü zaten mevcut.');
         return;
       }
 
-      list.push(value);
+      const updatedList = [...list, value];
+      const points = { ...getTaskPoints() };
 
-      saveTaskTypes(list);
+      points[value] = enteredPoints;
 
-      const saved =
-        await saveSharedTaskTypesToFirebase(list);
+      const submitBtn = taskForm.querySelector('[type="submit"]');
 
-      if (!saved) {
-        if (status) {
-          status.className = 'save-status';
-          status.textContent =
-            'İş türü Firebase\'e kaydedilemedi.';
+      if (submitBtn) submitBtn.disabled = true;
+
+      showStatus('İş türü ve puanı kaydediliyor...');
+
+      try {
+        const saved = await saveSharedTaskTypesToFirebase(
+          updatedList,
+          points
+        );
+
+        if (!saved) {
+          throw new Error('İş türü ve puanı Firebase’e kaydedilemedi.');
         }
 
-        return;
+        saveTaskTypes(updatedList);
+
+        showStatus(
+          `✓ ${value} iş türü ${enteredPoints} puanla kaydedildi.`,
+          true
+        );
+
+        setTimeout(() => {
+          renderDashboard('Yetkilendirme');
+        }, 500);
+
+      } catch (err) {
+        console.error('İş türü eklenemedi:', err);
+        showStatus(err.message);
+
+      } finally {
+        if (submitBtn) submitBtn.disabled = false;
       }
-
-      /*
-       * Yeni iş türü hiçbir personele otomatik yetki
-       * verilmeden oluşturulur.
-       */
-
-      if (status) {
-        status.className = 'save-status is-ok';
-        status.textContent = `✓ İş türü eklendi: ${value}`;
-      }
-
-      setTimeout(
-        () => renderDashboard('Yetkilendirme'),
-        500
-      );
-    }
-  );
-}
+    });
+  }
 }
 
 function renderStaffContent() {
   const list = getStaff();
   const admin = isAdminUser();
   const editName = window._staffEdit || '';
+  const staffMeta = loadCommunity(STAFF_META_KEY);
 
   const editRow = admin && editName
-    ? `<form id="staff-edit-form" class="work-form community-form">
-        <label class="field">
-          Ad Soyad
-          <input type="text" name="newName" value="${escapeHtml(editName)}" maxlength="100" required />
-        </label>
-
-        <label class="field">
-          Ünvan
-          <input type="text" name="staffTitle" value="${escapeHtml(loadCommunity(STAFF_META_KEY)[editName]?.title || '')}" maxlength="100" required />
-        </label>
-
-        <button class="primary-btn work-submit" type="submit">Kaydet</button>
-      </form>`
-    : '';
-
-  return `
-    <div class="page-heading">
-      <div>
-        <h1>Personel Yönetimi</h1>
-        <p>${admin
-      ? 'Personel ekleyin; adını ve ünvanını düzenleyin. Ünvan, yönetici yetkisi vermez.'
-      : 'Kayıtlı personeller ve ünvanları (sadece görüntüleme).'}
-        </p>
-      </div>
-      <span class="access-badge">${admin ? 'Yönetici' : 'Personel'}</span>
-    </div>
-
-    ${admin ? `
-      <section class="panel">
-        <div class="panel-header">
+    ? `
+      <div class="staff-edit-box">
+        <div class="staff-section-heading">
+          <span class="staff-section-icon">✎</span>
           <div>
-            <h2>Yeni personel ekle</h2>
-            <p class="panel-subtitle">Ad Soyad ve ünvan yazıp Ekle'ye basın.</p>
+            <h3>Personel bilgilerini düzenle</h3>
+            <p>Personelin adını ve ünvanını güncelleyin.</p>
           </div>
         </div>
 
-        <form id="staff-form" class="work-form community-form">
+        <form id="staff-edit-form" class="work-form community-form staff-form-modern">
           <label class="field">
             Ad Soyad
-            <input type="text" name="staffName" placeholder="Örn: Ali Veli" maxlength="100" required />
+            <input type="text" name="newName"
+              value="${escapeHtml(editName)}"
+              maxlength="100" required />
           </label>
 
           <label class="field">
             Ünvan
-            <input type="text" name="staffTitle" placeholder="Örn: Muhasebe Uzmanı" maxlength="100" required />
+            <input type="text" name="staffTitle"
+              value="${escapeHtml(staffMeta[editName]?.title || '')}"
+              maxlength="100" required />
           </label>
 
-          <label class="field">
-            E-posta (kullanıcı adı)
-            <input type="email" name="staffEmail" placeholder="ali.veli@firma.com" required />
-          </label>
-
-          <label class="field">
-            Şifre
-            <input type="password" name="staffPassword" minlength="8" maxlength="128" required />
-          </label>
-
-          <label class="field">
-            Şifre tekrar
-            <input type="password" name="staffPasswordRepeat" minlength="8" maxlength="128" required />
-          </label>
-
-          <button class="primary-btn work-submit" type="submit">Ekle</button>
-
-          <span class="field-hint">
-            Şifre en az 8, en fazla 128 karakter olmalıdır.
-          </span>
+          <button class="primary-btn work-submit staff-action-btn" type="submit">
+            ✓ Değişiklikleri kaydet
+          </button>
         </form>
-
-        <div class="save-row">
-          <span class="save-status" id="staff-save-status"></span>
-        </div>
-
-        ${editRow}
-      </section>
-    ` : ''}
-
-    <section class="panel">
-      <div class="panel-header">
-        <div>
-          <h2>Kayıtlı personeller (${list.length})</h2>
-        </div>
       </div>
+    `
+    : '';
 
-      <div class="task-content">
-        ${list.map((s) => `
-          <div class="task-row" style="cursor:default">
-            <span class="task-box" style="border-radius:50%">♟</span>
+  const staffRows = list.length
+    ? list.map((s) => {
+        const staffName = String(s);
+        const initial = escapeHtml(
+          staffName.trim().charAt(0).toLocaleUpperCase('tr-TR') || 'P'
+        );
 
-            <span class="task-name">
-              ${staffIdentity(s)}
+        return `
+          <article class="staff-person-card">
+            <div class="staff-person-avatar">${initial}</div>
+
+            <div class="staff-person-info">
+              <strong>${staffIdentity(s)}</strong>
+              <span class="staff-person-caption">Kayıtlı personel</span>
+            </div>
+
+            <span class="staff-role-badge">
+              <span class="staff-role-dot"></span>
+              ${admin ? 'Personel kaydı' : 'Görüntüleme'}
             </span>
 
             ${admin ? `
-              <span style="margin-left:auto; display:flex; gap:8px;">
-                <button
-                  class="primary-btn work-submit"
-                  data-edit-staff="${escapeHtml(s)}"
-                  type="button"
-                  style="min-width:90px;">
-                  Düzenle
+              <div class="staff-person-actions">
+                <button class="primary-btn work-submit staff-edit-btn"
+                  data-edit-staff="${escapeHtml(s)}" type="button">
+                  ✎ Düzenle
                 </button>
 
-                <button
-                  class="primary-btn work-submit"
-                  data-delete-staff="${escapeHtml(s)}"
-                  type="button"
-                  style="min-width:70px; background:#b42318;">
-                  Sil
+                <button class="primary-btn work-submit staff-delete-btn"
+                  data-delete-staff="${escapeHtml(s)}" type="button">
+                  × Sil
                 </button>
-              </span>
+              </div>
             ` : ''}
-          </div>
-        `).join('')}
+          </article>
+        `;
+      }).join('')
+    : `
+      <div class="staff-empty-state">
+        <div class="staff-empty-icon">♟</div>
+        <strong>Henüz personel kaydı bulunmuyor.</strong>
+        <p>${admin
+          ? 'Yeni personel eklemek için yukarıdaki formu kullanabilirsiniz.'
+          : 'Personel kayıtları burada görüntülenecektir.'}</p>
       </div>
+    `;
+
+  return `
+    <section class="staff-page">
+      <div class="staff-hero">
+        <div class="staff-hero-content">
+          <span class="staff-eyebrow">İNSAN KAYNAKLARI</span>
+          <h1>Personel Yönetimi</h1>
+          <p>${admin
+            ? 'Ekibinizi, personel bilgilerini ve görev ünvanlarını tek bir yerden yönetin.'
+            : 'Kayıtlı personelleri ve ünvanlarını görüntüleyin.'}</p>
+
+          <div class="staff-hero-tags">
+            <span><span class="staff-tag-dot"></span> Personel kayıtları</span>
+            <span><span class="staff-tag-dot"></span> Ünvan bilgileri</span>
+          </div>
+        </div>
+
+        <div class="staff-hero-visual" aria-hidden="true">
+          <div class="staff-visual-circle staff-circle-one"></div>
+          <div class="staff-visual-circle staff-circle-two"></div>
+          <div class="staff-visual-icon">♟</div>
+          <div class="staff-visual-label">EKİBİNİZ</div>
+        </div>
+
+        <span class="staff-access-label">${admin ? 'Yönetici' : 'Personel'}</span>
+      </div>
+
+      <div class="staff-summary-grid">
+        <article class="staff-summary-card">
+          <div class="staff-summary-icon">♟</div>
+          <div>
+            <span>Toplam personel</span>
+            <strong>${list.length}</strong>
+            <small>Kayıtlı çalışan sayısı</small>
+          </div>
+        </article>
+
+        <article class="staff-summary-card">
+          <div class="staff-summary-icon staff-summary-icon-blue">▤</div>
+          <div>
+            <span>Bilgi yönetimi</span>
+            <strong>${admin ? 'Aktif' : 'Görüntüleme'}</strong>
+            <small>${admin ? 'Kayıt ve düzenleme yetkisi' : 'Salt okunur erişim'}</small>
+          </div>
+        </article>
+
+        <article class="staff-summary-card">
+          <div class="staff-summary-icon staff-summary-icon-purple">✓</div>
+          <div>
+            <span>Personel kayıtları</span>
+            <strong>${list.length ? 'Hazır' : 'Boş'}</strong>
+            <small>Mevcut kayıt durumu</small>
+          </div>
+        </article>
+      </div>
+
+      ${admin ? `
+        <section class="panel staff-main-panel">
+          <div class="staff-section-heading">
+            <span class="staff-section-icon">＋</span>
+            <div>
+              <h2>Yeni personel ekle</h2>
+              <p>Personel bilgilerini doldurarak yeni bir kayıt oluşturun.</p>
+            </div>
+          </div>
+
+          <form id="staff-form" class="work-form community-form staff-form-modern">
+            <label class="field">
+              Ad Soyad
+              <input type="text" name="staffName"
+                placeholder="Örn: Ali Veli"
+                maxlength="100" autocomplete="name" required />
+            </label>
+
+            <label class="field">
+              Ünvan
+              <input type="text" name="staffTitle"
+                placeholder="Örn: Muhasebe Uzmanı"
+                maxlength="100" required />
+            </label>
+
+            <label class="field">
+              E-posta (kullanıcı adı)
+              <input type="email" name="staffEmail"
+                placeholder="ornek@firma.com"
+                autocomplete="email" required />
+            </label>
+
+            <label class="field">
+              Şifre
+              <input type="password" name="staffPassword"
+                minlength="8" maxlength="128"
+                autocomplete="new-password"
+                placeholder="En az 8 karakter" required />
+            </label>
+
+            <label class="field">
+              Şifre tekrar
+              <input type="password" name="staffPasswordRepeat"
+                minlength="8" maxlength="128"
+                autocomplete="new-password"
+                placeholder="Şifreyi tekrar girin" required />
+            </label>
+
+            <div class="staff-form-footer">
+              <span class="field-hint">
+                <span>ⓘ</span> Şifre 8–128 karakter arasında olmalıdır.
+              </span>
+
+              <button class="primary-btn work-submit staff-action-btn" type="submit">
+                ＋ Personel ekle
+              </button>
+            </div>
+          </form>
+
+          <div class="save-row staff-save-row">
+            <span class="save-status" id="staff-save-status"></span>
+          </div>
+
+          ${editRow}
+        </section>
+      ` : ''}
+
+      <section class="panel staff-main-panel staff-directory-panel">
+        <div class="staff-directory-heading">
+          <div class="staff-section-heading">
+            <span class="staff-section-icon">☷</span>
+            <div>
+              <h2>Personel listesi</h2>
+              <p>Kayıtlı çalışanların adlarını ve ünvan bilgilerini görüntüleyin.</p>
+            </div>
+          </div>
+
+          <span class="staff-total-badge">${list.length} personel</span>
+        </div>
+
+        <div class="staff-directory-list">
+          ${staffRows}
+        </div>
+      </section>
     </section>
   `;
 }
@@ -3904,28 +4214,201 @@ function renderPeriodContent() {
   const me = currentUser ? currentUser.name : '';
   const plans = getMyPlans().sort((a, b) => (a.date < b.date ? -1 : 1));
   const today = new Date().toISOString().slice(0, 10);
-  // Plan formunda yalnızca giriş yapan personelin yetkili olduğu cariler listelenir.
   const myCompanies = getMyVisibleCompanies(me);
+
   const companyOptions = myCompanies.length
     ? myCompanies.map((c) => `<option>${c}</option>`).join('')
     : '<option value="">Yetkili cari yok</option>';
-  const rows = plans.length ? plans.map((p) => {
-    const due = p.date <= today;
-    return `<div class="task-row" style="cursor:default"><span class="task-box" style="border-radius:50%">${due ? '!' : '◷'}</span><span class="task-name"><strong>${p.title}</strong><small>${p.date} · ${p.company}${p.remind ? ' · Hatırlat açık' : ''}${due ? ' · GÜNÜ GELDİ' : ''}</small></span><span style="margin-left:auto;display:flex;gap:8px;"><button class="primary-btn work-submit" data-remind="${p.id}" type="button" style="min-width:110px;">${p.remind ? 'Uyarma' : 'Beni uyar'}</button><button class="primary-btn work-submit" data-del="${p.id}" type="button" style="min-width:80px;background:#b5443c;">Sil</button></span></div>`;
-  }).join('') : '<div class="permission-empty"><span class="permission-icon">◷</span><div><strong>Henüz plan yok.</strong><p>Yukarıdaki kutudan ilk planını ekleyin. Planlar yalnızca size görünür.</p></div></div>';
+
+  const dueCount = plans.filter((p) => p.date <= today).length;
+  const upcomingCount = plans.filter((p) => p.date > today).length;
+  const reminderCount = plans.filter((p) => p.remind).length;
+
+  const rows = plans.length
+    ? plans.map((p) => {
+        const due = p.date <= today;
+        const dateText = p.date === today
+          ? 'Bugün'
+          : p.date < today
+            ? 'Tarihi geçti'
+            : 'Yaklaşan';
+
+        return `
+          <article class="period-plan-card ${due ? 'period-plan-due' : ''}">
+            <div class="period-plan-icon ${due ? 'period-icon-due' : 'period-icon-upcoming'}">
+              ${due ? '!' : '◷'}
+            </div>
+
+            <div class="period-plan-info">
+              <strong>${escapeHtml(p.title)}</strong>
+              <span class="period-plan-company">${escapeHtml(p.company)}</span>
+              <div class="period-plan-meta">
+                <span class="period-date-chip">${escapeHtml(p.date)}</span>
+                <span class="period-status-chip ${due ? 'period-status-due' : 'period-status-upcoming'}">
+                  ${dateText}
+                </span>
+                ${p.remind ? `
+                  <span class="period-reminder-chip">♧ Hatırlatma açık</span>
+                ` : ''}
+              </div>
+            </div>
+
+            <div class="period-plan-actions">
+              <button
+                class="primary-btn work-submit period-remind-btn"
+                data-remind="${escapeHtml(String(p.id))}"
+                type="button">
+                ${p.remind ? 'Uyarıyı kapat' : 'Beni uyar'}
+              </button>
+
+              <button
+                class="primary-btn work-submit period-delete-btn"
+                data-del="${escapeHtml(String(p.id))}"
+                type="button">
+                Sil
+              </button>
+            </div>
+          </article>
+        `;
+      }).join('')
+    : `
+      <div class="period-empty-state">
+        <div class="period-empty-icon">◷</div>
+        <strong>Henüz plan oluşturmadınız.</strong>
+        <p>Yapmanız gereken işleri tarihleriyle kaydederek kişisel plan listenizi oluşturabilirsiniz.</p>
+      </div>
+    `;
+
   return `
-    <div class="page-heading"><div><h1>Yıl / Dönem Yönetimi</h1><p>Planlı işlerinizi tarihe planlayın. Her personel yalnızca kendi planını görür.</p></div><span class="access-badge">${me}</span></div>
-    <section class="panel"><div class="panel-header"><div><h2>Yeni plan ekle</h2><p class="panel-subtitle">Yetkili olduğunuz cariler listelenir. Başlık, firma ve tarih seçip Ekle'ye basın.</p></div></div>
-      <form id="plan-form" class="work-form" style="grid-template-columns:1.4fr 1.2fr 1fr auto">
-        <label class="field">Plan<input type="text" name="title" placeholder="Örn: SGK bildirimi" required /></label>
-        <label class="field">Firma<select name="company">${companyOptions}</select></label>
-        <label class="field">Tarih<input type="date" name="date" value="${today}" required /></label>
-        <button class="primary-btn work-submit" type="submit">Ekle</button>
-      </form>
+    <section class="period-page">
+      <div class="period-hero">
+        <div class="period-hero-content">
+          <span class="period-eyebrow">PLANLAMA VE ORGANİZASYON</span>
+          <h1>Yıl / Dönem Yönetimi</h1>
+          <p>Planlı işlerinizi tarihlere göre düzenleyin, yaklaşan işlemlerinizi takip edin ve hatırlatmalarınızı yönetin.</p>
+
+          <div class="period-hero-tags">
+            <span>◷ Tarih bazlı planlama</span>
+            <span>✓ Kişisel iş takibi</span>
+          </div>
+        </div>
+
+        <div class="period-hero-visual" aria-hidden="true">
+          <div class="period-calendar">
+            <div class="period-calendar-top"></div>
+            <div class="period-calendar-grid">
+              <i></i><i></i><i></i><i></i>
+              <i></i><i></i><i class="period-calendar-active"></i><i></i>
+              <i></i><i></i><i></i><i></i>
+            </div>
+          </div>
+          <span class="period-hero-clock">◷</span>
+        </div>
+
+        <span class="period-user-badge">${escapeHtml(me)}</span>
+      </div>
+
+      <div class="period-summary-grid">
+        <article class="period-summary-card">
+          <div class="period-summary-icon period-summary-total">☷</div>
+          <div>
+            <span>Toplam plan</span>
+            <strong>${plans.length}</strong>
+            <small>Kayıtlı kişisel planlarınız</small>
+          </div>
+        </article>
+
+        <article class="period-summary-card">
+          <div class="period-summary-icon period-summary-due">!</div>
+          <div>
+            <span>Günü gelen</span>
+            <strong>${dueCount}</strong>
+            <small>Bugün veya geçmiş tarihli</small>
+          </div>
+        </article>
+
+        <article class="period-summary-card">
+          <div class="period-summary-icon period-summary-upcoming">◷</div>
+          <div>
+            <span>Yaklaşan plan</span>
+            <strong>${upcomingCount}</strong>
+            <small>İleri tarihli planlarınız</small>
+          </div>
+        </article>
+
+        <article class="period-summary-card">
+          <div class="period-summary-icon period-summary-reminder">♧</div>
+          <div>
+            <span>Hatırlatma açık</span>
+            <strong>${reminderCount}</strong>
+            <small>Hatırlatma etkin planlar</small>
+          </div>
+        </article>
+      </div>
+
+      <section class="panel period-main-panel">
+        <div class="period-section-heading">
+          <span class="period-section-icon">＋</span>
+          <div>
+            <h2>Yeni plan oluştur</h2>
+            <p>Plan başlığını, yetkili olduğunuz firmayı ve tarihi belirleyin.</p>
+          </div>
+        </div>
+
+        <form id="plan-form" class="work-form period-form-modern">
+          <label class="field">
+            Plan başlığı
+            <input
+              type="text"
+              name="title"
+              placeholder="Örn: SGK bildirimi"
+              maxlength="200"
+              required />
+          </label>
+
+          <label class="field">
+            Firma
+            <select name="company" ${myCompanies.length ? '' : 'disabled'} required>
+              ${companyOptions}
+            </select>
+          </label>
+
+          <label class="field">
+            Plan tarihi
+            <input type="date" name="date" value="${today}" required />
+          </label>
+
+          <button class="primary-btn work-submit period-add-btn" type="submit" ${myCompanies.length ? '' : 'disabled'}>
+            <span>＋</span> Plan ekle
+          </button>
+        </form>
+
+        ${myCompanies.length ? '' : `
+          <div class="period-form-warning">
+            Yetkili olduğunuz firma bulunmadığı için yeni plan oluşturamazsınız. Yöneticinizden firma erişim yetkisi isteyin.
+          </div>
+        `}
+      </section>
+
+      <section class="panel period-main-panel period-list-panel">
+        <div class="period-list-heading">
+          <div class="period-section-heading">
+            <span class="period-section-icon">☷</span>
+            <div>
+              <h2>Planlarım</h2>
+              <p>Yalnızca kendi planlarınızı görüntülersiniz. Günü gelen planlar ayrıca işaretlenir.</p>
+            </div>
+          </div>
+
+          <span class="period-total-badge">${plans.length} plan</span>
+        </div>
+
+        <div class="period-plan-list">
+          ${rows}
+        </div>
+      </section>
     </section>
-    <section class="panel"><div class="panel-header"><div><h2>Planlarım (${plans.length})</h2><p class="panel-subtitle">Günü gelenler ! ile işaretlenir ve girişte uyarı çıkar.</p></div></div>
-      <div class="task-content">${rows}</div>
-    </section>`;
+  `;
 }
 
 function setupPeriodPlans() {
@@ -4169,80 +4652,76 @@ async function loadReportWorkRecordsFromFirebase() {
       !window.firebaseCollection ||
       !window.firebaseGetDocs
     ) {
-      console.error(
-        'Firebase rapor bağlantısı hazır değil.'
-      );
-
+      console.error('Firebase rapor bağlantısı hazır değil.');
       return [];
     }
 
-    const recordsRef =
-      window.firebaseCollection(
-        window.firebaseDb,
-        'workRecords'
-      );
+    const recordsRef = window.firebaseCollection(
+      window.firebaseDb,
+      'workRecords'
+    );
 
-    const snapshot =
-      await window.firebaseGetDocs(
-        recordsRef
-      );
-
+    const snapshot = await window.firebaseGetDocs(recordsRef);
     const records = [];
 
     snapshot.forEach((docSnapshot) => {
-      const data =
-        docSnapshot.data();
+      const data = docSnapshot.data();
+      if (!data || !data.date) return;
 
-      if (!data || !data.company || !data.date) {
-        return;
-      }
+      const staffValue =
+        data.staff ??
+        data.staffName ??
+        data.personel ??
+        data.employee ??
+        data.updatedBy ??
+        data.createdBy ??
+        '';
+
+      const staff =
+        typeof staffValue === 'string'
+          ? staffValue.trim()
+          : '';
+
+      const tasksByName =
+        data.tasksByName &&
+        typeof data.tasksByName === 'object' &&
+        !Array.isArray(data.tasksByName)
+          ? data.tasksByName
+          : {};
+
+      const quantitiesByName =
+        data.quantitiesByName &&
+        typeof data.quantitiesByName === 'object' &&
+        !Array.isArray(data.quantitiesByName)
+          ? data.quantitiesByName
+          : {};
 
       records.push({
-        id:
-          docSnapshot.id,
-
-        staff:
-          data.updatedBy || '',
-
-        company:
-          data.company,
-
-        date:
-          data.date,
-
-        tasks:
-          Array.isArray(data.tasks)
-            ? data.tasks
-            : [],
-
-        tasksByName:
-          data.tasksByName &&
-            typeof data.tasksByName === 'object'
-            ? data.tasksByName
-            : {},
-
-        updatedAt:
-          data.updatedAt || ''
+        id: docSnapshot.id,
+        staff,
+        company: data.company || '',
+        date: String(data.date),
+        tasks: Array.isArray(data.tasks) ? data.tasks : [],
+        tasksByName,
+        quantitiesByName,
+        updatedAt: data.updatedAt || ''
       });
     });
 
     console.log(
-      'Rapor için Firebase iş kayıtları yüklendi:',
+      'Ayın Elemanı için okunan iş kayıtları:',
+      records.length,
       records
     );
 
-    sharedReportWorkRecordsCache = [...records];
+    if (typeof sharedReportWorkRecordsCache !== 'undefined') {
+      sharedReportWorkRecordsCache = [...records];
+    }
 
     return records;
-
   } catch (err) {
-
-    console.error(
-      'Firebase rapor kayıtları okunamadı:',
-      err
-    );
-
-    return [];
+    console.error('Firebase rapor kayıtları okunamadı:', err);
+    throw err;
   }
 } function getReportData(staff, start, end) {
   const store =
@@ -4367,60 +4846,447 @@ function renderReportContent() {
   const focus = window._reportStaff || me;
   const start = window._reportStart || '';
   const end = window._reportEnd || '';
-  const target = admin ? (focus || people[0]) : me;
+  const target = admin ? (focus || people[0] || '') : me;
   const data = getReportData(target, start, end);
+
   const dayMap = {};
+
   data.rows.forEach((r) => {
-    if (!dayMap[r.date]) dayMap[r.date] = { total: 0, done: 0, companies: {} };
+    if (!dayMap[r.date]) {
+      dayMap[r.date] = {
+        total: 0,
+        done: 0,
+        companies: {}
+      };
+    }
+
     dayMap[r.date].total += 1;
+
     if (r.done) dayMap[r.date].done += 1;
+
     dayMap[r.date].companies[r.company] = true;
   });
+
   const days = Object.keys(dayMap).sort();
-  const dayRows = days.length ? days.map((d) => {
-    const di = dayMap[d];
-    const p = di.total ? Math.round((di.done / di.total) * 100) : 0;
-    const miss = data.rows.filter((r) => r.date === d && !r.done);
-    return `<div class="task-row" style="cursor:default"><span class="task-box" style="border-radius:50%">${p === 100 ? '✓' : '!'}</span><span class="task-name"><strong>${formatDate(new Date(`${d}T00:00:00`))} · %${p}</strong><small>${di.done}/${di.total} tamamlandı · ${Object.keys(di.companies).join(', ')}${miss.length ? ` · Yapılmayan: ${miss.map((m) => `${m.task} (${m.company})`).join(', ')}` : ''}</small></span><span style="margin-left:auto;min-width:120px;"><span class="progress-bar"><i style="width:${p}%"></i></span></span></div>`;
-  }).join('') : '<div class="permission-empty"><span class="permission-icon">▥</span><div><strong>Kayıt yok.</strong><p>Seçili aralıkta bu personele ait iş kaydı bulunamadı.</p></div></div>';
-  return `
-    <div class="page-heading"><div><h1>Raporlar</h1><p>${admin ? 'Personel seçin, tarih aralığında tamamlanma raporunu görün.' : 'Kendi işlem raporunuz (tarih bazlı).'}</p></div><span class="access-badge">${admin ? 'Yönetici' : me}</span></div>
-    <section class="panel"><div class="panel-header"><div><h2>Rapor filtresi</h2></div></div>
-      <form id="report-form" class="work-form" style="grid-template-columns:1fr 1fr 1fr auto">
-        ${admin ? `<label class="field">Personel<select name="staff" id="report-staff">${people.map((s) => `<option${s === target ? ' selected' : ''}>${s}</option>`).join('')}</select></label>` : `<label class="field">Personel<input type="text" value="${me}" disabled /></label>`}
-        <label class="field">Başlangıç<input type="date" name="start" value="${start}" /></label>
-        <label class="field">Bitiş<input type="date" name="end" value="${end}" /></label>
-        <button class="primary-btn work-submit" type="submit">Getir</button>
-      </form>
-    </section>
-    <section class="stats-grid">
-      ${[['Tamamlanma', `%${data.pct}`, `${data.done}/${data.total} işlem`], ['Yapılan', `${data.done}`, 'tamamlanan işlem'], ['Yapılmayan', `${data.missing}`, 'eksik işlem'], ['Kayıtlı gün', `${days.length}`, 'işlem yapılan gün']].map(([t, v, c]) => `<article class="stat-card"><div class="stat-top"><span>${t} · ${target}</span></div><div class="stat-number">${v}</div><span class="stat-change">${c}</span></article>`).join('')}
-    </section>
-    <section class="panel"><div class="panel-header"><div><h2>Tamamlanma grafiği</h2><p class="panel-subtitle">Yapılan / yapılmayan dağılımı.</p></div></div>
-      <div class="task-content" style="display:flex;align-items:center;gap:22px;flex-wrap:wrap;">
-        <svg width="170" height="170" viewBox="0 0 42 42" role="img" aria-label="Tamamlanma %${data.pct}">
-          <circle cx="21" cy="21" r="15.915" fill="none" stroke="#edf2ef" stroke-width="7"></circle>
-          <circle cx="21" cy="21" r="15.915" fill="none" stroke="#0f766e" stroke-width="7" stroke-dasharray="${data.pct} ${100 - data.pct}" stroke-dashoffset="25" stroke-linecap="round"></circle>
-          <text x="21" y="22" text-anchor="middle" font-size="7" font-weight="800" fill="#173b3a">%${data.pct}</text>
-        </svg>
-        <div style="display:grid;gap:8px;font-size:.86rem;">
-          <span><i style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#0f766e;margin-right:8px;"></i>Yapılan: <strong>${data.done}</strong></span>
-          <span><i style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#edf2ef;border:1px solid #d9e5e0;margin-right:8px;"></i>Yapılmayan: <strong>${data.missing}</strong></span>
-          <span style="color:var(--muted);font-size:.78rem;">${data.total} işlem · ${days.length} gün · ${target}</span>
-        </div>
+  const pct = Math.max(0, Math.min(100, Number(data.pct) || 0));
+
+  const safePct = (value) =>
+    Math.max(0, Math.min(100, Number(value) || 0));
+
+  const formatNumber = (value) =>
+    new Intl.NumberFormat('tr-TR').format(Number(value) || 0);
+
+  const periodText = start || end
+    ? `${start ? formatDate(new Date(`${start}T00:00:00`)) : 'Başlangıç belirtilmedi'} — ${end ? formatDate(new Date(`${end}T00:00:00`)) : 'Bitiş belirtilmedi'}`
+    : 'Tüm tarihler';
+
+  const dayRows = days.length
+    ? days.map((d) => {
+        const di = dayMap[d];
+        const p = di.total
+          ? Math.round((di.done / di.total) * 100)
+          : 0;
+
+        const missing = data.rows.filter(
+          (r) => r.date === d && !r.done
+        );
+
+        const companyNames = Object.keys(di.companies).join(', ');
+
+        const missingText = missing.length
+          ? `Yapılmayan: ${missing.map(
+              (m) => `${m.task} (${m.company})`
+            ).join(', ')}`
+          : 'Bu gün için eksik işlem yok.';
+
+        return `
+          <article class="report-day-card">
+            <div class="report-day-status ${p === 100 ? 'is-complete' : 'is-pending'}">
+              ${p === 100 ? '✓' : '!'}
+            </div>
+
+            <div class="report-day-main">
+              <div class="report-day-heading">
+                <strong>${formatDate(new Date(`${d}T00:00:00`))}</strong>
+                <span class="report-day-percent">%${p}</span>
+              </div>
+
+              <div class="report-day-meta">
+                ${di.done}/${di.total} işlem tamamlandı
+                <span class="report-dot">•</span>
+                ${formatNumber(Object.keys(di.companies).length)} firma
+              </div>
+
+              <div class="report-progress-track">
+                <span style="width:${p}%"></span>
+              </div>
+
+              <div class="report-day-detail">
+                ${companyNames}
+              </div>
+
+              ${missing.length ? `
+                <div class="report-missing-note">
+                  <strong>Eksik işlemler:</strong> ${missingText.replace('Yapılmayan: ', '')}
+                </div>
+              ` : ''}
+            </div>
+          </article>
+        `;
+      }).join('')
+    : `
+      <div class="report-empty">
+        <div class="report-empty-icon">▤</div>
+        <strong>Henüz rapor kaydı bulunmuyor</strong>
+        <p>Seçilen personel ve tarih aralığına ait bir kayıt bulunamadı. Filtreleri değiştirerek tekrar deneyebilirsin.</p>
       </div>
-    </section>
-    <section class="panel"><div class="panel-header"><div><h2>İş türü bazında rapor · ${target}</h2><p class="panel-subtitle">Yetkili olduğu iş türlerinde hangi işlemde eksik var.</p></div></div>
-      <div class="task-content">${Object.keys(data.byTask).map((t) => {
-    const bi = data.byTask[t];
-    const p = bi.total ? Math.round((bi.done / bi.total) * 100) : 0;
-    const missDays = data.rows.filter((r) => r.task === t && !r.done).map((r) => `${formatDate(new Date(`${r.date}T00:00:00`))} (${r.company})`);
-    return `<div class="task-row" style="cursor:default"><span class="task-box" style="border-radius:50%">${p === 100 ? '✓' : bi.done === 0 ? '✕' : '!'}</span><span class="task-name"><strong>${t} · %${p}</strong><small>${bi.done}/${bi.total} tamamlandı${missDays.length ? ` · Eksik günler: ${missDays.join(', ')}` : bi.total ? ' · Eksik yok' : ' · Bu aralıkta kayıt yok'}</small></span><span style="margin-left:auto;min-width:120px;"><span class="progress-bar"><i style="width:${p}%"></i></span></span></div>`;
-  }).join('')}</div>
-    </section>
-    <section class="panel"><div class="panel-header"><div><h2>Günlük döküm</h2><p class="panel-subtitle">Hangi tarihte hangi işlem yapıldı / yapılmadı.</p></div></div>
-      <div class="task-content">${dayRows}</div>
-    </section>`;
+    `;
+
+  const taskRows = Object.keys(data.byTask).length
+    ? Object.keys(data.byTask).map((task) => {
+        const item = data.byTask[task];
+        const taskPct = item.total
+          ? Math.round((item.done / item.total) * 100)
+          : 0;
+
+        const missingRows = data.rows.filter(
+          (r) => r.task === task && !r.done
+        );
+
+        const missingDays = missingRows.map(
+          (r) => `${formatDate(new Date(`${r.date}T00:00:00`))} (${r.company})`
+        );
+
+        const statusClass = taskPct === 100
+          ? 'is-complete'
+          : item.done === 0
+            ? 'is-missing'
+            : 'is-pending';
+
+        const statusText = taskPct === 100
+          ? 'Tamamlandı'
+          : item.done === 0
+            ? 'Başlanmadı'
+            : 'Devam ediyor';
+
+        return `
+          <article class="report-task-card">
+            <div class="report-task-top">
+              <div class="report-task-icon">
+                ${taskPct === 100 ? '✓' : item.done === 0 ? '!' : '↗'}
+              </div>
+
+              <div class="report-task-info">
+                <strong>${task}</strong>
+                <span>${formatNumber(item.done)} / ${formatNumber(item.total)} işlem tamamlandı</span>
+              </div>
+
+              <div class="report-task-result">
+                <strong>%${safePct(taskPct)}</strong>
+                <span class="report-status-pill ${statusClass}">${statusText}</span>
+              </div>
+            </div>
+
+            <div class="report-progress-track">
+              <span style="width:${safePct(taskPct)}%"></span>
+            </div>
+
+            <div class="report-task-foot">
+              <span>Eksik işlem: <strong>${formatNumber(item.total - item.done)}</strong></span>
+              <span>${missingDays.length ? 'Eksik kayıt mevcut' : 'Eksik kayıt yok'}</span>
+            </div>
+
+            ${missingDays.length ? `
+              <details class="report-missing-details">
+                <summary>Eksik kayıtların ayrıntısı (${missingDays.length})</summary>
+                <ul>
+                  ${missingRows.map((r) => `
+                    <li>
+                      <span>${formatDate(new Date(`${r.date}T00:00:00`))}</span>
+                      <span>${r.company}</span>
+                    </li>
+                  `).join('')}
+                </ul>
+              </details>
+            ` : ''}
+          </article>
+        `;
+      }).join('')
+    : `
+      <div class="report-empty report-empty-compact">
+        <div class="report-empty-icon">◎</div>
+        <strong>İş türü verisi bulunamadı</strong>
+        <p>Seçilen filtrelerde görüntülenecek iş türü kaydı yok.</p>
+      </div>
+    `;
+
+  return `
+    <div class="report-page">
+
+      <section class="report-hero">
+        <div class="report-hero-content">
+          <div class="report-eyebrow">
+            <span class="report-eyebrow-dot"></span>
+            PERFORMANS VE FAALİYET ANALİZİ
+          </div>
+
+          <h1>Raporlama Merkezi</h1>
+
+          <p>
+            ${admin
+              ? 'Personel faaliyetlerini, iş tamamlama oranlarını ve eksik işlemleri tek ekrandan takip et.'
+              : 'Faaliyetlerini, tamamlanma oranlarını ve günlük işlem detaylarını incele.'}
+          </p>
+
+          <div class="report-hero-meta">
+            <span class="report-meta-icon">◷</span>
+            ${periodText}
+          </div>
+        </div>
+
+        <div class="report-hero-visual" aria-hidden="true">
+          <div class="report-orbit report-orbit-one"></div>
+          <div class="report-orbit report-orbit-two"></div>
+          <div class="report-hero-chart">
+            <span class="report-hero-chart-label">TAMAMLANMA</span>
+            <strong>%${pct}</strong>
+            <span class="report-hero-chart-caption">Genel oran</span>
+          </div>
+          <span class="report-floating-mark report-mark-one">↗</span>
+          <span class="report-floating-mark report-mark-two">✓</span>
+        </div>
+      </section>
+
+      <section class="report-filter-panel">
+        <div class="report-section-heading">
+          <div class="report-heading-icon">☷</div>
+          <div>
+            <h2>Rapor filtreleri</h2>
+            <p>Analiz etmek istediğin personeli ve tarih aralığını seç.</p>
+          </div>
+        </div>
+
+        <form id="report-form" class="report-filter-form">
+          ${admin ? `
+            <label class="report-field">
+              <span>Personel</span>
+              <select name="staff" id="report-staff">
+                ${people.map((person) => `
+                  <option value="${person}" ${person === target ? 'selected' : ''}>${person}</option>
+                `).join('')}
+              </select>
+            </label>
+          ` : `
+            <label class="report-field">
+              <span>Personel</span>
+              <input type="text" value="${me}" disabled>
+            </label>
+          `}
+
+          <label class="report-field">
+            <span>Başlangıç tarihi</span>
+            <input type="date" name="start" value="${start}">
+          </label>
+
+          <label class="report-field">
+            <span>Bitiş tarihi</span>
+            <input type="date" name="end" value="${end}" min="${start}">
+          </label>
+
+          <button class="report-filter-button" type="submit">
+            <span>⌕</span>
+            Raporu getir
+          </button>
+        </form>
+      </section>
+
+      <section class="report-stats-grid">
+        <article class="report-stat-card report-stat-primary">
+          <div class="report-stat-top">
+            <span>Genel tamamlanma</span>
+            <span class="report-stat-icon">◉</span>
+          </div>
+          <div class="report-stat-value">%${pct}</div>
+          <div class="report-stat-bottom">
+            <span class="report-stat-indicator"></span>
+            ${formatNumber(data.done)} / ${formatNumber(data.total)} işlem tamamlandı
+          </div>
+          <div class="report-stat-track">
+            <span style="width:${pct}%"></span>
+          </div>
+        </article>
+
+        <article class="report-stat-card">
+          <div class="report-stat-top">
+            <span>Tamamlanan işler</span>
+            <span class="report-stat-icon report-icon-green">✓</span>
+          </div>
+          <div class="report-stat-value">${formatNumber(data.done)}</div>
+          <div class="report-stat-bottom">Başarıyla tamamlanan işlem</div>
+          <div class="report-stat-accent report-accent-green"></div>
+        </article>
+
+        <article class="report-stat-card">
+          <div class="report-stat-top">
+            <span>Eksik işlemler</span>
+            <span class="report-stat-icon report-icon-orange">!</span>
+          </div>
+          <div class="report-stat-value">${formatNumber(data.missing)}</div>
+          <div class="report-stat-bottom">Takip edilmesi gereken işlem</div>
+          <div class="report-stat-accent report-accent-orange"></div>
+        </article>
+
+        <article class="report-stat-card">
+          <div class="report-stat-top">
+            <span>Faaliyet günleri</span>
+            <span class="report-stat-icon report-icon-blue">▦</span>
+          </div>
+          <div class="report-stat-value">${formatNumber(days.length)}</div>
+          <div class="report-stat-bottom">Kayıt bulunan farklı gün</div>
+          <div class="report-stat-accent report-accent-blue"></div>
+        </article>
+      </section>
+
+      <section class="report-analysis-grid">
+
+        <article class="report-panel report-completion-panel">
+          <div class="report-panel-heading">
+            <div>
+              <span class="report-overline">GENEL BAKIŞ</span>
+              <h2>Tamamlanma analizi</h2>
+              <p>Seçili dönemdeki işlem durumu.</p>
+            </div>
+            <span class="report-panel-symbol">◉</span>
+          </div>
+
+          <div class="report-donut-layout">
+            <div class="report-donut" role="img" aria-label="Tamamlanma oranı yüzde ${pct}">
+              <div class="report-donut-inner">
+                <strong>%${pct}</strong>
+                <span>Tamamlandı</span>
+              </div>
+            </div>
+
+            <div class="report-legend">
+              <div class="report-legend-item">
+                <span class="report-legend-dot report-legend-done"></span>
+                <div>
+                  <span>Tamamlanan</span>
+                  <strong>${formatNumber(data.done)}</strong>
+                </div>
+              </div>
+
+              <div class="report-legend-item">
+                <span class="report-legend-dot report-legend-missing"></span>
+                <div>
+                  <span>Eksik</span>
+                  <strong>${formatNumber(data.missing)}</strong>
+                </div>
+              </div>
+
+              <div class="report-legend-total">
+                <span>Toplam işlem</span>
+                <strong>${formatNumber(data.total)}</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="report-insight">
+            <span class="report-insight-icon">✦</span>
+            <p>
+              ${data.total
+                ? pct === 100
+                  ? 'Seçili dönemde tüm işlemler tamamlanmış görünüyor.'
+                  : `${formatNumber(data.missing)} işlem eksik görünüyor. Günlük dökümden ayrıntıları inceleyebilirsin.`
+                : 'Seçili filtrelerde karşılaştırma yapılabilecek işlem kaydı bulunmuyor.'}
+            </p>
+          </div>
+        </article>
+
+        <article class="report-panel report-summary-panel">
+          <div class="report-panel-heading">
+            <div>
+              <span class="report-overline">RAPOR ÖZETİ</span>
+              <h2>Seçili kapsam</h2>
+              <p>Raporun geçerli olduğu alanlar.</p>
+            </div>
+            <span class="report-panel-symbol">⌗</span>
+          </div>
+
+          <div class="report-summary-list">
+            <div class="report-summary-row">
+              <span class="report-summary-icon">♙</span>
+              <div>
+                <span>Personel</span>
+                <strong>${target || 'Seçilmedi'}</strong>
+              </div>
+            </div>
+
+            <div class="report-summary-row">
+              <span class="report-summary-icon">◷</span>
+              <div>
+                <span>Tarih aralığı</span>
+                <strong>${periodText}</strong>
+              </div>
+            </div>
+
+            <div class="report-summary-row">
+              <span class="report-summary-icon">▦</span>
+              <div>
+                <span>Kayıtlı faaliyet günü</span>
+                <strong>${formatNumber(days.length)} gün</strong>
+              </div>
+            </div>
+
+            <div class="report-summary-row">
+              <span class="report-summary-icon">▤</span>
+              <div>
+                <span>İş türü sayısı</span>
+                <strong>${formatNumber(Object.keys(data.byTask).length)} tür</strong>
+              </div>
+            </div>
+          </div>
+        </article>
+
+      </section>
+
+      <section class="report-panel report-task-panel">
+        <div class="report-panel-heading">
+          <div>
+            <span class="report-overline">DETAYLI PERFORMANS</span>
+            <h2>İş türü bazında analiz</h2>
+            <p>Her iş türündeki tamamlanma oranını ve eksik kayıtları incele.</p>
+          </div>
+          <span class="report-count-badge">${formatNumber(Object.keys(data.byTask).length)} iş türü</span>
+        </div>
+
+        <div class="report-task-list">
+          ${taskRows}
+        </div>
+      </section>
+
+      <section class="report-panel report-daily-panel">
+        <div class="report-panel-heading">
+          <div>
+            <span class="report-overline">GÜN GÜN TAKİP</span>
+            <h2>Günlük faaliyet dökümü</h2>
+            <p>Tamamlanan işlemler, eksikler ve ilgili firmalar.</p>
+          </div>
+          <span class="report-count-badge">${formatNumber(days.length)} gün</span>
+        </div>
+
+        <div class="report-day-list">
+          ${dayRows}
+        </div>
+      </section>
+
+      <div class="report-footer-note">
+        <span>ⓘ</span>
+        <p>Rapor sonuçları mevcut iş kayıtları ve seçili filtreler üzerinden hesaplanır.</p>
+      </div>
+
+    </div>
+  `;
 }
 function renderPersonnelLeaveContent() {
   if (!isAdminUser()) {
@@ -4430,410 +5296,262 @@ function renderPersonnelLeaveContent() {
   const people = getStaff();
 
   return `
-    <div class="page-heading">
-      <div>
-        <h1>Personel İzin ve Özlük</h1>
-        <p>Personel bilgileri, izin kullanımları ve izin planlamalarını yönetin.</p>
-      </div>
-      <span class="access-badge">Yönetici</span>
-    </div>
+    <section class="leave-page">
 
-    <!-- PERSONEL SEÇİMİ -->
-    <section class="panel">
-      <div class="panel-header">
-        <div>
-          <h2>Personel Seçimi</h2>
-          <p class="panel-subtitle">
-            İşlem yapmak istediğiniz personeli seçin.
-          </p>
+      <div class="leave-hero">
+        <div class="leave-hero-content">
+          <span class="leave-eyebrow">İNSAN KAYNAKLARI YÖNETİMİ</span>
+          <h1>Personel İzin ve Özlük</h1>
+          <p>Personel bilgilerini yönetin, izin kullanımını takip edin ve gelecek dönem izin planlarını tek ekrandan düzenleyin.</p>
+          <div class="leave-hero-tags">
+            <span>✓ Özlük bilgileri</span>
+            <span>◷ İzin takibi</span>
+            <span>▦ İzin planlaması</span>
+          </div>
         </div>
-      </div>
-
-      <form id="personnel-leave-form" class="work-form">
-
-        <label class="field">
-          Personel
-          <select name="staff" id="personnel-leave-staff">
-            ${people.length
-      ? people.map((person) =>
-        `<option value="${escapeHtml(person)}">${escapeHtml(person)}</option>`
-      ).join('')
-      : '<option value="">Personel bulunmuyor</option>'
-    }
-          </select>
-        </label>
-
-        <button
-          class="primary-btn work-submit"
-          type="submit"
-        >
-          Görüntüle
-        </button>
-
-      </form>
-    </section>
-
-    <!-- PERSONEL ÖZLÜK BİLGİLERİ -->
-    <section class="panel">
-
-      <div class="panel-header">
-        <div>
-          <h2>Personel Bilgileri</h2>
-          <p class="panel-subtitle">
-            Seçilen personele ait sabit özlük bilgileri.
-          </p>
+        <div class="leave-hero-art" aria-hidden="true">
+          <div class="leave-hero-document">
+            <div class="leave-doc-line"></div>
+            <div class="leave-doc-line short"></div>
+            <div class="leave-doc-check">✓</div>
+            <div class="leave-doc-line"></div>
+            <div class="leave-doc-line short"></div>
+          </div>
+          <div class="leave-hero-symbol">◷</div>
         </div>
+        <span class="leave-admin-badge">Yönetici Paneli</span>
       </div>
 
-      <form id="personnel-info-form" class="work-form">
+      <section class="panel leave-panel">
+        <div class="leave-section-heading">
+          <span class="leave-section-icon">♙</span>
+          <div>
+            <h2>Personel Seçimi</h2>
+            <p>İşlem yapmak istediğiniz personeli seçin.</p>
+          </div>
+        </div>
 
-        <label class="field">
-          Ad Soyad
-          <input
-            type="text"
-            id="personnel-info-name"
-            name="name"
-            disabled
-          />
-        </label>
-
-        <label class="field">
-          Doğum Tarihi
-          <input
-            type="date"
-            id="personnel-info-birth"
-            name="birthDate"
-          />
-        </label>
-
-        <label class="field">
-          İşe Giriş Tarihi
-          <input
-            type="date"
-            id="personnel-info-start"
-            name="startDate"
-          />
-        </label>
-
-        <label class="field">
-          Yıllık İzin Hakkı
-          <input
-            type="number"
-            id="personnel-info-annual"
-            name="annualLeave"
-            min="0"
-            step="0.5"
-            placeholder="Örn: 14"
-          />
-        </label>
-
-        <label class="field">
-          Not
-          <input
-            type="text"
-            id="personnel-info-note"
-            name="note"
-            placeholder="Personel hakkında not"
-          />
-        </label>
-
-        <div class="save-row">
-          <span
-            class="save-status"
-            id="personnel-info-status"
-          ></span>
-
-          <button
-            class="primary-btn work-submit"
-            type="submit"
-          >
-            Bilgileri Kaydet
+        <form id="personnel-leave-form" class="work-form leave-selection-form">
+          <label class="field">
+            Personel
+            <select name="staff" id="personnel-leave-staff" ${people.length ? '' : 'disabled'}>
+              ${people.length
+                ? people.map((person) =>
+                    `<option value="${escapeHtml(person)}">${escapeHtml(person)}</option>`
+                  ).join('')
+                : '<option value="">Personel bulunmuyor</option>'
+              }
+            </select>
+          </label>
+          <button class="primary-btn work-submit leave-primary-btn" type="submit" ${people.length ? '' : 'disabled'}>
+            Personeli Görüntüle <span>→</span>
           </button>
+        </form>
+      </section>
+
+      <section class="panel leave-panel">
+        <div class="leave-section-heading">
+          <span class="leave-section-icon">▤</span>
+          <div>
+            <h2>Personel Özlük Bilgileri</h2>
+            <p>Seçilen personele ait sabit özlük bilgileri.</p>
+          </div>
         </div>
 
-      </form>
+        <form id="personnel-info-form" class="work-form leave-fields-grid">
+          <label class="field">
+            Ad Soyad
+            <input type="text" id="personnel-info-name" name="name" disabled />
+          </label>
+
+          <label class="field">
+            Doğum Tarihi
+            <input type="date" id="personnel-info-birth" name="birthDate" />
+          </label>
+
+          <label class="field">
+            İşe Giriş Tarihi
+            <input type="date" id="personnel-info-start" name="startDate" />
+          </label>
+
+          <label class="field">
+            Yıllık İzin Hakkı (Gün)
+            <input type="number" id="personnel-info-annual" name="annualLeave" min="0" step="0.5" placeholder="Örn: 14" />
+          </label>
+
+          <label class="field leave-note-field">
+            Not
+            <input type="text" id="personnel-info-note" name="note" placeholder="Personel hakkında not" />
+          </label>
+
+          <div class="save-row leave-save-row">
+            <span class="save-status" id="personnel-info-status"></span>
+            <button class="primary-btn work-submit leave-primary-btn" type="submit">Bilgileri Kaydet</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel leave-panel">
+        <div class="leave-section-heading">
+          <span class="leave-section-icon">▥</span>
+          <div>
+            <h2>İzin Kullanım Özeti</h2>
+            <p>Seçilen personelin izin kullanım durumunu takip edin.</p>
+          </div>
+        </div>
+
+        <div class="stats-grid leave-stats-grid">
+          <article class="stat-card leave-stat-card">
+            <div class="leave-stat-top">
+              <span class="leave-stat-icon entitlement">▤</span>
+              <span>Yıllık İzin Hakkı</span>
+            </div>
+            <div class="stat-number" id="leave-summary-entitlement">0</div>
+            <small>Gün</small>
+          </article>
+
+          <article class="stat-card leave-stat-card">
+            <div class="leave-stat-top">
+              <span class="leave-stat-icon used">↗</span>
+              <span>Kullanılan Yıllık İzin</span>
+            </div>
+            <div class="stat-number" id="leave-summary-annual-used">0</div>
+            <small>Gün</small>
+          </article>
+
+          <article class="stat-card leave-stat-card">
+            <div class="leave-stat-top">
+              <span class="leave-stat-icon remaining">✓</span>
+              <span>Kalan Yıllık İzin</span>
+            </div>
+            <div class="stat-number" id="leave-summary-annual-remaining">0</div>
+            <small>Gün</small>
+          </article>
+
+          <article class="stat-card leave-stat-card">
+            <div class="leave-stat-top">
+              <span class="leave-stat-icon hourly">◷</span>
+              <span>Saatlik İzin</span>
+            </div>
+            <div class="stat-number" id="leave-summary-hourly-used">0</div>
+            <small>Saat</small>
+          </article>
+        </div>
+      </section>
+
+      <section class="panel leave-panel">
+        <div class="leave-section-heading">
+          <span class="leave-section-icon">＋</span>
+          <div>
+            <h2>Yeni İzin Kaydı</h2>
+            <p>Seçilen personelin kullandığı izni kaydedin.</p>
+          </div>
+        </div>
+
+        <form id="leave-record-form" class="work-form leave-fields-grid">
+          <label class="field">
+            İzin Tarihi
+            <input type="date" id="leave-record-date" name="date" required />
+          </label>
+
+          <label class="field">
+            İzin Türü
+            <select id="leave-record-type" name="type" required>
+              <option value="Yıllık İzin">Yıllık İzin</option>
+              <option value="Saatlik İzin">Saatlik İzin</option>
+              <option value="Mazeret İzni">Mazeret İzni</option>
+              <option value="Ücretsiz İzin">Ücretsiz İzin</option>
+              <option value="Rapor">Rapor</option>
+              <option value="Diğer">Diğer</option>
+            </select>
+          </label>
+
+          <label class="field">
+            Başlangıç Saati
+            <input type="time" id="leave-record-start" name="startTime" />
+          </label>
+
+          <label class="field">
+            Bitiş Saati
+            <input type="time" id="leave-record-end" name="endTime" />
+          </label>
+
+          <label class="field">
+            Süre (Gün / Saat)
+            <input type="number" id="leave-record-duration" name="duration" min="0" step="0.5" placeholder="Örn: 1 veya 2,5" required />
+          </label>
+
+          <label class="field">
+            Açıklama
+            <input type="text" id="leave-record-note" name="note" placeholder="İzin açıklaması" />
+          </label>
+
+          <div class="save-row leave-save-row">
+            <span class="save-status" id="leave-record-status"></span>
+            <button class="primary-btn work-submit leave-primary-btn" type="submit">İzin Kaydet</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel leave-panel">
+        <div class="leave-section-heading">
+          <span class="leave-section-icon">☷</span>
+          <div>
+            <h2>İzin Geçmişi</h2>
+            <p>Seçilen personelin kayıtlı izinlerini görüntüleyin.</p>
+          </div>
+        </div>
+
+        <div id="personnel-leave-history" class="leave-history-container">
+          <div class="permission-empty">Henüz izin kaydı bulunmuyor.</div>
+        </div>
+      </section>
+
+      <section class="panel leave-panel">
+        <div class="leave-section-heading">
+          <span class="leave-section-icon">▦</span>
+          <div>
+            <h2>Gelecek Yıl İzin Planı</h2>
+            <p>Planlanan ve tahmini izinleri önceden kaydedin.</p>
+          </div>
+        </div>
+
+        <form id="leave-plan-form" class="work-form leave-fields-grid">
+          <label class="field">
+            İzin Tarihi
+            <input type="date" id="leave-plan-date" name="date" required />
+          </label>
+
+          <label class="field">
+            Süre (Gün)
+            <input type="number" id="leave-plan-duration" name="duration" min="0.5" step="0.5" placeholder="Örn: 5" required />
+          </label>
+
+          <label class="field">
+            Durum
+            <select id="leave-plan-status" name="status">
+              <option value="Tahmini">Tahmini</option>
+              <option value="Planlandı">Planlandı</option>
+            </select>
+          </label>
+
+          <label class="field">
+            Açıklama
+            <input type="text" id="leave-plan-note" name="note" placeholder="Örn: Yaz tatili" />
+          </label>
+
+          <div class="save-row leave-save-row">
+            <span class="save-status" id="leave-plan-status-message"></span>
+            <button class="primary-btn work-submit leave-primary-btn" type="submit">Planı Kaydet</button>
+          </div>
+        </form>
+
+        <div id="personnel-leave-plan-history" class="leave-history-container leave-plan-history">
+          <div class="permission-empty">Henüz izin planı bulunmuyor.</div>
+        </div>
+      </section>
 
     </section>
-
-    <!-- İZİN ÖZETİ -->
-    <section class="panel">
-
-      <div class="panel-header">
-        <div>
-          <h2>İzin Özeti</h2>
-          <p class="panel-subtitle">
-            Seçilen personelin izin kullanım durumu.
-          </p>
-        </div>
-      </div>
-
-      <div class="stats-grid">
-
-        <article class="stat-card">
-          <div class="stat-top">
-            <span>Yıllık İzin Hakkı</span>
-          </div>
-          <div
-            class="stat-number"
-            id="leave-summary-entitlement"
-          >
-            0
-          </div>
-          <small>Gün</small>
-        </article>
-
-        <article class="stat-card">
-          <div class="stat-top">
-            <span>Kullanılan Yıllık İzin</span>
-          </div>
-          <div
-            class="stat-number"
-            id="leave-summary-annual-used"
-          >
-            0
-          </div>
-          <small>Gün</small>
-        </article>
-
-        <article class="stat-card">
-          <div class="stat-top">
-            <span>Kalan Yıllık İzin</span>
-          </div>
-          <div
-            class="stat-number"
-            id="leave-summary-annual-remaining"
-          >
-            0
-          </div>
-          <small>Gün</small>
-        </article>
-
-        <article class="stat-card">
-          <div class="stat-top">
-            <span>Saatlik İzin</span>
-          </div>
-          <div
-            class="stat-number"
-            id="leave-summary-hourly-used"
-          >
-            0
-          </div>
-          <small>Saat</small>
-        </article>
-
-      </div>
-
-    </section>
-
-    <!-- YENİ İZİN KAYDI -->
-    <section class="panel">
-
-      <div class="panel-header">
-        <div>
-          <h2>Yeni İzin Kaydı</h2>
-          <p class="panel-subtitle">
-            Seçilen personelin kullandığı izni kaydedin.
-          </p>
-        </div>
-      </div>
-
-      <form id="leave-record-form" class="work-form">
-
-        <label class="field">
-          İzin Tarihi
-          <input
-            type="date"
-            id="leave-record-date"
-            name="date"
-            required
-          />
-        </label>
-
-        <label class="field">
-          İzin Türü
-          <select
-            id="leave-record-type"
-            name="type"
-            required
-          >
-            <option value="Yıllık İzin">Yıllık İzin</option>
-            <option value="Saatlik İzin">Saatlik İzin</option>
-            <option value="Mazeret İzni">Mazeret İzni</option>
-            <option value="Ücretsiz İzin">Ücretsiz İzin</option>
-            <option value="Rapor">Rapor</option>
-            <option value="Diğer">Diğer</option>
-          </select>
-        </label>
-
-        <label class="field">
-          Başlangıç Saati
-          <input
-            type="time"
-            id="leave-record-start"
-            name="startTime"
-          />
-        </label>
-
-        <label class="field">
-          Bitiş Saati
-          <input
-            type="time"
-            id="leave-record-end"
-            name="endTime"
-          />
-        </label>
-
-        <label class="field">
-          Süre
-          <input
-            type="number"
-            id="leave-record-duration"
-            name="duration"
-            min="0"
-            step="0.5"
-            placeholder="Gün veya saat"
-            required
-          />
-        </label>
-
-        <label class="field">
-          Açıklama
-          <input
-            type="text"
-            id="leave-record-note"
-            name="note"
-            placeholder="İzin açıklaması"
-          />
-        </label>
-
-        <div class="save-row">
-
-          <span
-            class="save-status"
-            id="leave-record-status"
-          ></span>
-
-          <button
-            class="primary-btn work-submit"
-            type="submit"
-          >
-            İzin Kaydet
-          </button>
-
-        </div>
-
-      </form>
-
-    </section>
-
-    <!-- İZİN GEÇMİŞİ -->
-    <section class="panel">
-
-      <div class="panel-header">
-        <div>
-          <h2>İzin Geçmişi</h2>
-          <p class="panel-subtitle">
-            Seçilen personelin kayıtlı izinleri.
-          </p>
-        </div>
-      </div>
-
-      <div id="personnel-leave-history">
-        <div class="permission-empty">
-          Henüz izin kaydı bulunmuyor.
-        </div>
-      </div>
-
-    </section>
-
-
-    <!-- GELECEK YIL İZİN PLANI -->
-    <section class="panel">
-
-      <div class="panel-header">
-        <div>
-          <h2>Gelecek Yıl İzin Planı</h2>
-          <p class="panel-subtitle">
-            Seçilen personelin gelecek yıl için planlanan ve tahmini izinlerini yönetin.
-          </p>
-        </div>
-      </div>
-
-      <form id="leave-plan-form" class="work-form">
-
-        <label class="field">
-          İzin Tarihi
-          <input
-            type="date"
-            id="leave-plan-date"
-            name="date"
-            required
-          />
-        </label>
-
-        <label class="field">
-          Süre
-          <input
-            type="number"
-            id="leave-plan-duration"
-            name="duration"
-            min="0.5"
-            step="0.5"
-            placeholder="Örn: 5"
-            required
-          />
-        </label>
-
-        <label class="field">
-          Durum
-          <select
-            id="leave-plan-status"
-            name="status"
-          >
-            <option value="Tahmini">Tahmini</option>
-            <option value="Planlandı">Planlandı</option>
-          </select>
-        </label>
-
-        <label class="field">
-          Açıklama
-          <input
-            type="text"
-            id="leave-plan-note"
-            name="note"
-            placeholder="Örn: Yaz tatili"
-          />
-        </label>
-
-        <div class="save-row">
-
-          <span
-            class="save-status"
-            id="leave-plan-status-message"
-          ></span>
-
-          <button
-            class="primary-btn work-submit"
-            type="submit"
-          >
-            Planı Kaydet
-          </button>
-
-        </div>
-
-      </form>
-
-      <div
-        id="personnel-leave-plan-history"
-        style="margin-top: 20px;"
-      >
-        <div class="permission-empty">
-          Henüz izin planı bulunmuyor.
-        </div>
-      </div>
-
-    </section>
-
   `;
 }
 const PERSONNEL_INFO_FIREBASE_COLLECTION = 'settings';
@@ -7133,28 +7851,259 @@ function renderQuestionContent() {
   const me = currentUser ? currentUser.name : '';
   const admin = isAdminUser();
   const others = getStaff().filter((s) => s !== me);
-  const list = getVisibleQuestions().sort((a, b) => (a.askedAt < b.askedAt ? 1 : -1));
-  const rows = list.length ? list.map((q) => {
-    const canAnswer = admin || q.to === me;
-    const answerBlock = q.answer
-      ? `<div class="task-row" style="cursor:default;background:#f3f8f6;border-radius:8px;"><span class="task-box" style="border-radius:50%">✓</span><span class="task-name"><strong>Cevap — ${q.answeredBy}</strong><small>${formatUpdatedAt(q.answeredAt)}</small><span>${q.answer}</span></span></div>`
-      : `<div class="permission-empty"><span class="permission-icon">?</span><div><strong>Henüz cevaplanmadı.</strong></div></div>`;
-    const answerForm = canAnswer && !q.answer
-      ? `<form data-answer-form="${q.id}" class="work-form" style="grid-template-columns:1fr auto;margin-top:10px;"><label class="field">Cevabınız<input type="text" name="answer" placeholder="Cevabı yazın" required /></label><button class="primary-btn work-submit" type="submit">Cevapla</button></form>`
-      : '';
-    return `<div class="panel" style="margin-bottom:14px;"><div class="panel-header"><div><h2>${q.from} → ${q.to}</h2><p class="panel-subtitle">Soru: ${formatUpdatedAt(q.askedAt)}</p></div></div><div class="task-content"><div class="task-row" style="cursor:default;"><span class="task-box" style="border-radius:50%">☏</span><span class="task-name"><strong>${q.title}</strong></span></div>${answerBlock}${answerForm}</div></div>`;
-  }).join('') : '<div class="permission-empty"><span class="permission-icon">☏</span><div><strong>Soru yok.</strong><p>Yukarıdan personel seçip ilk sorunuzu sorun.</p></div></div>';
+  const list = getVisibleQuestions().sort(
+    (a, b) => (a.askedAt < b.askedAt ? 1 : -1)
+  );
+
+  const answeredCount = list.filter((q) => q.answer).length;
+  const pendingCount = list.length - answeredCount;
+
+  const esc = (value) =>
+    String(value ?? '').replace(/[&<>"']/g, (ch) => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    })[ch]);
+
+  const rows = list.length
+    ? list.map((q) => {
+        const canAnswer = admin || q.to === me;
+        const answered = Boolean(q.answer);
+
+        const answerBlock = answered
+          ? `
+            <div class="question-answer-card">
+              <div class="question-answer-heading">
+                <span class="question-answer-check">✓</span>
+                <div>
+                  <strong>Yanıt</strong>
+                  <small>${esc(q.answeredBy || 'Personel')} · ${esc(formatUpdatedAt(q.answeredAt))}</small>
+                </div>
+                <span class="question-status question-status-answered">Yanıtlandı</span>
+              </div>
+              <div class="question-answer-text">${esc(q.answer)}</div>
+            </div>
+          `
+          : `
+            <div class="question-pending-card">
+              <span class="question-pending-icon">◷</span>
+              <div>
+                <strong>Yanıt bekleniyor</strong>
+                <p>Bu soruya henüz bir yanıt girilmedi.</p>
+              </div>
+            </div>
+          `;
+
+        const answerForm = canAnswer && !answered
+          ? `
+            <form data-answer-form="${esc(q.id)}" class="question-answer-form">
+              <label class="question-field">
+                <span>Yanıtınız</span>
+                <input
+                  type="text"
+                  name="answer"
+                  placeholder="Soruyu yanıtlayın..."
+                  maxlength="2000"
+                  required
+                />
+              </label>
+              <button class="question-submit-button" type="submit">
+                <span>↗</span> Yanıtı gönder
+              </button>
+            </form>
+          `
+          : '';
+
+        return `
+          <article class="question-card">
+            <div class="question-card-top">
+              <div class="question-card-icon">☏</div>
+
+              <div class="question-card-people">
+                <div class="question-person-line">
+                  <span class="question-person-label">Gönderen</span>
+                  <strong>${esc(q.from)}</strong>
+                </div>
+                <div class="question-person-line">
+                  <span class="question-person-label">Alıcı</span>
+                  <strong>${esc(q.to)}</strong>
+                </div>
+              </div>
+
+              <span class="question-status ${answered
+                ? 'question-status-answered'
+                : 'question-status-pending'}">
+                <span class="question-status-dot"></span>
+                ${answered ? 'Yanıtlandı' : 'Yanıt bekliyor'}
+              </span>
+            </div>
+
+            <div class="question-card-body">
+              <div class="question-date">
+                <span>◷</span> ${esc(formatUpdatedAt(q.askedAt))}
+              </div>
+
+              <h3 class="question-title">${esc(q.title)}</h3>
+
+              ${answerBlock}
+              ${answerForm}
+            </div>
+          </article>
+        `;
+      }).join('')
+    : `
+      <div class="question-empty">
+        <div class="question-empty-icon">☏</div>
+        <strong>Henüz soru bulunmuyor</strong>
+        <p>
+          ${admin
+            ? 'Personel soruları gönderildiğinde burada görüntülenecek.'
+            : 'Yeni bir soru oluşturarak iletişimi başlatabilirsin.'}
+        </p>
+      </div>
+    `;
+
   return `
-    <div class="page-heading"><div><h1>Personel Soruları</h1><p>${admin ? 'Tüm soruları görür, cevap verebilirsiniz.' : 'Sadece sizin sorduğunuz ve size sorulan sorular görünür.'}</p></div><span class="access-badge">${admin ? 'Yönetici' : me}</span></div>
-    <section class="panel"><div class="panel-header"><div><h2>Soru sor</h2><p class="panel-subtitle">Personel seçin, sorunuzu yazın, Gönder'e basın. Tarih otomatik eklenir.</p></div></div>
-      <form id="question-form" class="work-form" style="grid-template-columns:1fr 1.4fr auto">
-        <label class="field">Personel<select name="to">${others.map((s) => `<option>${s}</option>`).join('')}</select></label>
-        <label class="field">Sorunuz<input type="text" name="title" placeholder="Sorunuzu yazın" required /></label>
-        <button class="primary-btn work-submit" type="submit">Gönder</button>
-      </form>
-      <div class="save-row"><span class="save-status" id="question-save-status"></span></div>
-    </section>
-    <div>${rows}</div>`;
+    <div class="question-page">
+
+      <section class="question-hero">
+        <div class="question-hero-content">
+          <span class="question-hero-eyebrow">
+            <span></span> EKİP İLETİŞİM MERKEZİ
+          </span>
+
+          <h1>Personel Soruları</h1>
+
+          <p>
+            ${admin
+              ? 'Personel sorularını takip et, yanıtla ve ekip içi iletişimi tek merkezden yönet.'
+              : 'Sorularını ilet, sana yöneltilen soruları takip et ve yanıtları tek ekranda görüntüle.'}
+          </p>
+
+          <div class="question-hero-tag">
+            <span>✦</span>
+            Açık ve düzenli iletişim
+          </div>
+        </div>
+
+        <div class="question-hero-art" aria-hidden="true">
+          <div class="question-art-ring question-art-ring-one"></div>
+          <div class="question-art-ring question-art-ring-two"></div>
+          <div class="question-art-bubble">
+            <span>•••</span>
+          </div>
+          <span class="question-art-small question-art-small-one">?</span>
+          <span class="question-art-small question-art-small-two">✓</span>
+        </div>
+      </section>
+
+      <section class="question-overview">
+        <article class="question-overview-card">
+          <div class="question-overview-icon question-overview-icon-blue">☏</div>
+          <div>
+            <span>Görüntülenen sorular</span>
+            <strong>${list.length}</strong>
+            <small>Toplam soru</small>
+          </div>
+        </article>
+
+        <article class="question-overview-card">
+          <div class="question-overview-icon question-overview-icon-orange">◷</div>
+          <div>
+            <span>Yanıt bekleyen</span>
+            <strong>${pendingCount}</strong>
+            <small>Takip edilmesi gereken</small>
+          </div>
+        </article>
+
+        <article class="question-overview-card">
+          <div class="question-overview-icon question-overview-icon-green">✓</div>
+          <div>
+            <span>Yanıtlanan</span>
+            <strong>${answeredCount}</strong>
+            <small>Yanıtı bulunan soru</small>
+          </div>
+        </article>
+      </section>
+
+      <section class="question-compose-panel">
+        <div class="question-section-heading">
+          <div class="question-section-icon">✎</div>
+          <div>
+            <h2>Yeni soru oluştur</h2>
+            <p>İlgili personeli seç ve iletmek istediğin soruyu yaz.</p>
+          </div>
+        </div>
+
+        ${others.length ? `
+          <form id="question-form" class="question-compose-form">
+            <label class="question-field">
+              <span>Sorunun yöneltileceği personel</span>
+              <select name="to" required>
+                ${others.map((s) => `
+                  <option value="${esc(s)}">${esc(s)}</option>
+                `).join('')}
+              </select>
+            </label>
+
+            <label class="question-field question-field-message">
+              <span>Soru içeriği</span>
+              <input
+                type="text"
+                name="title"
+                placeholder="Sorunuzu buraya yazın..."
+                maxlength="2000"
+                required
+              />
+            </label>
+
+            <button class="question-submit-button question-send-button" type="submit">
+              <span>↗</span> Soruyu gönder
+            </button>
+          </form>
+        ` : `
+          <div class="question-compose-notice">
+            <span>ⓘ</span>
+            <p>
+              ${admin
+                ? 'Soru yöneltebileceğin başka bir personel bulunmuyor.'
+                : 'Soru yöneltebileceğin başka bir personel bulunmuyor.'}
+            </p>
+          </div>
+        `}
+
+        <div class="question-save-message" id="question-save-status"></div>
+      </section>
+
+      <section class="question-list-section">
+        <div class="question-list-heading">
+          <div>
+            <span class="question-section-eyebrow">İLETİŞİM GEÇMİŞİ</span>
+            <h2>Soru ve yanıtlar</h2>
+            <p>
+              ${admin
+                ? 'Görüntüleme yetkin kapsamındaki personel soruları.'
+                : 'Sorduğun ve sana yöneltilen sorular.'}
+            </p>
+          </div>
+
+          <span class="question-list-count">${list.length} kayıt</span>
+        </div>
+
+        <div class="question-list">
+          ${rows}
+        </div>
+      </section>
+
+      <div class="question-footer-note">
+        <span>ⓘ</span>
+        <p>Soru ve yanıtlar mevcut kayıt sistemi üzerinden görüntülenir.</p>
+      </div>
+
+    </div>
+  `;
 }
 
 function setupQuestions() {
@@ -7242,74 +8191,276 @@ function renderNoteContent() {
   </div>
   <div style="margin-top:16px;">${rows}</div>`;
 }
-
-function setupNotes() {
+async function setupNotes() {
   const form = document.querySelector('#note-form');
   const textArea = document.querySelector('#note-text');
   const charCount = document.querySelector('#note-char-count');
   const fileInput = document.querySelector('#note-file');
   const preview = document.querySelector('#note-preview');
   const fileHint = document.querySelector('#note-file-hint');
-  if (textArea && charCount) {
-    const upd = () => { charCount.textContent = `${textArea.value.length} karakter`; };
-    textArea.addEventListener('input', upd);
-    upd();
+
+  const status = (message) => {
+    const el = document.querySelector('#note-save-status');
+    if (el) el.textContent = message;
+  };
+
+  const auth = window.firebaseAuth;
+  const db = window.firebaseDb;
+  const uid = auth?.currentUser?.uid;
+
+  if (!uid || !db) {
+    status('Firebase bağlantısı hazır değil. Sayfayı yenileyip tekrar deneyin.');
+    setupCalculator();
+    return;
   }
-  // Resim seçilince anında önizleme göster; 1.5 MB üzeri seçimleri reddet.
+
+  // Firebase'deki kişisel notları yükle.
+  try {
+    if (
+      window._personalNotesUid !== uid ||
+      !Array.isArray(window._personalNotesCache)
+    ) {
+      window._personalNotesCache = [];
+
+      const notesQuery = window.firebaseQuery(
+        window.firebaseCollection(db, 'personalNotes'),
+        window.firebaseWhere('ownerUid', '==', uid)
+      );
+
+      const snapshot = await window.firebaseGetDocs(notesQuery);
+
+      window._personalNotesCache = snapshot.docs.map((item) => ({
+        id: item.id,
+        ...item.data()
+      }));
+
+      window._personalNotesUid = uid;
+
+      // Veriler yüklendikten sonra not listesini yenile.
+      renderDashboard('Notlar');
+      return;
+    }
+  } catch (err) {
+    console.error('Kişisel notlar yüklenemedi:', err);
+    status('Notlar Firebase’den yüklenemedi. Bağlantınızı ve güvenlik kurallarını kontrol edin.');
+    setupCalculator();
+    return;
+  }
+
+  // Karakter sayacı.
+  if (textArea && charCount) {
+    const updateCount = () => {
+      charCount.textContent = `${textArea.value.length} karakter`;
+    };
+
+    textArea.addEventListener('input', updateCount);
+    updateCount();
+  }
+
+  // Resim önizlemesi ve boyut kontrolü.
   if (fileInput && preview) {
     fileInput.addEventListener('change', () => {
-      const f = fileInput.files && fileInput.files[0];
+      const file = fileInput.files?.[0];
+
       preview.style.display = 'none';
       preview.removeAttribute('src');
-      if (fileHint) fileHint.textContent = 'JPG / PNG, en fazla 1.5 MB. Seçince önizleme çıkar.';
-      if (!f) return;
-      if (f.size > 1500000) {
+
+      if (fileHint) {
+        fileHint.textContent =
+          'JPG / PNG, en fazla 1.5 MB. Seçince önizleme çıkar.';
+      }
+
+      if (!file) return;
+
+      if (file.size > 1500000) {
         fileInput.value = '';
-        if (fileHint) fileHint.textContent = 'Seçilen resim 1.5 MB sınırını aşıyor. Daha küçük bir resim seçin.';
+
+        if (fileHint) {
+          fileHint.textContent =
+            'Resim 1.5 MB sınırını aşıyor. Daha küçük bir resim seçin.';
+        }
+
         return;
       }
-      if (!(f.type || '').startsWith('image/')) {
+
+      if (!file.type.startsWith('image/')) {
         fileInput.value = '';
-        preview.style.display = 'none';
-        if (fileHint) fileHint.textContent = 'Yalnızca resim dosyası (JPG / PNG) yükleyebilirsiniz.';
+
+        if (fileHint) {
+          fileHint.textContent = 'Yalnızca resim dosyası seçebilirsiniz.';
+        }
+
         return;
       }
+
       const reader = new FileReader();
+
       reader.onload = () => {
         preview.src = reader.result;
         preview.style.display = 'block';
-        if (fileHint) fileHint.textContent = `${f.name} hazır — Kaydet'e basınca nota eklenir.`;
+
+        if (fileHint) {
+          fileHint.textContent =
+            `${file.name} hazır — Kaydet'e basınca nota eklenir.`;
+        }
       };
-      reader.readAsDataURL(f);
+
+      reader.readAsDataURL(file);
     });
   }
-  if (form) form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const fd = new FormData(form);
-    const title = (fd.get('title') || '').toString().trim();
-    const text = (fd.get('text') || '').toString().trim();
-    const file = fd.get('file');
-    if (!title) return;
-    const push = (fileName, fileType, fileData) => {
-      const list = loadNotes();
-      list.push({ id: 'n' + Date.now(), staff: currentUser ? currentUser.name : '', title, text, fileName, fileType, fileData, createdAt: new Date().toISOString() });
-      saveNotes(list);
-      renderDashboard('Notlar');
-    };
-    if (file && file.size) {
-      if (file.size > 1500000) { const st = document.querySelector('#note-save-status'); if (st) st.textContent = 'Dosya 1.5 MB sınırını aşıyor, daha küçük seçin.'; return; }
-      const reader = new FileReader();
-      reader.onload = () => push(file.name, file.type || '', reader.result);
-      reader.readAsDataURL(file);
-    } else {
-      push('', '', '');
-    }
+
+  // Yeni notu kaydet.
+  if (form) {
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      const fd = new FormData(form);
+      const title = String(fd.get('title') || '').trim();
+      const text = String(fd.get('text') || '').trim();
+      const file = fd.get('file');
+
+      if (!title) {
+        status('Lütfen nota bir başlık girin.');
+        return;
+      }
+
+      if (file && file.size > 1500000) {
+        status('Resim 1.5 MB sınırını aşıyor.');
+        return;
+      }
+
+      if (file && file.size && !file.type.startsWith('image/')) {
+        status('Lütfen geçerli bir resim dosyası seçin.');
+        return;
+      }
+
+      const saveButton = form.querySelector('[type="submit"]');
+
+      if (saveButton) saveButton.disabled = true;
+      status('Not kaydediliyor...');
+
+      try {
+        let fileData = '';
+
+        // Resim yalnızca bu tarayıcıdaki yerel nota eklenir.
+        if (file && file.size) {
+          fileData = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => reject(new Error('Resim okunamadı.'));
+            reader.readAsDataURL(file);
+          });
+        }
+
+        const now = new Date().toISOString();
+        const noteId =
+          'note_' + Date.now() + '_' +
+          Math.random().toString(36).slice(2, 8);
+
+        const note = {
+          id: noteId,
+          staff: currentUser?.name || '',
+          ownerUid: uid,
+          title,
+          text,
+          createdAt: now,
+          fileName: file && file.size ? file.name : '',
+          fileType: file && file.size ? file.type : '',
+          fileData
+        };
+
+        // Önce yerel kaydı koru.
+        const localNotes = loadNotes();
+        localNotes.push(note);
+        saveNotes(localNotes);
+
+        // Metin ve temel bilgiler Firebase'e kaydedilir.
+        // Base64 resim verisi Firestore'a gönderilmez.
+        const cloudNote = {
+          ownerUid: uid,
+          staff: note.staff,
+          title: note.title,
+          text: note.text,
+          createdAt: note.createdAt
+        };
+
+        await window.firebaseSetDoc(
+          window.firebaseDoc(db, 'personalNotes', noteId),
+          cloudNote
+        );
+
+        window._personalNotesCache = [
+          ...(window._personalNotesCache || []),
+          { id: noteId, ...cloudNote }
+        ];
+
+        form.reset();
+
+        if (preview) {
+          preview.style.display = 'none';
+          preview.removeAttribute('src');
+        }
+
+        if (fileHint) {
+          fileHint.textContent =
+            'JPG / PNG, en fazla 1.5 MB. Seçince önizleme çıkar.';
+        }
+
+        renderDashboard('Notlar');
+        status(
+          fileData
+            ? 'Not Firebase’e kaydedildi. Ekli resim yalnızca bu tarayıcıda saklandı.'
+            : 'Not başarıyla Firebase’e kaydedildi.'
+        );
+      } catch (err) {
+        console.error('Not kaydetme hatası:', err);
+        status(
+          'Firebase kaydı başarısız oldu. Notun kaydedildiğini varsaymayın; bağlantıyı kontrol edin.'
+        );
+      } finally {
+        if (saveButton) saveButton.disabled = false;
+      }
+    });
+  }
+
+  // Not silme.
+  document.querySelectorAll('[data-del-note]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      const noteId = button.dataset.delNote;
+      const note = getMyNotes().find((item) => item.id === noteId);
+
+      if (!note) return;
+
+      if (!window.confirm('Bu notu silmek istediğinize emin misiniz?')) {
+        return;
+      }
+
+      try {
+        const localNotes = loadNotes().filter(
+          (item) => item.id !== noteId
+        );
+
+        saveNotes(localNotes);
+
+        // Firebase'deki notu da sil.
+        if (note.ownerUid === uid) {
+          await window.firebaseDeleteDoc(
+            window.firebaseDoc(db, 'personalNotes', noteId)
+          );
+        }
+
+        window._personalNotesCache = (
+          window._personalNotesCache || []
+        ).filter((item) => item.id !== noteId);
+
+        renderDashboard('Notlar');
+      } catch (err) {
+        console.error('Not silme hatası:', err);
+        status('Not Firebase’den silinemedi. Sayfayı yenileyip kontrol edin.');
+      }
+    });
   });
-  document.querySelectorAll('[data-del-note]').forEach((b) => b.addEventListener('click', () => {
-    const me = currentUser ? currentUser.name : '';
-    saveNotes(loadNotes().filter((n) => !(n.id === b.dataset.delNote && n.staff === me)));
-    renderDashboard('Notlar');
-  }));
+
   setupCalculator();
 }
 
@@ -7362,24 +8513,174 @@ function setupCalculator() {
 function renderCompanyContent() {
   const me = currentUser ? currentUser.name : '';
   const admin = isAdminUser();
-  // Personel yalnızca kendisine yetkilendirilmiş carileri görür; yönetici tümünü görür.
   const list = admin ? getCompanies() : getMyVisibleCompanies(me);
   const meta = loadCompanyMeta();
   const editName = window._companyEdit || '';
-  const editRow = admin && editName ? `<form id="company-edit-form" class="work-form" style="grid-template-columns:1fr 1fr auto"><label class="field">Firma<input type="text" value="${editName}" disabled /></label><label class="field">Yeni unvan<input type="text" name="newName" value="${editName}" required /></label><button class="primary-btn work-submit" type="submit">Kaydet</button></form>` : '';
+  const today = new Date().toISOString().slice(0, 10);
+
+  const editRow = admin && editName ? `
+    <form id="company-edit-form" class="work-form company-form-modern">
+      <label class="field">
+        Firma
+        <input type="text" value="${editName}" disabled />
+      </label>
+      <label class="field">
+        Yeni unvan
+        <input type="text" name="newName" value="${editName}" required />
+      </label>
+      <button class="primary-btn work-submit" type="submit">
+        ✓ Kaydet
+      </button>
+    </form>
+  ` : '';
+
+  const companyRows = list.length
+    ? list.map((c) => {
+        const d = (meta[c] && meta[c].createdAt) || getCompanyCreatedDate(c);
+
+        return `
+          <article class="company-item">
+            <div class="company-item-icon">▣</div>
+
+            <div class="company-item-info">
+              <strong>${c}</strong>
+              <div class="company-item-date">
+                <span>Takip başlangıcı</span>
+                <span>${formatDateTr(d)}</span>
+              </div>
+            </div>
+
+            ${admin ? `
+              <button class="primary-btn work-submit company-edit-btn"
+                data-edit-company="${c}" type="button">
+                ✎ Düzenle
+              </button>
+            ` : `
+              <span class="company-view-label">Görüntüleme</span>
+            `}
+          </article>
+        `;
+      }).join('')
+    : `
+      <div class="permission-empty">
+        <span class="permission-icon">▣</span>
+        <div>
+          <strong>Henüz görüntülenebilecek cari yok.</strong>
+          <p>Yöneticinizden firma erişim yetkisi isteyin.</p>
+        </div>
+      </div>
+    `;
+
   return `
-    <div class="page-heading"><div><h1>Firma Yönetimi</h1><p>${admin ? 'Cari ünvanı + tanımlanma tarihi yazıp Kaydet ile ekleyin. Bu tarih, personelin Yönetim Panelinde işlerinin başlangıcı sayılır.' : 'Size tanımlı cariler görünür (sadece görüntüleme).'}</p></div><span class="access-badge">${admin ? 'Yönetici' : me}</span></div>
-    ${admin ? `<section class="panel"><div class="panel-header"><div><h2>Yeni cari ekle</h2><p class="panel-subtitle">Kutucuğa ünvan + tanımlanma tarihi yazın, Kaydet'e basın.</p></div></div>
-      <form id="company-form" class="work-form" style="grid-template-columns:1.2fr 1fr auto">
-        <label class="field">Cari ünvanı<input type="text" name="companyName" placeholder="Örn: Yeni Cari A.Ş." required /></label>
-        <label class="field">Tanımlanma tarihi<input type="date" name="createdAt" value="${new Date().toISOString().slice(0, 10)}" required /></label>
-        <button class="primary-btn work-submit" type="submit">Kaydet</button>
-      </form>
-      <div class="save-row"><span class="save-status" id="company-save-status"></span></div>${editRow}
-    </section>` : ``}
-    <section class="panel"><div class="panel-header"><div><h2>${admin ? 'Kayıtlı firmalar' : 'Yetkili olduğum cariler'} (${list.length})</h2><p class="panel-subtitle">Tanımlanma tarihi, personelin Yönetim Panelindeki sayaçların başlangıcıdır.</p></div></div>
-      <div class="task-content">${list.length ? list.map((c) => { const d = (meta[c] && meta[c].createdAt) || getCompanyCreatedDate(c); return `<div class="task-row" style="cursor:default"><span class="task-box" style="border-radius:50%">▣</span><span class="task-name"><strong>${c}</strong><small>Tanımlanma: ${formatDateTr(d)}</small></span>${admin ? `<span style="margin-left:auto;"><button class="primary-btn work-submit" data-edit-company="${c}" type="button" style="min-width:90px;">Düzenle</button></span>` : ''}</div>`; }).join('') : '<div class="permission-empty"><span class="permission-icon">▣</span><div><strong>Yetkili olduğunuz cari yok.</strong><p>Yöneticinizden firma erişim yetkisi isteyin.</p></div></div>'}</div>
-    </section>`;
+    <section class="company-page">
+
+      <div class="company-hero">
+        <div class="company-hero-content">
+          <span class="company-eyebrow">FİRMA VE CARİ KAYITLARI</span>
+          <h1>Firma Yönetimi</h1>
+          <p>
+            Firma kayıtlarını düzenli bir şekilde yönet,
+            tanımlanma tarihlerini takip et ve iş süreçlerini
+            doğru başlangıç tarihleriyle yürüt.
+          </p>
+          <div class="company-hero-tags">
+            <span>✓ Düzenli kayıt</span>
+            <span>▦ Tarih bazlı takip</span>
+          </div>
+        </div>
+
+        <div class="company-hero-art" aria-hidden="true">
+          <div class="company-hero-orbit"></div>
+          <div class="company-hero-symbol">▣</div>
+        </div>
+      </div>
+
+      <div class="company-section-heading">
+        <div>
+          <h2>Firma çalışma alanı</h2>
+          <p>
+            ${admin
+              ? 'Yeni firmalar ekleyebilir ve mevcut firma unvanlarını düzenleyebilirsiniz.'
+              : 'Yalnızca erişim izniniz bulunan firmaları görüntüleyebilirsiniz.'}
+          </p>
+        </div>
+        <span class="company-role-label">
+          ${admin ? 'Yönetici' : 'Personel'} · ${me}
+        </span>
+      </div>
+
+      ${admin ? `
+        <section class="panel company-add-panel">
+          <div class="company-panel-heading">
+            <div class="company-heading-icon">＋</div>
+            <div>
+              <h2>Yeni cari ekle</h2>
+              <p>Firma unvanını ve iş takibinin başlayacağı tarihi tanımlayın.</p>
+            </div>
+          </div>
+
+          <form id="company-form" class="work-form company-form-modern">
+            <label class="field">
+              Firma / cari unvanı
+              <input type="text" name="companyName"
+                placeholder="Örn: Yeni Cari A.Ş." required />
+            </label>
+
+            <label class="field">
+              Tanımlanma tarihi
+              <input type="date" name="createdAt"
+                value="${today}" required />
+              <small>Bu tarih, iş takip başlangıcını etkiler.</small>
+            </label>
+
+            <button class="primary-btn work-submit company-add-btn"
+              type="submit">
+              ＋ &nbsp; Firma ekle
+            </button>
+          </form>
+
+          <div class="company-save-message">
+            <span class="save-status" id="company-save-status"></span>
+          </div>
+
+          ${editRow ? `
+            <div class="company-edit-area">
+              <div class="company-panel-heading">
+                <div class="company-heading-icon company-edit-icon">✎</div>
+                <div>
+                  <h2>Firma unvanını düzenle</h2>
+                  <p>Seçtiğiniz firmanın yeni unvanını girin.</p>
+                </div>
+              </div>
+              ${editRow}
+            </div>
+          ` : ''}
+        </section>
+      ` : ''}
+
+      <section class="panel company-list-panel">
+        <div class="company-list-heading">
+          <div class="company-panel-heading">
+            <div class="company-heading-icon company-list-icon">▤</div>
+            <div>
+              <h2>${admin ? 'Kayıtlı firmalar' : 'Yetkili olduğum cariler'}</h2>
+              <p>Tanımlanma tarihleri iş takip başlangıcında kullanılır.</p>
+            </div>
+          </div>
+
+          <div class="company-total">
+            <strong>${list.length}</strong>
+            <span>${list.length === 1 ? 'firma' : 'firma'}</span>
+          </div>
+        </div>
+
+        <div class="company-list-content">
+          ${companyRows}
+        </div>
+      </section>
+
+    </section>
+  `;
 }
 
 function renderWorkTrackingContent() {
@@ -7387,20 +8688,138 @@ function renderWorkTrackingContent() {
   const initialDate = getLastWorkDate(today);
   const staffName = currentUser ? currentUser.name : getStaff()[0];
   const visibleCompanies = getMyVisibleCompanies(staffName);
-  const companyOptions = (visibleCompanies.length ? visibleCompanies : [`Yetkiniz yok — yöneticiye başvurun`]).map((c) => `<option>${c}</option>`).join('');
+
+  const companyOptions = (
+    visibleCompanies.length
+      ? visibleCompanies
+      : ['Yetkiniz yok — yöneticiye başvurun']
+  ).map((c) => `<option>${c}</option>`).join('');
+
   return `
-    <div class="page-heading"><div><h1>İş Takip</h1><p>Yetkiniz olan firmalarda günlük işlemlerinizi takip edin.</p></div><span class="access-badge">Personel çalışma alanı</span></div>
-    <section class="panel work-filter">
-      <div class="panel-header"><div><h2>Çalışma günleri seçimi</h2><p class="panel-subtitle">Personel alanı hesabınıza kilitlidir ve değiştirilemez. Firma ve tarih aralığını seçerek işlemleri görüntüleyin veya kaydedin.</p></div></div>
-      <form id="work-form" class="work-form">
-        <label class="field">Personel<input type="text" name="staff-display" value="${staffName}" disabled /><input type="hidden" name="staff" value="${staffName}" /></label>
-        <label class="field">Firma<select name="company">${companyOptions}</select></label>
-        <label class="field">Başlangıç tarihi<input type="date" name="date-from" value="${initialDate}" required /></label>
-        <label class="field">Bitiş tarihi<input type="date" name="date-to" value="${initialDate}" required /></label>
-        <button class="primary-btn work-submit" type="submit">İşlemleri göster</button>
-      </form>
+    <section class="work-page">
+
+      <div class="work-hero">
+        <div class="work-hero-content">
+          <span class="work-eyebrow">GÜNLÜK OPERASYONLAR</span>
+          <h1>İş Takip</h1>
+          <p>Günlük işlerini planla, işlemlerini kontrol et ve
+          tamamladığın görevleri güvenle kaydet.</p>
+          <div class="work-hero-tags">
+            <span>✓ Kişisel çalışma alanı</span>
+            <span>▦ Firma bazlı takip</span>
+          </div>
+        </div>
+        <div class="work-hero-art" aria-hidden="true">
+          <div class="work-hero-orbit"></div>
+          <div class="work-hero-symbol">✓</div>
+        </div>
+      </div>
+
+      <div class="work-section-heading">
+        <div>
+          <h2>Çalışma alanı</h2>
+          <p>İşlemlerini görüntülemek için aşağıdaki bilgileri seç.</p>
+        </div>
+        <span class="work-secure-label">
+          <span class="work-secure-dot"></span>
+          Yetki kontrollü erişim
+        </span>
+      </div>
+
+      <section class="panel work-filter work-filter-modern">
+        <div class="panel-header work-filter-heading">
+          <div class="work-heading-icon">⌕</div>
+          <div>
+            <h2>İşlem filtreleri</h2>
+            <p class="panel-subtitle">
+              Personel, firma ve tarih aralığına göre işlemlerini listele.
+            </p>
+          </div>
+        </div>
+
+        <form id="work-form" class="work-form work-form-modern">
+
+          <label class="field work-field">
+            <span class="work-field-label">Personel</span>
+            <input type="text" name="staff-display"
+              value="${staffName}" disabled />
+            <input type="hidden" name="staff" value="${staffName}" />
+            <small>Hesabına otomatik atanır.</small>
+          </label>
+
+          <label class="field work-field">
+            <span class="work-field-label">Firma</span>
+            <select name="company">${companyOptions}</select>
+            <small>Yalnızca yetkili olduğun firmalar.</small>
+          </label>
+
+          <label class="field work-field">
+            <span class="work-field-label">Başlangıç tarihi</span>
+            <input type="date" name="date-from"
+              value="${initialDate}" required />
+          </label>
+
+          <label class="field work-field">
+            <span class="work-field-label">Bitiş tarihi</span>
+            <input type="date" name="date-to"
+              value="${initialDate}" required />
+          </label>
+
+          <div class="work-form-actions">
+            <button class="primary-btn work-submit work-submit-modern"
+              type="submit">
+              <span>⌕</span> İşlemleri göster
+            </button>
+          </div>
+
+        </form>
+      </section>
+
+      <section class="panel task-panel task-panel-modern">
+
+        <div class="panel-header task-panel-heading">
+          <div class="task-heading-main">
+            <div class="work-heading-icon work-heading-icon-green">✓</div>
+            <div>
+              <h2 id="task-title">Günlük işlemler</h2>
+              <p class="panel-subtitle" id="task-summary">
+                Firma ve tarih seçimini yaptıktan sonra işlemlerin burada
+                görüntülenecek.
+              </p>
+            </div>
+          </div>
+
+          <span class="task-counter work-counter-modern"
+            id="task-counter">0 / 0 tamamlandı</span>
+        </div>
+
+        <div class="work-task-intro">
+          <span class="work-task-intro-icon">▤</span>
+          <span>İşlemlerini kontrol et. Değişiklik yaptıktan sonra
+          <strong>Kaydet</strong> düğmesine bas.</span>
+        </div>
+
+        <div id="task-content" class="task-content work-task-content"></div>
+
+        <div class="save-row work-save-row" id="task-save-row">
+          <div class="work-save-info">
+            <span class="work-save-icon">✓</span>
+            <div>
+              <strong>İşlem kayıtları</strong>
+              <span class="save-status" id="task-save-status">
+                Değişikliklerini kaydetmeyi unutma.
+              </span>
+            </div>
+          </div>
+          <button class="primary-btn save-btn work-save-btn"
+            id="task-save-btn" type="button">
+            ✓ &nbsp; Kaydet
+          </button>
+        </div>
+
+      </section>
     </section>
-    <section class="panel task-panel"><div class="panel-header"><div><h2 id="task-title">Günlük işlemler</h2><p class="panel-subtitle" id="task-summary">Personel ve firma seçimi bekleniyor.</p></div><span class="task-counter" id="task-counter">0 / 0 tamamlandı</span></div><div id="task-content" class="task-content"></div><div class="save-row" id="task-save-row"><span class="save-status" id="task-save-status"></span><button class="primary-btn save-btn" id="task-save-btn" type="button">Kaydet</button></div></section>`;
+  `;
 }
 
 function updateTaskCounter(contentEl, counterEl, statusEl, initialSaved) {
@@ -8609,10 +10028,12 @@ function renderLogin() {
       console.log('FIREBASE PROFİL TEST:', profile);
 
       currentUser = {
-        email: firebaseUser.email,
-        title: profile.title || 'Personel',
-        name: profile.name || firebaseUser.email
-      };
+  uid: firebaseUser.uid,
+  email: firebaseUser.email,
+  title: profile.title || 'Personel',
+  name: profile.name || firebaseUser.email,
+  avatar: profile.avatar || null
+};
 
       console.log('CURRENT USER TEST:', currentUser);
 
@@ -8645,7 +10066,7 @@ function renderPageBody(active) {
     if (active === 'Notlar') return renderNoteContent();
     if (active === 'Kullanıcı Yönetimi') return renderMyDashboardStats();
     if (active === 'Duyurular') return renderAnnouncementsContent();
-    if (active === 'Ayın Elemanı') return renderEmployeeContent();
+    if (active === 'Ayın Elemanı') return renderEmployeeScoringContent();
     if (active === 'Yönetim Paneli') return renderMyDashboardStats() + renderPasswordPanel() + renderEmployeeSpotlight() + renderAnnouncementsContent(true);
     return '<div class="page-heading"><div><h1>' + active + '</h1><p>Bugünkü iş akışınıza genel bakış.</p></div></div>'
       + '<section class="stats-grid">'
@@ -9391,3 +10812,235 @@ function renderDashboard(active = 'Yönetim Paneli') {
 
 
 renderLogin();
+
+// Avatar seçenekleri: emoji ve SVG tabanlı illüstrasyonlar
+const SYSTEM_AVATARS = [
+  { id: 'emoji-1', type: 'emoji', value: '👨‍💼', label: 'Profesyonel' },
+  { id: 'emoji-2', type: 'emoji', value: '👩‍💼', label: 'Yönetici' },
+  { id: 'emoji-3', type: 'emoji', value: '🧑‍💻', label: 'Teknoloji' },
+  { id: 'emoji-4', type: 'emoji', value: '👨‍💻', label: 'Uzman' },
+  { id: 'emoji-5', type: 'emoji', value: '👩‍💻', label: 'Uzman' },
+  { id: 'emoji-6', type: 'emoji', value: '🙂', label: 'Sade' },
+
+  {
+    id: 'illustration-1',
+    type: 'illustration',
+    value: 'male-navy',
+    label: 'Kurumsal'
+  },
+  {
+    id: 'illustration-2',
+    type: 'illustration',
+    value: 'female-teal',
+    label: 'Modern'
+  },
+  {
+    id: 'illustration-3',
+    type: 'illustration',
+    value: 'male-teal',
+    label: 'Uzman'
+  },
+  {
+    id: 'illustration-4',
+    type: 'illustration',
+    value: 'female-rose',
+    label: 'Profesyonel'
+  }
+];
+
+function getSystemAvatarSvg(id) {
+  const designs = {
+    'illustration-1': {
+      bg: '#dce7f5',
+      skin: '#d6a078',
+      hair: '#29364b',
+      shirt: '#253d63'
+    },
+    'illustration-2': {
+      bg: '#d9efeb',
+      skin: '#edbd98',
+      hair: '#49352f',
+      shirt: '#27877f'
+    },
+    'illustration-3': {
+      bg: '#e1e9fa',
+      skin: '#8e583e',
+      hair: '#252c3c',
+      shirt: '#3979a8'
+    },
+    'illustration-4': {
+      bg: '#f7e2e8',
+      skin: '#e0a47e',
+      hair: '#6b3f38',
+      shirt: '#a94f71'
+    }
+  };
+
+  const d = designs[id];
+  if (!d) return '';
+
+  return `
+    <svg viewBox="0 0 100 100"
+      xmlns="http://www.w3.org/2000/svg"
+      role="img" aria-label="Profesyonel avatar">
+      <circle cx="50" cy="50" r="50" fill="${d.bg}"/>
+      <path d="M14 100 Q17 72 38 69 L62 69 Q83 72 86 100"
+        fill="${d.shirt}"/>
+      <path d="M39 59 L61 59 L64 76 L36 76 Z"
+        fill="${d.skin}"/>
+      <ellipse cx="50" cy="43" rx="23" ry="28"
+        fill="${d.skin}"/>
+      <path d="M27 43 Q20 12 49 12 Q78 12 74 44
+        L67 32 Q51 37 34 29 Z"
+        fill="${d.hair}"/>
+      <path d="M36 44 Q40 41 44 44 M56 44 Q60 41 64 44"
+        stroke="#45352f" stroke-width="2.5"
+        fill="none" stroke-linecap="round"/>
+      <path d="M44 56 Q50 61 57 55"
+        stroke="#925a4c" stroke-width="2.5"
+        fill="none" stroke-linecap="round"/>
+    </svg>
+  `;
+}
+
+function getSystemAvatarHtml(avatar) {
+  if (!avatar) return '';
+
+  if (avatar.type === 'emoji') {
+    const item = SYSTEM_AVATARS.find(
+      (x) => x.id === avatar.id && x.type === 'emoji'
+    );
+
+    if (!item) return '';
+
+    return `<span class="system-avatar-emoji"
+      aria-label="${escapeHtml(item.label)}">${item.value}</span>`;
+  }
+
+  if (avatar.type === 'illustration') {
+    const item = SYSTEM_AVATARS.find(
+      (x) => x.id === avatar.id && x.type === 'illustration'
+    );
+
+    if (!item) return '';
+
+    return getSystemAvatarSvg(item.id);
+  }
+
+  return '';
+}
+
+function openAvatarPicker(email) {
+  const uid = window.firebaseAuth?.currentUser?.uid;
+
+  if (!uid || !email) {
+    window.alert('Avatar seçmek için tekrar giriş yapmalısınız.');
+    return;
+  }
+
+  document.querySelector('#system-avatar-picker')?.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'system-avatar-picker';
+  overlay.className = 'avatar-picker-overlay';
+
+  const choices = SYSTEM_AVATARS.map((avatar) => `
+    <button type="button"
+      class="avatar-picker-option"
+      data-avatar-id="${avatar.id}"
+      aria-label="${escapeHtml(avatar.label)}">
+      <span class="avatar-picker-preview">
+        ${avatar.type === 'emoji'
+          ? `<span class="system-avatar-emoji">${avatar.value}</span>`
+          : getSystemAvatarSvg(avatar.id)}
+      </span>
+      <span>${escapeHtml(avatar.label)}</span>
+    </button>
+  `).join('');
+
+  overlay.innerHTML = `
+    <section class="avatar-picker-dialog"
+      role="dialog" aria-modal="true"
+      aria-labelledby="avatar-picker-title">
+      <button type="button" class="avatar-picker-close"
+        aria-label="Kapat">×</button>
+      <h2 id="avatar-picker-title">Profil avatarını seç</h2>
+      <p>Ekibine uygun bir avatar seçebilirsin.</p>
+      <h3>Emoji avatarlar</h3>
+      <div class="avatar-picker-grid">
+        ${choices.split('</button>').slice(0, 6)
+          .map((x) => x + '</button>').join('')}
+      </div>
+      <h3>Profesyonel illüstrasyonlar</h3>
+      <div class="avatar-picker-grid">
+        ${choices.split('</button>').slice(6)
+          .map((x) => x + '</button>').join('')}
+      </div>
+      <p class="avatar-picker-status" aria-live="polite"></p>
+    </section>
+  `;
+
+  document.body.appendChild(overlay);
+
+  overlay.querySelector('.avatar-picker-close').onclick =
+    () => overlay.remove();
+
+  overlay.addEventListener('click', (event) => {
+    if (event.target === overlay) overlay.remove();
+  });
+
+  overlay.querySelectorAll('[data-avatar-id]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      const item = SYSTEM_AVATARS.find(
+        (x) => x.id === button.dataset.avatarId
+      );
+
+      if (!item) return;
+
+      const status = overlay.querySelector('.avatar-picker-status');
+      status.textContent = 'Avatar kaydediliyor...';
+
+      try {
+        const profileRef = window.firebaseDoc(
+          window.firebaseDb, 'users', uid
+        );
+
+        await window.firebaseSetDoc(profileRef, {
+          avatar: {
+            id: item.id,
+            type: item.type,
+            value: item.value
+          }
+        }, { merge: true });
+
+        if (window.firebaseAuth.currentUser.uid !== uid) {
+          throw new Error('Oturum değişti. Lütfen tekrar deneyin.');
+        }
+
+        if (typeof currentUser !== 'undefined' && currentUser) {
+          currentUser.avatar = {
+            id: item.id,
+            type: item.type,
+            value: item.value
+          };
+        }
+
+        overlay.remove();
+        renderDashboard(window._lastPage || 'Yönetim Paneli');
+      } catch (error) {
+        console.error('Avatar kaydetme hatası:', error);
+        status.textContent =
+          'Avatar kaydedilemedi. Firebase erişim kurallarını kontrol edin.';
+      }
+    });
+  });
+}
+
+document.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-open-avatar-picker]');
+  if (!button) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+  openAvatarPicker(button.dataset.openAvatarPicker);
+});
