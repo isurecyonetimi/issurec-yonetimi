@@ -8034,9 +8034,76 @@ function renderQuestionContent() {
   const me = currentUser ? currentUser.name : '';
   const admin = isAdminUser();
   const others = getStaff().filter((s) => s !== me);
-  const list = getVisibleQuestions().sort(
+
+  const allQuestions = getVisibleQuestions().sort(
     (a, b) => (a.askedAt < b.askedAt ? 1 : -1)
   );
+
+  // Varsayılan filtre: içinde bulunulan ay.
+  const now = new Date();
+  const currentMonth =
+    `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+  if (!window._questionFilterMonth) {
+    window._questionFilterMonth = currentMonth;
+  }
+
+  // Kayıtların bulunduğu ayları belirle.
+  const monthKeys = [
+    ...new Set([
+      currentMonth,
+      ...allQuestions.map((q) => {
+        const date = new Date(q.askedAt);
+
+        if (Number.isNaN(date.getTime())) return '';
+
+        return `${date.getFullYear()}-${String(
+          date.getMonth() + 1
+        ).padStart(2, '0')}`;
+      }).filter(Boolean)
+    ])
+  ];
+
+  monthKeys.sort((a, b) => b.localeCompare(a));
+
+  // Seçilen ayı veya bütün soruları göster.
+  const selectedMonth = window._questionFilterMonth;
+
+  const list = selectedMonth === 'all'
+    ? allQuestions
+    : allQuestions.filter((q) => {
+        const date = new Date(q.askedAt);
+
+        if (Number.isNaN(date.getTime())) return false;
+
+        const questionMonth =
+          `${date.getFullYear()}-${String(
+            date.getMonth() + 1
+          ).padStart(2, '0')}`;
+
+        return questionMonth === selectedMonth;
+      });
+
+  // Ay seçimi seçenekleri.
+  const monthOptions = `
+    <option value="all" ${selectedMonth === 'all' ? 'selected' : ''}>
+      Tüm Sorular
+    </option>
+    ${monthKeys.map((key) => {
+      const [year, month] = key.split('-');
+
+      const label = new Intl.DateTimeFormat('tr-TR', {
+        month: 'long',
+        year: 'numeric'
+      }).format(new Date(Number(year), Number(month) - 1, 1));
+
+      return `
+        <option value="${key}" ${selectedMonth === key ? 'selected' : ''}>
+          ${label}
+        </option>
+      `;
+    }).join('')}
+  `;
 
   const answeredCount = list.filter((q) => q.answer).length;
   const pendingCount = list.length - answeredCount;
@@ -8115,9 +8182,11 @@ function renderQuestionContent() {
                 </div>
               </div>
 
-              <span class="question-status ${answered
-                ? 'question-status-answered'
-                : 'question-status-pending'}">
+              <span class="question-status ${
+                answered
+                  ? 'question-status-answered'
+                  : 'question-status-pending'
+              }">
                 <span class="question-status-dot"></span>
                 ${answered ? 'Yanıtlandı' : 'Yanıt bekliyor'}
               </span>
@@ -8139,11 +8208,11 @@ function renderQuestionContent() {
     : `
       <div class="question-empty">
         <div class="question-empty-icon">☏</div>
-        <strong>Henüz soru bulunmuyor</strong>
+        <strong>Bu dönemde soru bulunmuyor</strong>
         <p>
-          ${admin
-            ? 'Personel soruları gönderildiğinde burada görüntülenecek.'
-            : 'Yeni bir soru oluşturarak iletişimi başlatabilirsin.'}
+          ${selectedMonth === 'all'
+            ? 'Henüz görüntülenebilecek bir soru kaydı bulunmuyor.'
+            : 'Seçilen ayda soru bulunmuyor. Diğer ayları veya Tüm Sorular seçeneğini deneyebilirsin.'}
         </p>
       </div>
     `;
@@ -8188,7 +8257,7 @@ function renderQuestionContent() {
           <div>
             <span>Görüntülenen sorular</span>
             <strong>${list.length}</strong>
-            <small>Toplam soru</small>
+            <small>Seçili filtredeki soru</small>
           </div>
         </article>
 
@@ -8249,11 +8318,7 @@ function renderQuestionContent() {
         ` : `
           <div class="question-compose-notice">
             <span>ⓘ</span>
-            <p>
-              ${admin
-                ? 'Soru yöneltebileceğin başka bir personel bulunmuyor.'
-                : 'Soru yöneltebileceğin başka bir personel bulunmuyor.'}
-            </p>
+            <p>Soru yöneltebileceğin başka bir personel bulunmuyor.</p>
           </div>
         `}
 
@@ -8272,7 +8337,17 @@ function renderQuestionContent() {
             </p>
           </div>
 
-          <span class="question-list-count">${list.length} kayıt</span>
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <select
+              id="question-month-filter"
+              aria-label="Soruları aya göre filtrele"
+              style="padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; background:#fff; color:#111827; max-width:100%;"
+            >
+              ${monthOptions}
+            </select>
+
+            <span class="question-list-count">${list.length} kayıt</span>
+          </div>
         </div>
 
         <div class="question-list">
@@ -8282,7 +8357,7 @@ function renderQuestionContent() {
 
       <div class="question-footer-note">
         <span>ⓘ</span>
-        <p>Soru ve yanıtlar mevcut kayıt sistemi üzerinden görüntülenir.</p>
+        <p>Soru ve yanıtlar Firebase üzerinde saklanır; bu filtre kayıtları silmez.</p>
       </div>
 
     </div>
@@ -8292,6 +8367,18 @@ function renderQuestionContent() {
 function setupQuestions() {
   // Firebase üzerinden ortak soruları dinlemeye başla.
   setupSharedQuestionsListener();
+
+  // Ay filtresinin değişimini takip et.
+  const monthFilter = document.querySelector('#question-month-filter');
+
+  if (monthFilter && !monthFilter.dataset.filterBound) {
+    monthFilter.dataset.filterBound = 'true';
+
+    monthFilter.addEventListener('change', () => {
+      window._questionFilterMonth = monthFilter.value;
+      renderDashboard('Personel Soruları');
+    });
+  }
 
   // Yeni soru gönderme işlemi.
   const form = document.querySelector('#question-form');
@@ -8306,7 +8393,10 @@ function setupQuestions() {
       const to = (fd.get('to') || '').toString().trim();
       const title = (fd.get('title') || '').toString().trim();
 
-      if (!to || !title) return;
+      if (!to || !title) {
+        alert('Lütfen personel seçin ve soru başlığını yazın.');
+        return;
+      }
 
       if (
         !window.firebaseDb ||
@@ -8344,8 +8434,6 @@ function setupQuestions() {
         if (statusEl) {
           statusEl.textContent = 'Sorunuz başarıyla gönderildi.';
         }
-
-        // Gerçek zamanlı dinleyici ekranı güncelleyecektir.
       } catch (err) {
         console.error('Soru gönderilemedi:', err);
 
@@ -8373,7 +8461,10 @@ function setupQuestions() {
         new FormData(f).get('answer') || ''
       ).toString().trim();
 
-      if (!id || !answer) return;
+      if (!id || !answer) {
+        alert('Lütfen yanıtınızı yazın.');
+        return;
+      }
 
       const me = currentUser ? currentUser.name : '';
       const q = loadQuestions().find((item) => item.id === id);
@@ -8417,8 +8508,6 @@ function setupQuestions() {
           },
           { merge: true }
         );
-
-        // Yanıt, gerçek zamanlı dinleyici üzerinden ekranlara yansır.
       } catch (err) {
         console.error('Yanıt kaydedilemedi:', err);
 
@@ -10865,8 +10954,12 @@ function renderDashboard(active = 'Yönetim Paneli') {
 
 
             <span class="date-chip">
-              10 Eylül 2026
-            </span>
+  ${new Date().toLocaleDateString('tr-TR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  })}
+</span>
 
           </div>
 
