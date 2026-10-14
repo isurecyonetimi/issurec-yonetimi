@@ -4907,53 +4907,78 @@ async function loadReportWorkRecordsFromFirebase() {
     throw err;
   }
 } function getReportData(staff, start, end) {
-  const store =
-    Array.isArray(sharedReportWorkRecordsCache)
-      ? sharedReportWorkRecordsCache
-      : [];
+  const store = Array.isArray(sharedReportWorkRecordsCache)
+    ? sharedReportWorkRecordsCache
+    : [];
 
-  const tasks =
-    getTaskTypes();
+  const tasks = getTaskTypes();
+
+  const matrix = sharedPermissionMatrixCache;
+  const staffPermissions =
+    matrix &&
+    typeof matrix === 'object' &&
+    matrix[staff] &&
+    typeof matrix[staff] === 'object'
+      ? matrix[staff]
+      : null;
+
+  const taskPermissions =
+    staffPermissions &&
+    staffPermissions.tasks &&
+    typeof staffPermissions.tasks === 'object'
+      ? staffPermissions.tasks
+      : null;
 
   const rows = [];
-
   let done = 0;
   let total = 0;
 
+  // Yetki matrisi yüklenmediyse eksik görev hesaplama.
+  if (!taskPermissions) {
+    return {
+      rows: [],
+      done: 0,
+      total: 0,
+      pct: 0,
+      missing: 0,
+      byTask: {},
+      taskCount: 0
+    };
+  }
+
   store.forEach((rec) => {
+    if (!rec) return;
 
-    if (!rec) {
-      return;
-    }
+    const s = rec.staff || '';
+    const c = rec.company || '';
+    const d = rec.date || '';
 
-    const s =
-      rec.staff || '';
+    if (s !== staff) return;
+    if (start && d < start) return;
+    if (end && d > end) return;
 
-    const c =
-      rec.company || '';
+    const companyPermissions = taskPermissions[c];
 
-    const d =
-      rec.date || '';
-
-    if (s !== staff) {
-      return;
-    }
-
-    if (start && d < start) {
-      return;
-    }
-
-    if (end && d > end) {
+    // Bu firmada personelin görev yetkisi yoksa sayma.
+    if (
+      !companyPermissions ||
+      typeof companyPermissions !== 'object'
+    ) {
       return;
     }
 
     tasks.forEach((task) => {
+      const permission = companyPermissions[task];
 
-      const value =
-        !!(
-          rec.tasksByName &&
-          rec.tasksByName[task]
-        );
+      // Yalnızca görüntüleme veya işlem izni olan görevleri say.
+      if (permission !== 'gor' && permission !== 'islem') {
+        return;
+      }
+
+      const value = !!(
+        rec.tasksByName &&
+        rec.tasksByName[task]
+      );
 
       total += 1;
 
@@ -4970,33 +4995,19 @@ async function loadReportWorkRecordsFromFirebase() {
     });
   });
 
-  rows.sort(
-    (a, b) =>
-      a.date < b.date
-        ? -1
-        : a.date > b.date
-          ? 1
-          : 0
+  rows.sort((a, b) =>
+    a.date < b.date ? -1 :
+    a.date > b.date ? 1 : 0
   );
 
-  const pct =
-    total
-      ? Math.round(
-        (done / total) * 100
-      )
-      : 0;
+  const pct = total
+    ? Math.round((done / total) * 100)
+    : 0;
 
   const byTask = {};
 
-  tasks.forEach((task) => {
-    byTask[task] = {
-      total: 0,
-      done: 0
-    };
-  });
-
+  // Yalnızca rapora dahil edilen görev türlerini hazırla.
   rows.forEach((row) => {
-
     if (!byTask[row.task]) {
       byTask[row.task] = {
         total: 0,
@@ -5018,7 +5029,7 @@ async function loadReportWorkRecordsFromFirebase() {
     pct,
     missing: total - done,
     byTask,
-    taskCount: tasks.length
+    taskCount: Object.keys(byTask).length
   };
 }
 

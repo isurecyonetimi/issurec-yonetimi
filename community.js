@@ -687,6 +687,15 @@ function employeeScoringCalculate(month) {
   const rows = staffList.map((staff) => {
     let earnedPoints = 0;
     let completedUnits = 0;
+    const taskBreakdown = {};
+
+    taskNames.forEach((taskName) => {
+      taskBreakdown[taskName] = {
+        units: 0,
+        unitPoints: Number(rules.taskPoints?.[taskName] ?? 1),
+        totalPoints: 0
+      };
+    });
 
     records.forEach((record) => {
       if (!record || !record.date) return;
@@ -729,10 +738,12 @@ function employeeScoringCalculate(month) {
 
           if (value === true) {
             units = 1;
-          } else if (typeof value === 'number' || (
-            typeof value === 'string' && value.trim() !== ''
-          )) {
+          } else if (
+            typeof value === 'number' ||
+            (typeof value === 'string' && value.trim() !== '')
+          ) {
             const quantity = Number(value);
+
             if (Number.isFinite(quantity) && quantity > 0) {
               units = quantity;
             }
@@ -744,6 +755,7 @@ function employeeScoringCalculate(month) {
           typeof tasks[index] === 'string'
         ) {
           const quantity = Number(tasks[index]);
+
           if (Number.isFinite(quantity) && quantity > 0) {
             units = quantity;
           }
@@ -754,6 +766,9 @@ function employeeScoringCalculate(month) {
         if (Number.isFinite(points) && points >= 0) {
           completedUnits += units;
           earnedPoints += units * points;
+
+          taskBreakdown[taskName].units += units;
+          taskBreakdown[taskName].totalPoints += units * points;
         }
       });
     });
@@ -762,6 +777,7 @@ function employeeScoringCalculate(month) {
 
     const penaltyPoints = errors.reduce((sum, error) => {
       const penalty = Number(error.penalty);
+
       return sum + (
         Number.isFinite(penalty) && penalty >= 0
           ? penalty
@@ -775,7 +791,8 @@ function employeeScoringCalculate(month) {
       earnedPoints,
       penaltyPoints,
       score: earnedPoints - penaltyPoints,
-      errorCount: errors.length
+      errorCount: errors.length,
+      taskBreakdown
     };
   });
 
@@ -1046,16 +1063,83 @@ function renderEmployeeScoringContent() {
     </option>
   `).join('');
 
-  const rankingRows = ranking.map((row, index) => `
+  const rankingRows = ranking.map((row, index) => {
+  const detailRows = Object.entries(row.taskBreakdown || {})
+    .filter(([, item]) => item.units > 0)
+    .map(([taskName, item]) => `
+      <tr>
+        <td>${escapeHtml(taskName)}</td>
+        <td>${employeeScoringFormat(item.units)}</td>
+        <td>${employeeScoringFormat(item.unitPoints)}</td>
+        <td><strong>${employeeScoringFormat(item.totalPoints)}</strong></td>
+      </tr>
+    `).join('');
+
+  return `
     <tr class="${index < 3 ? 'scoring-table-top' : ''}">
-      <td><span class="scoring-table-medal">${medals[index] || (index + 1)}</span></td>
-      <td><strong>${escapeHtml(row.staff)}</strong></td>
+      <td>
+        <span class="scoring-table-medal">
+          ${medals[index] || (index + 1)}
+        </span>
+      </td>
+      <td>
+        <button
+          type="button"
+          class="scoring-person-toggle"
+          data-scoring-details-toggle="${index}"
+          aria-expanded="false">
+          <strong>${escapeHtml(row.staff)}</strong>
+          <span>＋</span>
+        </button>
+      </td>
       <td>${employeeScoringFormat(row.earnedPoints)}</td>
-      <td class="scoring-penalty">−${employeeScoringFormat(row.penaltyPoints)}</td>
-      <td><strong class="scoring-net-score">${employeeScoringFormat(row.score)}</strong></td>
+      <td class="scoring-penalty">
+        −${employeeScoringFormat(row.penaltyPoints)}
+      </td>
+      <td>
+        <strong class="scoring-net-score">
+          ${employeeScoringFormat(row.score)}
+        </strong>
+      </td>
       <td>${row.completedUnits}</td>
     </tr>
-  `).join('');
+
+    <tr data-scoring-details="${index}" hidden>
+      <td colspan="6">
+        <div class="scoring-person-details">
+          <h3>${escapeHtml(row.staff)} — İş ve Puan Detayları</h3>
+
+          <div class="scoring-table-wrap">
+            <table class="scoring-table">
+              <thead>
+                <tr>
+                  <th>İş türü</th>
+                  <th>İşlem adedi</th>
+                  <th>Birim puan</th>
+                  <th>Kazanılan puan</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${detailRows || `
+                  <tr>
+                    <td colspan="4">Bu ay için tamamlanmış bir işlem bulunmuyor.</td>
+                  </tr>
+                `}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="scoring-person-details-summary">
+            <span>Toplam işlem: <strong>${employeeScoringFormat(row.completedUnits)}</strong></span>
+            <span>Kazanılan puan: <strong>${employeeScoringFormat(row.earnedPoints)}</strong></span>
+            <span>Kesinti: <strong>${employeeScoringFormat(row.penaltyPoints)}</strong></span>
+            <span>Net puan: <strong>${employeeScoringFormat(row.score)}</strong></span>
+          </div>
+        </div>
+      </td>
+    </tr>
+  `;
+}).join('');
 
   const errorRows = admin ? staffList.map((staff) => {
     const errors = employeeScoringErrorsFor(month, staff);
@@ -1327,6 +1411,34 @@ if (!window.employeeScoringEventsInstalled) {
       }
       return;
     }
+    const scoringToggle = event.target.closest(
+  '[data-scoring-details-toggle]'
+);
+
+if (scoringToggle) {
+  const index = scoringToggle.dataset.scoringDetailsToggle;
+  const detailRow = document.querySelector(
+    `[data-scoring-details="${index}"]`
+  );
+
+  if (detailRow) {
+    const isOpening = detailRow.hidden;
+    detailRow.hidden = !isOpening;
+
+    scoringToggle.setAttribute(
+      'aria-expanded',
+      String(isOpening)
+    );
+
+    const symbol = scoringToggle.querySelector('span');
+
+    if (symbol) {
+      symbol.textContent = isOpening ? '−' : '＋';
+    }
+  }
+
+  return;
+}
 
     if (event.target.closest('#employee-scoring-approve')) {
       try {

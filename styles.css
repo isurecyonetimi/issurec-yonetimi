@@ -9643,4 +9643,52 @@ button:disabled,
   .daily-thought {
     padding: 16px;
   }
+}.scoring-person-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.scoring-person-toggle:hover {
+  background: rgba(100, 116, 139, 0.12);
+}
+
+.scoring-person-toggle > span {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.scoring-person-details {
+  padding: 16px;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.scoring-person-details h3 {
+  margin: 0 0 14px;
+}
+
+.scoring-person-details-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.scoring-person-details-summary span {
+  font-size: 14px;
+}
+
+[data-scoring-details][hidden] {
+  display: none !important;
 }
