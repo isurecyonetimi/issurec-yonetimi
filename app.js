@@ -435,7 +435,6 @@ async function loadSharedStaffFromFirebase() {
 }
 
 const staffMembers = loadStaff();
-
 loadSharedStaffMetaFromFirebase();
 
 const DEFAULT_COMPANIES = [
@@ -2299,8 +2298,7 @@ function formatUpdatedAt(iso) {
 }
 
 // Her personel kendi kullanıcı bilgileriyle (e-posta / şifre) giriş yapar.
-// Böylece İş Takip ekranında personel alanı, giriş yapan kullanıcıya göre
-// otomatik ve değiştirilemez şekilde doldurulur; başka bir isim seçilemez.
+// İş Takip ekranında personel alanı giriş yapan kullanıcıya göre doldurulur.
 const users = [
   { email: 'ayse.yilmaz@firma.com', password: '1234', name: 'Ayşe Yılmaz', title: 'Yönetici' },
   { email: 'mehmet.kaya@firma.com', password: '1234', name: 'Mehmet Kaya', title: 'Personel' },
@@ -2308,21 +2306,178 @@ const users = [
   { email: 'ahmet.sahin@firma.com', password: '1234', name: 'Ahmet Şahin', title: 'Personel' },
   { email: 'zeynep.aras@firma.com', password: '1234', name: 'Zeynep Aras', title: 'Personel' }
 ];
+
 const USER_NAME_KEY = 'isSurecUserNamesV1';
-function loadUserNames() { try { const raw = localStorage.getItem(USER_NAME_KEY); const p = raw ? JSON.parse(raw) : null; if (p && typeof p === 'object') return p; } catch (err) { } return {}; }
-function saveUserNames(o) { try { localStorage.setItem(USER_NAME_KEY, JSON.stringify(o)); } catch (err) { } }
-function resolveUserName(u) { const m = loadUserNames(); return (m && m[u.email]) || u.name; }
+
+function loadUserNames() {
+  try {
+    const raw = localStorage.getItem(USER_NAME_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+
+    if (parsed && typeof parsed === 'object') return parsed;
+  } catch (err) {
+    console.error('Kullanıcı adları okunamadı:', err);
+  }
+
+  return {};
+}
+
+function saveUserNames(data) {
+  try {
+    localStorage.setItem(USER_NAME_KEY, JSON.stringify(data));
+  } catch (err) {
+    console.error('Kullanıcı adları kaydedilemedi:', err);
+  }
+}
+
+function resolveUserName(user) {
+  const names = loadUserNames();
+  return (names && names[user.email]) || user.name;
+}
 
 let currentUser = null;
 
+
+// --------------------------------------------------
+// PERSONEL SORULARI - FIREBASE ORTAK KAYIT SİSTEMİ
+// --------------------------------------------------
+
 const QUESTION_KEY = 'isSurecQuestionsV1';
-function loadQuestions() { try { const raw = localStorage.getItem(QUESTION_KEY); const p = raw ? JSON.parse(raw) : null; if (Array.isArray(p)) return p; } catch (err) { } return []; }
-function saveQuestions(list) { try { localStorage.setItem(QUESTION_KEY, JSON.stringify(list)); } catch (err) { } }
+
+window._sharedQuestionsCache =
+  window._sharedQuestionsCache || [];
+
+window._sharedQuestionsLoaded =
+  window._sharedQuestionsLoaded || false;
+
+
+// Soruları oku.
+function loadQuestions() {
+  if (window._sharedQuestionsLoaded) {
+    return window._sharedQuestionsCache.slice();
+  }
+
+  try {
+    const raw = localStorage.getItem(QUESTION_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+
+    if (Array.isArray(parsed)) return parsed;
+  } catch (err) {
+    console.error('Yerel sorular okunamadı:', err);
+  }
+
+  return [];
+}
+
+
+// Soruları Firebase'e kaydet.
+async function saveQuestions(list) {
+  if (
+    !window.firebaseDb ||
+    typeof window.firebaseCollection !== 'function' ||
+    typeof window.firebaseDoc !== 'function' ||
+    typeof window.firebaseSetDoc !== 'function'
+  ) {
+    console.error('Firebase soru kayıt bağlantısı hazır değil.');
+    return false;
+  }
+
+  try {
+    const collectionRef = window.firebaseCollection(
+      window.firebaseDb,
+      'personelSorulari'
+    );
+
+    await Promise.all(
+      list.map((question) => {
+        if (!question.id) {
+          throw new Error('Soru kaydında kimlik bilgisi bulunamadı.');
+        }
+
+        const questionRef = window.firebaseDoc(
+          collectionRef,
+          String(question.id)
+        );
+
+        const { id, ...data } = question;
+
+        return window.firebaseSetDoc(
+          questionRef,
+          data,
+          { merge: true }
+        );
+      })
+    );
+
+    window._sharedQuestionsCache = list.slice();
+    window._sharedQuestionsLoaded = true;
+
+    return true;
+  } catch (err) {
+    console.error('Sorular Firebase’e kaydedilemedi:', err);
+    return false;
+  }
+}
+
+
+// Kullanıcının görebileceği soruları belirle.
 function getVisibleQuestions() {
   const me = currentUser ? currentUser.name : '';
   const all = loadQuestions();
-  if (isAdminUser()) return all;
-  return all.filter((q) => q.from === me || q.to === me);
+
+  if (isAdminUser()) {
+    return all;
+  }
+
+  return all.filter(
+    (question) =>
+      question.from === me || question.to === me
+  );
+}
+
+
+// Firebase sorularını gerçek zamanlı dinle.
+function setupSharedQuestionsListener() {
+  if (window._sharedQuestionsUnsubscribe) return;
+
+  if (
+    !window.firebaseDb ||
+    typeof window.firebaseCollection !== 'function' ||
+    typeof window.firebaseOnSnapshot !== 'function'
+  ) {
+    console.error('Firebase soru dinleme bağlantısı hazır değil.');
+    return;
+  }
+
+  const questionsRef = window.firebaseCollection(
+    window.firebaseDb,
+    'personelSorulari'
+  );
+
+  window._sharedQuestionsUnsubscribe =
+    window.firebaseOnSnapshot(
+      questionsRef,
+      (snapshot) => {
+        window._sharedQuestionsCache = snapshot.docs.map(
+          (documentSnapshot) => ({
+            ...documentSnapshot.data(),
+            id: documentSnapshot.id
+          })
+        );
+
+        window._sharedQuestionsLoaded = true;
+
+        if (document.querySelector('.question-page')) {
+          renderDashboard('Personel Soruları');
+        }
+      },
+      (err) => {
+        console.error(
+          'Ortak personel soruları alınamadı:',
+          err
+        );
+      }
+    );
 }
 
 const NOTE_KEY = 'isSurecNotesV1';
@@ -4187,6 +4342,34 @@ function setupStaffManagement() {
     if (!old || !getStaff().includes(old) || !validStaffDetails(nv, title)) return;
     if (getStaff().some((s) => s !== old && normName(s) === normName(nv))) { window.alert('Bu adla başka bir personel var.'); return; }
     if (!updateStaffIdentity(old, nv, title)) return;
+     // Güncel personel ünvanını ortak kayda hazırla.
+    const meta = loadCommunity(STAFF_META_KEY);
+
+    // Personelin adı değiştiyse eski anahtarı kaldır.
+    if (old !== nv) {
+      delete meta[old];
+    }
+
+    // Yeni adı ve güncel ünvanı kaydet.
+    meta[nv] = {
+      ...(meta[nv] && typeof meta[nv] === 'object' ? meta[nv] : {}),
+      title: title
+    };
+
+    if (!saveCommunity(STAFF_META_KEY, meta)) {
+      alert('Personel bilgileri yerel kayda yazılamadı.');
+      return;
+    }
+
+    // Güncel ünvanı Firebase ortak kaynağına kaydet.
+    const firebaseMetaSaved = await saveSharedStaffMetaToFirebase(meta);
+
+    if (!firebaseMetaSaved) {
+      alert(
+        'Personel bilgileri bilgisayarda güncellendi ancak ortak ünvan kaydı Firebase’e kaydedilemedi.'
+      );
+      return;
+    }
     const updatedStaffList = getStaff().map((s) => (s === old ? nv : s));
     saveStaff(updatedStaffList);
 
@@ -8107,34 +8290,146 @@ function renderQuestionContent() {
 }
 
 function setupQuestions() {
+  // Firebase üzerinden ortak soruları dinlemeye başla.
+  setupSharedQuestionsListener();
+
+  // Yeni soru gönderme işlemi.
   const form = document.querySelector('#question-form');
-  if (form) form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const fd = new FormData(form);
-    const to = fd.get('to');
-    const title = (fd.get('title') || '').toString().trim();
-    if (!to || !title) return;
-    const list = loadQuestions();
-    list.push({ id: 'q' + Date.now(), from: currentUser ? currentUser.name : '', to, title, askedAt: new Date().toISOString(), answer: '', answeredBy: '', answeredAt: '' });
-    saveQuestions(list);
-    renderDashboard('Personel Soruları');
+
+  if (form && !form.dataset.questionsBound) {
+    form.dataset.questionsBound = 'true';
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const fd = new FormData(form);
+      const to = (fd.get('to') || '').toString().trim();
+      const title = (fd.get('title') || '').toString().trim();
+
+      if (!to || !title) return;
+
+      if (
+        !window.firebaseDb ||
+        typeof window.firebaseCollection !== 'function' ||
+        typeof window.firebaseAddDoc !== 'function'
+      ) {
+        alert('Firebase bağlantısı hazır değil. Lütfen sayfayı yenileyin.');
+        return;
+      }
+
+      const submitButton = form.querySelector('button[type="submit"]');
+      const statusEl = document.querySelector('#question-save-status');
+
+      if (submitButton) submitButton.disabled = true;
+      if (statusEl) statusEl.textContent = 'Soru gönderiliyor...';
+
+      try {
+        const questionsRef = window.firebaseCollection(
+          window.firebaseDb,
+          'personelSorulari'
+        );
+
+        await window.firebaseAddDoc(questionsRef, {
+          from: currentUser ? currentUser.name : '',
+          to: to,
+          title: title,
+          askedAt: new Date().toISOString(),
+          answer: '',
+          answeredBy: '',
+          answeredAt: ''
+        });
+
+        form.reset();
+
+        if (statusEl) {
+          statusEl.textContent = 'Sorunuz başarıyla gönderildi.';
+        }
+
+        // Gerçek zamanlı dinleyici ekranı güncelleyecektir.
+      } catch (err) {
+        console.error('Soru gönderilemedi:', err);
+
+        if (statusEl) {
+          statusEl.textContent =
+            'Soru gönderilemedi. Firebase bağlantısını ve güvenlik kurallarını kontrol edin.';
+        }
+      } finally {
+        if (submitButton) submitButton.disabled = false;
+      }
+    });
+  }
+
+  // Gelen sorulara yanıt verme işlemi.
+  document.querySelectorAll('[data-answer-form]').forEach((f) => {
+    if (f.dataset.questionsBound) return;
+
+    f.dataset.questionsBound = 'true';
+
+    f.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const id = f.dataset.answerForm;
+      const answer = (
+        new FormData(f).get('answer') || ''
+      ).toString().trim();
+
+      if (!id || !answer) return;
+
+      const me = currentUser ? currentUser.name : '';
+      const q = loadQuestions().find((item) => item.id === id);
+
+      if (!q) {
+        alert('Soru kaydı henüz yüklenmedi. Biraz bekleyip tekrar deneyin.');
+        return;
+      }
+
+      if (!isAdminUser() && q.to !== me) {
+        alert('Bu soruyu yanıtlama yetkiniz bulunmuyor.');
+        return;
+      }
+
+      if (
+        !window.firebaseDb ||
+        typeof window.firebaseDoc !== 'function' ||
+        typeof window.firebaseSetDoc !== 'function'
+      ) {
+        alert('Firebase bağlantısı hazır değil. Lütfen sayfayı yenileyin.');
+        return;
+      }
+
+      const submitButton = f.querySelector('button[type="submit"]');
+
+      if (submitButton) submitButton.disabled = true;
+
+      try {
+        const questionRef = window.firebaseDoc(
+          window.firebaseDb,
+          'personelSorulari',
+          id
+        );
+
+        await window.firebaseSetDoc(
+          questionRef,
+          {
+            answer: answer,
+            answeredBy: me,
+            answeredAt: new Date().toISOString()
+          },
+          { merge: true }
+        );
+
+        // Yanıt, gerçek zamanlı dinleyici üzerinden ekranlara yansır.
+      } catch (err) {
+        console.error('Yanıt kaydedilemedi:', err);
+
+        alert(
+          'Yanıt kaydedilemedi. Firebase bağlantısını ve güvenlik kurallarını kontrol edin.'
+        );
+      } finally {
+        if (submitButton) submitButton.disabled = false;
+      }
+    });
   });
-  document.querySelectorAll('[data-answer-form]').forEach((f) => f.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const id = f.dataset.answerForm;
-    const answer = (new FormData(f).get('answer') || '').toString().trim();
-    if (!answer) return;
-    const list = loadQuestions();
-    const q = list.find((x) => x.id === id);
-    if (!q) return;
-    const me = currentUser ? currentUser.name : '';
-    if (!isAdminUser() && q.to !== me) return;
-    q.answer = answer;
-    q.answeredBy = me;
-    q.answeredAt = new Date().toISOString();
-    saveQuestions(list);
-    renderDashboard('Personel Soruları');
-  }));
 }
 
 function renderNoteContent() {

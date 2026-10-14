@@ -17,7 +17,11 @@ import {
   deleteDoc,
   collection,
   getDocs,
-  onSnapshot
+  onSnapshot,
+  addDoc,
+  query,
+  where,
+  orderBy
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
 import { getStorage } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-storage.js";
@@ -38,11 +42,13 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
 
-// Firebase bağlantılarını global olarak kullanılabilir hale getiriyoruz.
+// Firebase bağlantıları
 window.firebaseApp = app;
 window.firebaseAuth = auth;
 window.firebaseDb = db;
+window.firebaseStorage = storage;
 
+// Firestore temel işlemleri
 window.firebaseDoc = doc;
 window.firebaseGetDoc = getDoc;
 window.firebaseSetDoc = setDoc;
@@ -51,13 +57,18 @@ window.firebaseCollection = collection;
 window.firebaseGetDocs = getDocs;
 window.firebaseOnSnapshot = onSnapshot;
 
+// Notlar için gereken Firestore işlemleri
+window.firebaseAddDoc = addDoc;
+window.firebaseQuery = query;
+window.firebaseWhere = where;
+window.firebaseOrderBy = orderBy;
+
+// Mevcut iş kayıtları koleksiyonu
 window.firebaseWorkRecordCollection = 'workRecords';
 
-window.firebaseStorage = storage;
-
+// Firebase Authentication
 window.firebaseSignIn = signInWithEmailAndPassword;
 window.firebaseCreateUser = createUserWithEmailAndPassword;
-
 window.firebaseUpdatePassword = updatePassword;
 window.firebaseReauthenticate = reauthenticateWithCredential;
 window.firebaseEmailAuthProvider = EmailAuthProvider;
