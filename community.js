@@ -716,26 +716,45 @@ function employeeScoringCalculate(month) {
         return;
       }
 
-      const named = record.tasksByName || {};
-      const quantities = record.quantitiesByName || {};
-      const tasks = Array.isArray(record.tasks) ? record.tasks : [];
+      const named =
+        record.tasksByName &&
+        typeof record.tasksByName === 'object' &&
+        !Array.isArray(record.tasksByName)
+          ? record.tasksByName
+          : {};
+      const quantities =
+        record.quantitiesByName &&
+        typeof record.quantitiesByName === 'object' &&
+        !Array.isArray(record.quantitiesByName)
+          ? record.quantitiesByName
+          : {};
 
-      taskNames.forEach((taskName, index) => {
+      // Puanlama, personelin ilgili firmada işlemi yapma yetkisine (islem) bağlıdır.
+      // Eski tasks[] dizisi görev sırası değiştiğinde yanlış puan doğurabileceği
+      // için kullanılmaz; yalnızca görev adıyla eşleşen kayıtlar değerlendirilir.
+      const matrix = sharedPermissionMatrixCache;
+      if (!matrix || typeof matrix !== 'object') {
+        throw new Error('Personel iş türü yetkileri yüklenmeden puanlama yapılamaz.');
+      }
+
+      const staffPermissions = matrix[record.staff || record.staffName || record.personel || record.employee || ''];
+      const companyPermissions =
+        staffPermissions && staffPermissions.tasks &&
+        typeof staffPermissions.tasks === 'object'
+          ? staffPermissions.tasks[String(record.company || '').trim()]
+          : null;
+
+      taskNames.forEach((taskName) => {
+        const permission = companyPermissions && companyPermissions[taskName];
+        if (permission !== 'islem') return;
+
         let units = 0;
 
-        if (
-          Object.prototype.hasOwnProperty.call(quantities, taskName)
-        ) {
+        if (Object.prototype.hasOwnProperty.call(quantities, taskName)) {
           const quantity = Number(quantities[taskName]);
-
-          if (Number.isFinite(quantity) && quantity > 0) {
-            units = quantity;
-          }
-        } else if (
-          Object.prototype.hasOwnProperty.call(named, taskName)
-        ) {
+          if (Number.isFinite(quantity) && quantity > 0) units = quantity;
+        } else if (Object.prototype.hasOwnProperty.call(named, taskName)) {
           const value = named[taskName];
-
           if (value === true) {
             units = 1;
           } else if (
@@ -743,21 +762,7 @@ function employeeScoringCalculate(month) {
             (typeof value === 'string' && value.trim() !== '')
           ) {
             const quantity = Number(value);
-
-            if (Number.isFinite(quantity) && quantity > 0) {
-              units = quantity;
-            }
-          }
-        } else if (tasks[index] === true) {
-          units = 1;
-        } else if (
-          typeof tasks[index] === 'number' ||
-          typeof tasks[index] === 'string'
-        ) {
-          const quantity = Number(tasks[index]);
-
-          if (Number.isFinite(quantity) && quantity > 0) {
-            units = quantity;
+            if (Number.isFinite(quantity) && quantity > 0) units = quantity;
           }
         }
 
@@ -950,6 +955,10 @@ async function employeeScoringApprove(month) {
   await employeeScoringLoadMonth(month);
   await employeeScoringLoadRules();
   await employeeScoringLoadWorkRecords();
+  if (typeof loadPermissionMatrixFromFirebase !== 'function') {
+    throw new Error('Personel iş türü yetkileri yüklenemiyor.');
+  }
+  await loadPermissionMatrixFromFirebase();
 
   const ranking = employeeScoringCalculate(month);
   const winner = ranking[0];
@@ -998,7 +1007,10 @@ function renderEmployeeScoringContent() {
     Promise.all([
       employeeScoringLoadRules(),
       employeeScoringLoadMonth(month),
-      employeeScoringLoadWorkRecords()
+      employeeScoringLoadWorkRecords(),
+      typeof loadPermissionMatrixFromFirebase === 'function'
+        ? loadPermissionMatrixFromFirebase()
+        : Promise.reject(new Error('Personel iş türü yetkileri yüklenemiyor.'))
     ]).then(() => {
       state.loading = false;
       renderDashboard('Ayın Elemanı');
